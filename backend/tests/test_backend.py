@@ -11,6 +11,8 @@ from app.services.xtream import XtreamClient
 from app.services.file_manager import FileManager
 from app.tasks.sync import process_movies
 from app.models.cache import MovieCache
+from app.models.selection import SelectedCategory
+from app.models.sync_state import SyncState
 
 class TestXtreamClient(unittest.TestCase):
     def setUp(self):
@@ -55,32 +57,67 @@ class TestSyncLogic(unittest.TestCase):
             {"stream_id": "100", "name": "Test Movie", "container_extension": "mp4", "category_id": "1", "tmdb_id": "123"}
         ]
         
+        # One mock per model: process_movies queries SettingsModel, SyncState,
+        # SelectedCategory and MovieCache, and they need different answers. A
+        # single shared return_value cannot express that.
+        selected = MagicMock()
+        selected.category_id = "1"
+
+        sync_state = MagicMock()
+        sync_state.layout_signature = None
+
+        def query(model):
+            result = MagicMock()
+            if model is SelectedCategory:
+                # The category the movie above belongs to. An empty selection
+                # would legitimately sync nothing — see the filter in
+                # process_movies — so the test has to select something.
+                result.filter.return_value.all.return_value = [selected]
+            elif model is SyncState:
+                result.filter.return_value.first.return_value = sync_state
+            else:
+                # SettingsModel (defaults) and MovieCache (nothing cached yet).
+                result.all.return_value = []
+                result.filter.return_value.all.return_value = []
+                result.filter.return_value.first.return_value = None
+            return result
+
         db = MagicMock()
-        # Mock cache query to return empty (so it adds)
-        db.query.return_value.all.return_value = []
-        # Mock SyncState query
-        db.query.return_value.filter.return_value.first.return_value = MagicMock()
-        # Mock SelectedCategory query (filter().all()) to return empty list so it doesn't filter out movies
-        db.query.return_value.filter.return_value.all.return_value = []
+        db.query.side_effect = query
 
         xc = XtreamClient("http://test.com", "user", "pass")
         fm = FileManager("/tmp/output")
         fm.ensure_directory = MagicMock()
         fm.write_strm = AsyncMock()
         fm.write_nfo = AsyncMock()
+        # The post-sync disk sweep is covered by test_hardening; here it would
+        # walk a directory that does not exist.
+        fm.sweep_generated_files = AsyncMock(return_value={})
 
         # Run
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(process_movies(db, xc, fm))
+        loop.run_until_complete(process_movies(db, xc, fm, subscription_id=1))
         loop.close()
 
         # Verify
-        # Should have called write_strm
         fm.write_strm.assert_called_once()
-        args = fm.write_strm.call_args[0]
-        self.assertTrue(args[0].endswith("Test Movie.strm"))
-        self.assertIn("100.mp4", args[1])
+        path, url = fm.write_strm.call_args[0]
+
+        # Layout since v4.2.0: <library>/<category>/<title {tmdb-id}>/<title {tmdb-id}>.strm
+        # Every movie owns a folder now, so the file is never written loose in
+        # the library root, and the folder carries the same name as the file.
+        self.assertEqual(
+            path,
+            os.path.join(
+                "/tmp/output", "Action",
+                "Test Movie {tmdb-123}", "Test Movie {tmdb-123}.strm",
+            ),
+        )
+        self.assertEqual(os.path.basename(os.path.dirname(path)),
+                         os.path.basename(path)[:-len(".strm")])
+
+        self.assertIn("100.mp4", url)
 
 if __name__ == '__main__':
     unittest.main()

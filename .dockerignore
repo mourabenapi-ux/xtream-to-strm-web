@@ -18,5 +18,4 @@ backend/venv
 .git
 .vscode
 .idea
-screenshots/
 *.md

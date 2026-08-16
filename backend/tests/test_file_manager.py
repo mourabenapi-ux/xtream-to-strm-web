@@ -47,14 +47,18 @@ class TestFileManagerNFO(unittest.TestCase):
             self.assertIn(f"<title>{expected_title}</title>", nfo)
 
     def test_generate_movie_nfo_with_tmdb(self):
-        # Should ignore name and just use TMDB ID
+        # With a TMDB id the identifiers carry the match, but the title is still
+        # written: Jellyfin shows it before any provider lookup completes, and a
+        # titleless NFO displays as the folder name.
         data = {
             "name": "FR - Movie Name",
             "tmdb": "12345"
         }
         nfo = self.fm.generate_movie_nfo(data)
         self.assertIn("<tmdbid>12345</tmdbid>", nfo)
-        self.assertNotIn("<title>", nfo)
+        self.assertIn('<uniqueid type="tmdb" default="true">12345</uniqueid>', nfo)
+        # The prefix is still stripped from the title.
+        self.assertIn("<title>Movie Name</title>", nfo)
 
     def test_generate_movie_nfo_custom_regex(self):
         # Test with custom regex
