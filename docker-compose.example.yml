@@ -1,0 +1,28 @@
+# Ready-to-use compose file for running the published image.
+#
+#   cp docker-compose.example.yml docker-compose.yml
+#   docker compose up -d
+#
+# The repository's own docker-compose.yml builds from source instead — use that one
+# only if you are developing on the project.
+
+services:
+  app:
+    image: mourabena2ui/xtream-to-strm-web:4.2.0
+    container_name: xtream_app
+    ports:
+      # Host port 80 -> app. Keep this on your LAN: there is no authentication.
+      - "80:8000"
+    volumes:
+      # Generated .strm / .nfo library and downloads. Point this at the folder your
+      # media server scans.
+      - ./output:/output
+      # SQLite database: subscriptions, selections, sync state. Back this up.
+      - ./db:/db
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Container clock.
+      - TZ=Europe/Paris
+      # Timezone used to place EPG programmes. Set it to your own zone.
+      - TIMEZONE=Europe/Paris
+    restart: unless-stopped

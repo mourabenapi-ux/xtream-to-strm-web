@@ -1,0 +1,15 @@
+# Normalise text files to LF in the repository.
+* text=auto eol=lf
+
+# These are copied into a Linux image and executed there. CRLF would break the
+# shebang ("/bin/sh^M: bad interpreter"), so never let a Windows checkout convert them.
+*.sh            text eol=lf
+docker_start.sh text eol=lf
+Dockerfile*     text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+
+# Binary
+*.png binary
+*.jpg binary
+*.ico binary

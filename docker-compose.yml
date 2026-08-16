@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.single
+    container_name: xtream_app
+    ports:
+      - "80:8000"
+    volumes:
+      - ./output:/output
+      - ./db:/db
+      - ./app.log:/app/app.log
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=Europe/Paris
+      - TIMEZONE=Europe/Paris

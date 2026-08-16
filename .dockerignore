@@ -1,0 +1,22 @@
+# Dependencies (reinstalled inside the image — host copies are Windows-built)
+frontend/node_modules
+frontend/dist
+
+# Runtime data (mounted as volumes at runtime)
+db/
+output/
+app.log
+*.db
+*.db.backup-*
+
+# Python artifacts
+**/__pycache__
+**/*.pyc
+backend/venv
+
+# Dev noise
+.git
+.vscode
+.idea
+screenshots/
+*.md

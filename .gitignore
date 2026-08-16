@@ -1,0 +1,71 @@
+# ---------------------------------------------------------------------------
+# Runtime data — NEVER commit. db/ holds subscriptions with provider
+# credentials in clear text, output/ holds the generated media library.
+# ---------------------------------------------------------------------------
+db/
+output/
+app.log
+*.log
+*.db
+*.db-journal
+*.db.backup-*
+
+# Sample / captured provider payloads (may embed account tokens)
+p1.xml
+*.m3u
+*.m3u8
+test.xml
+
+# ---------------------------------------------------------------------------
+# Local debug & verification scripts.
+# They stay on disk and keep working — they simply are not published, because
+# several of them embed the real provider URLs and account tokens.
+# ---------------------------------------------------------------------------
+backend/check_*.py
+backend/debug_*.py
+backend/verify_*.py
+backend/test_conn*.py
+backend/cleanup_live.py
+backend/find_tables.py
+backend/reset_downloads*.py
+backend/trigger_queue.py
+backend/migrate_add_*.py
+reproduce_dedup_bug.py
+apply_migration.py
+
+# ---------------------------------------------------------------------------
+# Dependencies & build output
+# ---------------------------------------------------------------------------
+node_modules/
+frontend/dist/
+frontend/.vite/
+backend/venv/
+.venv/
+
+# ---------------------------------------------------------------------------
+# Python artifacts
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# ---------------------------------------------------------------------------
+# Environment & secrets
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---------------------------------------------------------------------------
+# Editors & OS
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
