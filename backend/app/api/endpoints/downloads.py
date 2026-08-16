@@ -227,6 +227,11 @@ async def queue_bulk_download(
     
     for i, media_id in enumerate(data.media_ids):
         title = data.titles[i] if data.titles and i < len(data.titles) else None
+        extension = (
+            data.container_extensions[i]
+            if data.container_extensions and i < len(data.container_extensions)
+            else None
+        )
         try:
             if data.media_type == "series":
                 # Expand series into episodes (Expansion uses its own title generation)
@@ -287,7 +292,11 @@ async def queue_bulk_download(
                      created_tasks.append({"media_id": media_id, "error": f"Failed to expand series: {str(e)}"})
             else:
                 # Regular download (movie or single episode)
-                result = await queue_download(data.subscription_id, data.media_type, media_id, title=title, trigger_queue=False, db=db)
+                result = await queue_download(
+                    data.subscription_id, data.media_type, media_id,
+                    title=title, trigger_queue=False,
+                    container_extension=extension, db=db,
+                )
                 created_tasks.append(result)
                 
         except Exception as e:

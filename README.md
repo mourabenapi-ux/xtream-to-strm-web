@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.2.0-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.2.1-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -91,10 +91,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.2.0
+  mourabena2ui/xtream-to-strm-web:4.2.1
 ```
 
-Available tags: `4.2.0` (pin this in production), `4.2`, `latest`.
+Available tags: `4.2.1` (pin this in production), `4.2`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -108,7 +108,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.2.0
+    image: mourabena2ui/xtream-to-strm-web:4.2.1
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -219,7 +219,38 @@ output/
 
 ## 📝 Version History
 
-### v4.2.0 (Current)
+### v4.2.1 (Current)
+
+A download-queue fix release. Both defects were reproduced against a live provider and a
+real 2.9 GB file before being fixed, and the fix was verified by a full download that
+finished at exactly the announced byte count.
+
+- 🔁 **Fixed: a download restarted from zero at 99 % and never finished.** The byte counter
+  lived on the ORM row while the pause check called `db.refresh()` every 5 seconds, which
+  reloaded that row and discarded everything counted since the last commit — about 90 MB
+  lost over a 2.9 GB film. A complete file was therefore declared truncated, and the retry
+  started it over. The total is now counted locally and completeness is judged from the
+  file on disk.
+- 📂 **Fixed: retries landed in a different folder, so nothing ever resumed.** The target
+  path is rebuilt from provider metadata on each attempt, and a failed category lookup sent
+  the retry somewhere else, leaving the partial file unfindable. `save_path` is now recorded
+  when the download *starts*, and an earlier attempt's bytes are carried over to the new
+  target.
+- 🎬 **Fixed: series downloads never started (HTTP 551).** Episodes are not in the local
+  cache and nothing asked the provider, so every episode URL was built as `.mp4` while the
+  provider served `.mkv`. The browse response's real container is now sent when queueing,
+  and a 551 makes the task probe the other containers, correct the URL and rename the
+  target accordingly.
+- 🚦 **Sequential mode is now really sequential.** A retry went straight to the worker
+  without passing the slot check, so two downloads ran at once against providers that allow
+  one connection — which is what produced the 551s and the mid-stream cuts. The queue is
+  also FIFO again: the sort reversed the creation date as well as the priority, so the
+  newest item jumped ahead and the first ones were never served.
+- 🩹 **HTTP 416 no longer trusts `HEAD`.** The remote size is read from a one-byte ranged
+  `GET`; when it cannot be established the task fails loudly instead of truncating a
+  finished file and starting again.
+
+### v4.2.0
 
 A hardening release. Every item below was reproduced against a live provider, a real
 149 MB XMLTV guide and a 3 700-item library, then re-verified after the fix.

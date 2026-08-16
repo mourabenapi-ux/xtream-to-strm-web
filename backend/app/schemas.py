@@ -129,6 +129,9 @@ class DownloadBulkQueueCreate(BaseModel):
     media_ids: list[int | str]
     media_type: str
     titles: Optional[list[str]] = None
+    # Episodes are not in the local cache, so the container has to come from the
+    # listing the caller browsed; guessing it earns a flat HTTP 551 refusal.
+    container_extensions: Optional[list[str]] = None
 
 class DownloadSettingsUpdate(BaseModel):
     max_parallel_downloads: Optional[int] = None

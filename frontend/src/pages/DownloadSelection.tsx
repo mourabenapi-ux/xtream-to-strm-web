@@ -241,6 +241,21 @@ export default function DownloadSelection() {
         return searchResults?.items.find(m => m.id === id);
     };
 
+    // The loaded episode behind a selected id, with the series and season it came
+    // from — both the title and the container extension are built from it.
+    const findLoadedEpisode = (
+        epId: number
+    ): { detail: SeriesDetail; season: Season; ep: Episode } | undefined => {
+        for (const sId in seriesDetails) {
+            const detail = seriesDetails[sId];
+            for (const season of detail.seasons) {
+                const ep = season.episodes.find(e => Number(e.id) === epId);
+                if (ep) return { detail, season, ep };
+            }
+        }
+        return undefined;
+    };
+
     const toggleMonitoring = async (mType: string, mId: string, title: string) => {
         if (!selectedSubscription) return;
 
@@ -438,26 +453,28 @@ export default function DownloadSelection() {
                 if (selectedEpIds.length > 0) {
                     // Build explicit titles for episodes: Series Name - SXXEYY - Title
                     const titles = selectedEpIds.map(epId => {
-                        for (const sId in seriesDetails) {
-                            const detail = seriesDetails[sId];
-                            for (const season of detail.seasons) {
-                                const ep = season.episodes.find(e => Number(e.id) === epId);
-                                if (ep) {
-                                    const sName = detail.info?.name || "Series";
-                                    const epInfo = `S${season.season_number.toString().padStart(2, '0')}E${ep.episode_num.toString().padStart(2, '0')}`;
-                                    const epTitle = ep.title ? ` - ${ep.title}` : "";
-                                    return `${sName} - ${epInfo}${epTitle}`;
-                                }
-                            }
-                        }
-                        return `Episode ${epId}`;
+                        const found = findLoadedEpisode(epId);
+                        if (!found) return `Episode ${epId}`;
+                        const { detail, season, ep } = found;
+                        const sName = detail.info?.name || "Series";
+                        const epInfo = `S${season.season_number.toString().padStart(2, '0')}E${ep.episode_num.toString().padStart(2, '0')}`;
+                        const epTitle = ep.title ? ` - ${ep.title}` : "";
+                        return `${sName} - ${epInfo}${epTitle}`;
                     });
+
+                    // The provider refuses a stream requested with the wrong container
+                    // (HTTP 551), and episodes are not in the local cache, so the
+                    // extension the listing gave us is the only reliable source.
+                    const containers = selectedEpIds.map(
+                        epId => findLoadedEpisode(epId)?.ep.container_extension || 'mp4'
+                    );
 
                     await api.post('/downloads/queue/bulk', {
                         subscription_id: selectedSubscription,
                         media_ids: selectedEpIds,
                         media_type: 'episode',
-                        titles: titles
+                        titles: titles,
+                        container_extensions: containers,
                     });
                     totalQueued += selectedEpIds.length;
                 }

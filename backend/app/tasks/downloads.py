@@ -43,6 +43,19 @@ class IncompleteDownloadError(Exception):
     partial file, rather than archiving a truncated media file as complete.
     """
 
+
+class WrongContainerExtension(Exception):
+    """The provider serves this title in another container than the URL asked for.
+
+    The task's URL has already been corrected when this is raised; the caller
+    only has to resolve the target path again so the file is named after the
+    container it really is.
+    """
+
+    def __init__(self, extension: str):
+        super().__init__(f"provider serves this title as .{extension}")
+        self.extension = extension
+
 # --- Heartbeat ---
 # A task stuck in DOWNLOADING means nothing on its own: the worker may be alive and
 # streaming, or it may have died with the container. The heartbeat tells them apart,
@@ -64,6 +77,27 @@ def _clear_heartbeat(download_id: int):
         redis_conn.delete(_heartbeat_key(download_id))
     except Exception:
         pass
+
+def _another_download_is_live(db: Session, download_id: int) -> bool:
+    """Is some other download actually streaming right now?
+
+    Only a heartbeat counts: a row left in DOWNLOADING by a worker that died must
+    not block the queue, which is exactly what `_recover_stalled_downloads` sorts
+    out on its own schedule.
+    """
+    others = db.query(DownloadTask.id).filter(
+        DownloadTask.status == DownloadStatus.DOWNLOADING,
+        DownloadTask.id != download_id,
+    ).all()
+    for (other_id,) in others:
+        try:
+            if redis_conn.exists(_heartbeat_key(other_id)):
+                return True
+        except Exception:
+            # Redis unreachable: assume it is live rather than open a second connection
+            return True
+    return False
+
 
 def _recover_stalled_downloads(db: Session) -> int:
     """Requeue downloads whose worker is gone. Live downloads are left alone."""
@@ -154,6 +188,88 @@ def _extension_from_url(url: str, default: str = ".mp4") -> str:
     """Extension the file will actually be served with, taken from the stream URL."""
     suffix = Path(urlparse(url).path).suffix
     return suffix if suffix else default
+
+
+# Containers these providers actually serve, most common first. Anything else
+# answers HTTP 551, which is what makes the probe below cheap and unambiguous.
+CONTAINER_CANDIDATES = ("mkv", "mp4", "avi", "ts", "m4v")
+
+
+def _url_with_extension(url: str, extension: str) -> str:
+    parsed = urlparse(url)
+    stem = parsed.path.rsplit(".", 1)[0] if Path(parsed.path).suffix else parsed.path
+    return parsed._replace(path=f"{stem}.{extension}").geturl()
+
+
+def _probe_container_extension(client: httpx.Client, url: str) -> Optional[str]:
+    """Ask the provider which container it will actually serve for this stream.
+
+    Episodes are queued from the catalogue listing, which does not always carry a
+    container, and nothing falls back to the provider — so the URL was built with
+    a guessed `.mp4` and the provider answered 551 on every attempt. One byte per
+    candidate is enough to find the real one.
+    """
+    current = _extension_from_url(url).lstrip(".").lower()
+    for extension in CONTAINER_CANDIDATES:
+        if extension == current:
+            continue
+        try:
+            with client.stream(
+                "GET", _url_with_extension(url, extension), headers={"Range": "bytes=0-1"}
+            ) as response:
+                if response.status_code < 400:
+                    return extension
+        except Exception as e:
+            logger.debug(f"Container probe .{extension} failed: {e}")
+    return None
+
+
+def _probe_total_size(client: httpx.Client, url: str) -> Optional[int]:
+    """Total size of the remote file, from a one-byte ranged GET.
+
+    HEAD is not trustworthy on these CDNs — it answers without a length, or with
+    a wrong one — and believing it used to truncate an already finished file and
+    start the whole download again.
+    """
+    try:
+        with client.stream("GET", url, headers={"Range": "bytes=0-0"}) as response:
+            content_range = response.headers.get("content-range", "")
+            if "/" in content_range:
+                total = content_range.rsplit("/", 1)[-1]
+                if total.isdigit():
+                    return int(total)
+            if response.status_code == 200 and "content-length" in response.headers:
+                return int(response.headers["content-length"])
+    except Exception as e:
+        logger.warning(f"Could not probe the size of {url}: {e}")
+    return None
+
+
+def _adopt_previous_partial(download: DownloadTask, save_path: Path) -> None:
+    """Move the bytes an earlier attempt wrote to where this attempt will write.
+
+    The target path is rebuilt from provider metadata on every attempt, and those
+    lookups can fail on one attempt and succeed on the next — a category that
+    resolves to "Uncategorized" once and to its real name later sends the retry
+    to a different folder. The partial file was then never found, so the download
+    restarted from zero every time and could never finish.
+    """
+    previous = Path(download.save_path) if download.save_path else None
+    if not previous or previous == save_path or not previous.is_file():
+        return
+
+    try:
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        if save_path.is_file():
+            # Both attempts left a file: the longer one is the one worth resuming.
+            if save_path.stat().st_size >= previous.stat().st_size:
+                previous.unlink()
+                return
+            save_path.unlink()
+        previous.replace(save_path)
+        logger.info(f"Resuming download {download.id} from {previous} at {save_path}")
+    except OSError as e:
+        logger.warning(f"Could not carry over the partial file for {download.id}: {e}")
 
 
 # Where downloads land when a subscription does not name a directory of its own.
@@ -481,6 +597,8 @@ def _perform_download_stream(db: Session, download: DownloadTask, save_path: Pat
                       headers={"User-Agent": ua, "Icy-MetaData": "1", "Connection": "close"},
                       timeout=httpx.Timeout(client_timeout, read=None)) as client:
         
+        container_probed = False
+
         while True:
             headers = {'Range': f'bytes={existing_size}-'} if existing_size > 0 else {}
             try:
@@ -514,26 +632,40 @@ def _perform_download_stream(db: Session, download: DownloadTask, save_path: Pat
                     bytes_sampled = 0
                     sample_start = time.time()
                     speed_limit = download.speed_limit_kbps or settings.global_speed_limit_kbps
+                    # The running total lives here, not on the ORM object. It used to be
+                    # accumulated on `download.downloaded_bytes`, and the pause check
+                    # below called `db.refresh()`, which reloads the row and throws away
+                    # every byte counted since the last commit. Half a megabyte lost
+                    # every five seconds added up to ~90 MB over a 2.9 GB film, so a
+                    # download that had in fact finished was declared truncated, and the
+                    # retry started it over.
+                    downloaded = existing_size
+                    expected_total = download.file_size
 
                     with open(save_path, mode) as f:
                         for chunk in response.iter_bytes(chunk_size=CHUNK_SIZE):
-                            # Optimized DB Refresh (Check pause/cancel every 5s)
+                            # Check pause/cancel every 5s, reading only the status column
+                            # so nothing else on the row is reloaded over our own counter.
                             now = time.time()
                             if now - last_db_refresh >= DB_REFRESH_INTERVAL:
-                                db.refresh(download)
-                                if download.status in [DownloadStatus.PAUSED, DownloadStatus.CANCELLED]:
-                                    logger.info(f"Download {download.id} {download.status}")
+                                state = db.query(DownloadTask.status).filter(
+                                    DownloadTask.id == download.id
+                                ).scalar()
+                                if state in [DownloadStatus.PAUSED, DownloadStatus.CANCELLED]:
+                                    logger.info(f"Download {download.id} {state}")
+                                    download.downloaded_bytes = downloaded
+                                    db.commit()
                                     return False # Interrupted
                                 _beat(download.id)
                                 last_db_refresh = now
-                            
+
                             f.write(chunk)
-                            download.downloaded_bytes += len(chunk)
+                            downloaded += len(chunk)
                             bytes_sampled += len(chunk)
 
                             # Throttling
                             if speed_limit > 0:
-                                expected = (download.downloaded_bytes - existing_size) / (speed_limit * 1024)
+                                expected = (downloaded - existing_size) / (speed_limit * 1024)
                                 elapsed = time.time() - start_time
                                 if elapsed < expected:
                                     time.sleep(expected - elapsed)
@@ -541,23 +673,28 @@ def _perform_download_stream(db: Session, download: DownloadTask, save_path: Pat
                             # Statistics Update (Non-blocking)
                             sample_elapsed = now - sample_start
                             if sample_elapsed >= 1.0:
+                                download.downloaded_bytes = downloaded
                                 download.current_speed_kbps = (bytes_sampled / 1024) / sample_elapsed
-                                if download.file_size:
-                                    download.progress = min((download.downloaded_bytes / download.file_size) * 100, 99.9)
+                                if expected_total:
+                                    download.progress = min((downloaded / expected_total) * 100, 99.9)
                                     if download.current_speed_kbps > 0:
-                                        rem = (download.file_size - download.downloaded_bytes) / 1024
+                                        rem = (expected_total - downloaded) / 1024
                                         download.estimated_time_remaining = int(rem / download.current_speed_kbps)
                                 bytes_sampled = 0
                                 sample_start = now
                                 db.commit()
 
-                    # The byte loop also ends when the provider drops the connection.
-                    # Without this check a truncated file would be reported as complete.
-                    expected_total = download.file_size
-                    if expected_total and download.downloaded_bytes < expected_total:
+                    # What is on disk is the only figure worth checking against: the
+                    # byte loop also ends when the provider drops the connection, and
+                    # without this a truncated file would be reported as complete.
+                    on_disk = save_path.stat().st_size if save_path.exists() else downloaded
+                    download.downloaded_bytes = on_disk
+                    db.commit()
+
+                    if expected_total and on_disk < expected_total:
                         raise IncompleteDownloadError(
-                            f"stream ended at {download.downloaded_bytes:,}/{expected_total:,} bytes "
-                            f"({expected_total - download.downloaded_bytes:,} missing)"
+                            f"stream ended at {on_disk:,}/{expected_total:,} bytes "
+                            f"({expected_total - on_disk:,} missing)"
                         )
 
                     return True # Success
@@ -566,32 +703,42 @@ def _perform_download_stream(db: Session, download: DownloadTask, save_path: Pat
                 # Special handling for common IPTV/CDN non-standard codes
                 if e.response.status_code == 551:
                     # 551 is used by providers both for a saturated account and for a
-                    # stream requested with the wrong container extension.
+                    # stream requested with the wrong container extension. Ask which
+                    # container this title is really served in before giving up.
+                    if not container_probed:
+                        container_probed = True
+                        better = _probe_container_extension(client, download.url)
+                        if better:
+                            logger.info(
+                                f"Download {download.id}: provider refused "
+                                f"'{_extension_from_url(download.url)}', serving .{better} instead"
+                            )
+                            download.url = _url_with_extension(download.url, better)
+                            db.commit()
+                            raise WrongContainerExtension(better) from e
+
                     raise Exception(
                         f"Provider refused the stream (HTTP 551) for "
                         f"'{_extension_from_url(download.url)}' - wrong container extension "
                         f"or connection limit reached"
                     ) from e
-                
-                if e.response.status_code == 416:
-                    # Verify if already done
-                    try:
-                        head = client.head(download.url)
-                        srv_size = int(head.headers.get('content-length', 0))
-                        if srv_size > 0 and existing_size >= srv_size:
-                            download.file_size = srv_size
-                            download.downloaded_bytes = existing_size
-                            return True
-                    except: pass
-                    # Else reset
-                    existing_size = 0
-                    download.downloaded_bytes = 0
-                    continue
-                raise e
-            except (httpx.NetworkError, httpx.TimeoutException) as e:
-                logger.error(f"Network error for {download.id}: {e}")
-                raise e
 
+                if e.response.status_code == 416:
+                    # Range not satisfiable: either the file is already whole, or the
+                    # provider changed it under us. Never assume the second - throwing
+                    # away a finished file and restarting is the worst possible guess.
+                    total = _probe_total_size(client, download.url)
+                    if total and existing_size >= total:
+                        download.file_size = total
+                        download.downloaded_bytes = existing_size
+                        db.commit()
+                        return True
+                    raise Exception(
+                        f"Provider rejected the resume at byte {existing_size:,} "
+                        f"(HTTP 416, remote size {total or 'unknown'}). "
+                        f"Delete the partial file to start over."
+                    ) from e
+                raise e
             except (httpx.NetworkError, httpx.TimeoutException) as e:
                 logger.error(f"Network error for {download.id}: {e}")
                 raise e
@@ -800,6 +947,17 @@ def download_media_task(self, download_id: int):
         subscription = db.query(Subscription).filter(Subscription.id == download.subscription_id).first()
         if not subscription: return
 
+        # A retry is scheduled straight onto the worker and so never passed through
+        # the queue's slot check. In sequential mode that let a retry run alongside
+        # a live download; these providers allow one connection and answer the
+        # second with HTTP 551 or by cutting it mid-stream. Hand the slot back
+        # instead, and let the queue start it when it is free.
+        if settings.download_mode == "sequential" and _another_download_is_live(db, download_id):
+            download.status = DownloadStatus.PENDING
+            download.error_message = "Waiting: another download is using the connection"
+            db.commit()
+            return
+
         # App settings for naming
         settings_dict = {s.key: s.value for s in db.query(SettingsModel).all()}
         
@@ -807,11 +965,15 @@ def download_media_task(self, download_id: int):
         target = _resolve_target_path(db, download, subscription, settings_dict)
         save_path = target["path"]
         sidecars = target.get("sidecars") or []
+        _adopt_previous_partial(download, save_path)
 
         # 2. Start Download
         download.status = DownloadStatus.DOWNLOADING
         download.started_at = datetime.now()
         download.task_id = self.request.id
+        # Recorded now, not at the end: it is what lets the next attempt find the
+        # bytes this one wrote, whatever the metadata resolves to next time.
+        download.save_path = str(save_path)
         db.commit()
         _beat(download_id)
 
@@ -820,7 +982,19 @@ def download_media_task(self, download_id: int):
 
         used_ffmpeg = False
         try:
-            success = _perform_download_stream(db, download, save_path, settings)
+            try:
+                success = _perform_download_stream(db, download, save_path, settings)
+            except WrongContainerExtension as ext_error:
+                # The URL is fixed; the file has to be named after the container it
+                # really is, so the target is resolved again before retrying.
+                target = _resolve_target_path(db, download, subscription, settings_dict)
+                save_path = target["path"]
+                sidecars = target.get("sidecars") or []
+                _adopt_previous_partial(download, save_path)
+                download.save_path = str(save_path)
+                db.commit()
+                logger.info(f"Retrying download {download_id} as .{ext_error.extension}")
+                success = _perform_download_stream(db, download, save_path, settings)
         except Exception as e:
             partial_bytes = save_path.stat().st_size if save_path.exists() else 0
             if partial_bytes > 0:
@@ -911,7 +1085,11 @@ def process_download_queue():
                 all_pending.extend(pending)
             
             if all_pending:
-                all_pending.sort(key=lambda x: (x.priority or 0, x.created_at), reverse=True)
+                # Highest priority first, then oldest first. Sorting the whole key in
+                # reverse also reversed the date, so the queue ran newest-first: every
+                # item queued after an episode pushed it further back, and a batch of
+                # episodes was served in reverse while the first ones never came up.
+                all_pending.sort(key=lambda x: (-(x.priority or 0), x.created_at))
                 download = all_pending[0]
                 if not download.scheduled_start_at or download.scheduled_start_at <= datetime.now():
                     # Mark as downloading immediately to reserve the slot
