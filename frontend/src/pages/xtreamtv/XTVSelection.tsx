@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Save, CheckSquare, Square, Film, Tv, StopCircle, AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { SyncProgress } from "@/components/SyncProgress";
 import { useToast } from '@/contexts/ToastContext';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import api from '@/lib/api';
@@ -30,6 +31,10 @@ interface SyncStatus {
     items_added: number;
     items_deleted: number;
     error_message?: string;
+    // Live counters of the run in flight; cleared by the backend when it ends.
+    progress_done?: number;
+    progress_total?: number;
+    progress_phase?: string | null;
 }
 
 type SortKey = 'name' | 'id' | 'count';
@@ -73,7 +78,10 @@ export default function XTVSelection() {
     useEffect(() => {
         fetchSubscriptions();
         fetchSyncStatus();
-        const interval = setInterval(fetchSyncStatus, 5000);
+        // 2s rather than 5s: this now drives a progress bar, and a bar that
+        // only moves every five seconds reads as stuck. The endpoint is a
+        // single small query.
+        const interval = setInterval(fetchSyncStatus, 2000);
         return () => clearInterval(interval);
     }, []);
 
@@ -180,6 +188,21 @@ export default function XTVSelection() {
 
     const getStatus = (subscriptionId: number, type: string) => {
         return statuses.find(s => s.subscription_id === subscriptionId && s.type === type);
+    };
+
+    // Where the run currently in flight has got to. Renders nothing unless this
+    // type is actually syncing.
+    const renderSyncProgress = (type: 'movies' | 'series') => {
+        if (!selectedSubId) return null;
+        const status = getStatus(selectedSubId, type);
+        return (
+            <SyncProgress
+                status={status?.status}
+                phase={status?.progress_phase}
+                done={status?.progress_done}
+                total={status?.progress_total}
+            />
+        );
     };
 
     // The backend has always recorded why a sync went wrong; nothing ever showed
@@ -452,6 +475,7 @@ export default function XTVSelection() {
                                         </div>
                                     )}
                                 </div>
+                                {renderSyncProgress('movies')}
                                 {renderSyncProblem('movies')}
                                 <div className="mt-4">
                                     {getStatus(selectedSubId, 'movies')?.status === 'running' ? (
@@ -512,6 +536,7 @@ export default function XTVSelection() {
                                         </div>
                                     )}
                                 </div>
+                                {renderSyncProgress('series')}
                                 {renderSyncProblem('series')}
                                 <div className="mt-4">
                                     {getStatus(selectedSubId, 'series')?.status === 'running' ? (

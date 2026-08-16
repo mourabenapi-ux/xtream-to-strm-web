@@ -45,6 +45,11 @@ class SyncStatusResponse(BaseModel):
     items_added: int
     items_deleted: int
     error_message: Optional[str] = None
+    # How far the run in flight has got. Only meaningful while status is
+    # "running"; progress_total is 0 when the count is not known yet.
+    progress_done: int = 0
+    progress_total: int = 0
+    progress_phase: Optional[str] = None
 
 class M3USyncStatusResponse(BaseModel):
     id: Optional[int] = None
@@ -55,6 +60,9 @@ class M3USyncStatusResponse(BaseModel):
     items_added: int
     items_deleted: int
     error_message: Optional[str] = None
+    progress_done: int = 0
+    progress_total: int = 0
+    progress_phase: Optional[str] = None
 
 class SyncTriggerResponse(BaseModel):
     message: str

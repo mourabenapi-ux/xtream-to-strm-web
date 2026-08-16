@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.2.1-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -91,10 +91,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.2.1
+  mourabena2ui/xtream-to-strm-web:4.3.0
 ```
 
-Available tags: `4.2.1` (pin this in production), `4.2`, `latest`.
+Available tags: `4.3.0` (pin this in production), `4.3`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -108,7 +108,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.2.1
+    image: mourabena2ui/xtream-to-strm-web:4.3.0
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -219,7 +219,20 @@ output/
 
 ## 📝 Version History
 
-### v4.2.1 (Current)
+### v4.3.0 (Current)
+
+- 📊 **The sync now shows how far it has got.** A run spends most of its time in its
+  per-item loop, and a spinner said nothing about whether that was 3 titles or 3 000. Both
+  the Xtream and the M3U sync publish a phase and a counter — reading the catalogue,
+  removing deselected entries, writing files (`n / total`), sweeping the library — rendered
+  as a progress bar on the selection screens and reflected in the dashboard's active-task
+  list. Until the item count is known the bar is deliberately indeterminate rather than
+  showing a fake 0 %. The counters are cleared when a run ends, fails or is stopped, so a
+  finished sync never leaves a bar frozen at 87 %.
+- 🗃️ The three progress columns are added to `sync_state` and `m3u_sync_state` automatically
+  on first start; no manual migration.
+
+### v4.2.1
 
 A download-queue fix release. Both defects were reproduced against a live provider and a
 real 2.9 GB file before being fixed, and the fix was verified by a full download that

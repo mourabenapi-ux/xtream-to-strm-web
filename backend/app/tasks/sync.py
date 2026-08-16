@@ -185,6 +185,31 @@ def _record_outcome(sync_state: SyncState, attempted: int, succeeded: int, colli
     sync_state.error_message = " ".join(notes) if notes else None
 
 
+def _set_progress(db: Session, sync_state: SyncState, phase, done=None, total=None) -> None:
+    """Publish where the run has got to, so the UI can show a bar and not a spinner.
+
+    Committed on every call: this is read by the API from another process, so a
+    value that stays in this session's transaction is invisible to the user.
+    """
+    sync_state.progress_phase = phase
+    if done is not None:
+        sync_state.progress_done = done
+    if total is not None:
+        sync_state.progress_total = total
+    db.commit()
+
+
+def _clear_progress(sync_state: SyncState) -> None:
+    """Drop the live counters once the run is over.
+
+    Left behind, they would make a finished sync look like it stopped at 87%.
+    The caller commits — this always runs next to a status change.
+    """
+    sync_state.progress_phase = None
+    sync_state.progress_done = 0
+    sync_state.progress_total = 0
+
+
 def _protected_roots(db: Session, subscription_id: int, own_root: str) -> set:
     """Directories the disk sweep must never enter.
 
@@ -231,6 +256,9 @@ async def process_movies(db: Session, xc: XtreamClient, fm: FileManager, subscri
     
     sync_state.status = SyncStatus.RUNNING
     sync_state.last_sync = datetime.now()
+    sync_state.progress_phase = "Reading the provider catalogue"
+    sync_state.progress_done = 0
+    sync_state.progress_total = 0
     db.commit()
 
     try:
@@ -340,6 +368,8 @@ async def process_movies(db: Session, xc: XtreamClient, fm: FileManager, subscri
         }
 
         # Process Deletions
+        if to_delete:
+            _set_progress(db, sync_state, f"Removing {len(to_delete)} title(s)")
         for movie in to_delete:
             cat_name = cat_map.get(str(movie.category_id), "Uncategorized")
             target_info = fm.get_movie_target_info(
@@ -457,6 +487,8 @@ async def process_movies(db: Session, xc: XtreamClient, fm: FileManager, subscri
         reprocessed_ids = set()
         strm_by_id = {}
 
+        _set_progress(db, sync_state, "Writing movies", done=0, total=len(to_add_update))
+
         for i in range(0, len(to_add_update), chunk_size):
             chunk = to_add_update[i:i + chunk_size]
             results = await asyncio.gather(*[process_single_movie(m) for m in chunk])
@@ -477,6 +509,9 @@ async def process_movies(db: Session, xc: XtreamClient, fm: FileManager, subscri
                     cached.container_extension = d['container_extension']
                     cached.tmdb_id = d['tmdb_id']
 
+            # Counted as attempted, not as succeeded: the bar tracks how far
+            # through the to-do list the run is, and a failed item is done with.
+            sync_state.progress_done = i + len(chunk)
             db.commit() # Commit every chunk
 
         # Movies left untouched this run — unchanged, or a refresh that failed —
@@ -486,6 +521,8 @@ async def process_movies(db: Session, xc: XtreamClient, fm: FileManager, subscri
             if stream_id not in reprocessed_ids:
                 keep_files.update(paths)
                 strm_by_id.setdefault(stream_id, paths[0])
+
+        _set_progress(db, sync_state, "Cleaning up the library")
 
         await fm.sweep_generated_files(
             keep_files,
@@ -516,6 +553,7 @@ async def process_movies(db: Session, xc: XtreamClient, fm: FileManager, subscri
         # partial one would leave the failed items in the old shape forever.
         if sync_state.status == SyncStatus.SUCCESS:
             sync_state.layout_signature = signature
+        _clear_progress(sync_state)
         db.commit()
 
     except SyncAborted as e:
@@ -524,11 +562,13 @@ async def process_movies(db: Session, xc: XtreamClient, fm: FileManager, subscri
         logger.warning(f"Movie sync aborted for subscription {subscription_id}: {e}")
         sync_state.status = SyncStatus.FAILED
         sync_state.error_message = str(e)
+        _clear_progress(sync_state)
         db.commit()
     except Exception as e:
         logger.exception("Error syncing movies")
         sync_state.status = SyncStatus.FAILED
         sync_state.error_message = str(e)
+        _clear_progress(sync_state)
         db.commit()
         raise
 
@@ -558,6 +598,9 @@ async def process_series(db: Session, xc: XtreamClient, fm: FileManager, subscri
     
     sync_state.status = SyncStatus.RUNNING
     sync_state.last_sync = datetime.utcnow()
+    sync_state.progress_phase = "Reading the provider catalogue"
+    sync_state.progress_done = 0
+    sync_state.progress_total = 0
     db.commit()
 
     try:
@@ -655,6 +698,8 @@ async def process_series(db: Session, xc: XtreamClient, fm: FileManager, subscri
         }
 
         # Deletions
+        if to_delete:
+            _set_progress(db, sync_state, f"Removing {len(to_delete)} series")
         for series in to_delete:
             cat_name = cat_map.get(str(series.category_id), "Uncategorized")
             target_info = fm.get_series_target_info(
@@ -823,6 +868,8 @@ async def process_series(db: Session, xc: XtreamClient, fm: FileManager, subscri
         keep_files = set()
         reprocessed_ids = set()
 
+        _set_progress(db, sync_state, "Writing series", done=0, total=len(to_add_update))
+
         for i in range(0, len(to_add_update), chunk_size):
             chunk = to_add_update[i:i + chunk_size]
             results = await asyncio.gather(*[process_single_series(s) for s in chunk])
@@ -843,6 +890,7 @@ async def process_series(db: Session, xc: XtreamClient, fm: FileManager, subscri
                     cached.last_modified = d['last_modified']
                     cached.last_refreshed = datetime.utcnow()
 
+            sync_state.progress_done = i + len(chunk)
             db.commit()
 
         # A series not reprocessed this run — unchanged, or a failed refresh —
@@ -854,6 +902,8 @@ async def process_series(db: Session, xc: XtreamClient, fm: FileManager, subscri
             if series_id not in reprocessed_ids
         }
 
+        _set_progress(db, sync_state, "Cleaning up the library")
+
         await fm.sweep_generated_files(
             keep_files,
             keep_trees=keep_trees,
@@ -864,17 +914,20 @@ async def process_series(db: Session, xc: XtreamClient, fm: FileManager, subscri
         _record_outcome(sync_state, attempted=len(to_add_update), succeeded=len(reprocessed_ids))
         if sync_state.status == SyncStatus.SUCCESS:
             sync_state.layout_signature = signature
+        _clear_progress(sync_state)
         db.commit()
 
     except SyncAborted as e:
         logger.warning(f"Series sync aborted for subscription {subscription_id}: {e}")
         sync_state.status = SyncStatus.FAILED
         sync_state.error_message = str(e)
+        _clear_progress(sync_state)
         db.commit()
     except Exception as e:
         logger.exception("Error syncing series")
         sync_state.status = SyncStatus.FAILED
         sync_state.error_message = str(e)
+        _clear_progress(sync_state)
         db.commit()
         raise
 

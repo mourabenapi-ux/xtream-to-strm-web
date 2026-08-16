@@ -60,6 +60,8 @@ interface ActiveTask {
     speed_kbps?: number;
     eta_seconds?: number;
     status: string;
+    // Sync tasks only: what the run is currently doing.
+    phase?: string | null;
 }
 
 export default function Dashboard() {
@@ -249,7 +251,7 @@ export default function Dashboard() {
                                                     <div>
                                                         <div className="text-sm font-semibold truncate max-w-[200px]">{task.name}</div>
                                                         <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-                                                            {task.type} • {task.status}
+                                                            {task.type} • {task.phase || task.status}
                                                         </div>
                                                     </div>
                                                 </div>

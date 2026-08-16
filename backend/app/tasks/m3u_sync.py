@@ -161,8 +161,33 @@ def sync_m3u_source_task(source_id: int, sync_types: list = None, force: bool = 
                     # RESET counters at the start of each sync
                     state.items_added = 0
                     state.items_deleted = 0
+                    state.progress_done = 0
+                    state.progress_total = 0
+                    state.progress_phase = "Reading the playlist"
                     sync_states.append(state)
-        
+
+        def set_progress(phase, done=None, total=None):
+            """Publish where this run has got to, for the UI's progress bar.
+
+            Committed every time: the API reads these from another process, so
+            an uncommitted value is invisible to the user.
+            """
+            for st in sync_states:
+                st.progress_phase = phase
+                if done is not None:
+                    st.progress_done = done
+                if total is not None:
+                    st.progress_total = total
+            db.commit()
+
+        def clear_progress():
+            """Drop the live counters once the run is over — otherwise a
+            finished sync keeps showing a bar stuck at some percentage."""
+            for st in sync_states:
+                st.progress_phase = None
+                st.progress_done = 0
+                st.progress_total = 0
+
         db.commit()
         
         # Early exit if no groups selected and entries already cached
@@ -175,7 +200,8 @@ def sync_m3u_source_task(source_id: int, sync_types: list = None, force: bool = 
                 state.status = "success"
                 state.last_sync = datetime.utcnow()
                 state.task_id = None
-            
+
+            clear_progress()
             db.commit()
             return {
                 "source_id": source_id,
@@ -189,6 +215,7 @@ def sync_m3u_source_task(source_id: int, sync_types: list = None, force: bool = 
         
         added_count = 0
         if needs_reparse:
+            set_progress("Parsing the playlist")
             # Parse M3U content
             try:
                 if source.source_type == SourceType.URL:
@@ -203,7 +230,8 @@ def sync_m3u_source_task(source_id: int, sync_types: list = None, force: bool = 
                     state.status = "failed"
                     state.error_message = str(e)
                     state.task_id = None
-                    
+
+                clear_progress()
                 db.commit()
                 return {"error": str(e)}
             
@@ -268,7 +296,8 @@ def sync_m3u_source_task(source_id: int, sync_types: list = None, force: bool = 
                 state.status = "success"
                 state.last_sync = datetime.utcnow()
                 state.task_id = None
-                
+
+            clear_progress()
             db.commit()
             return {
                 "source_id": source_id,
@@ -292,6 +321,7 @@ def sync_m3u_source_task(source_id: int, sync_types: list = None, force: bool = 
         use_category_folders = settings.get("SERIES_USE_CATEGORY_FOLDERS", "true") == "true"
         
         # CLEANUP PHASE: Remove directories for deselected groups
+        set_progress("Removing deselected groups")
         movies_deleted = cleanup_deselected_groups(
             source.movies_dir or source.output_dir, selected_movie_groups, CONTENT_TYPE_MOVIES, sync_types
         )
@@ -311,7 +341,16 @@ def sync_m3u_source_task(source_id: int, sync_types: list = None, force: bool = 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
-        for entry in db.query(M3UEntry).filter(M3UEntry.m3u_source_id == source_id).all():
+        # Materialised so the bar has a denominator, and so the counter below
+        # advances over the same list the loop walks.
+        all_entries = db.query(M3UEntry).filter(M3UEntry.m3u_source_id == source_id).all()
+        set_progress("Writing files", done=0, total=len(all_entries))
+
+        for processed, entry in enumerate(all_entries, start=1):
+            # Published every 100 entries: one commit per entry would dominate
+            # the run on a large playlist, and the UI only polls every 5s.
+            if processed % 100 == 0:
+                set_progress("Writing files", done=processed)
             try:
                 # Filter by sync_types if provided
                 if sync_types:
@@ -399,7 +438,8 @@ def sync_m3u_source_task(source_id: int, sync_types: list = None, force: bool = 
                 state.items_added = series_files_created
                 state.items_deleted = series_deleted
             state.task_id = None
-            
+
+        clear_progress()
         db.commit()
         
         logger.info(
@@ -432,7 +472,11 @@ def sync_m3u_source_task(source_id: int, sync_types: list = None, force: bool = 
                             state.status = "failed"
                             state.error_message = str(e)
                             state.task_id = None
-                            
+                            state.progress_phase = None
+                            state.progress_done = 0
+                            state.progress_total = 0
+
+
                 db.commit()
         except:
             pass

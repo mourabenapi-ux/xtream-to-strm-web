@@ -25,3 +25,8 @@ class M3USyncState(Base):
     items_deleted = Column(Integer, nullable=False, default=0)
     error_message = Column(String, nullable=True)
     task_id = Column(String, nullable=True)  # Celery task ID for cancellation
+    # Live progress of the run currently in flight — see the Xtream SyncState
+    # for why. Only meaningful while status is "running".
+    progress_done = Column(Integer, nullable=False, default=0)
+    progress_total = Column(Integer, nullable=False, default=0)
+    progress_phase = Column(String, nullable=True)

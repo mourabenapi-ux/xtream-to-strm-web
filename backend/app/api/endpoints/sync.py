@@ -20,7 +20,10 @@ def get_sync_status(db: Session = Depends(get_db)):
             last_sync=state.last_sync,
             items_added=state.items_added,
             items_deleted=state.items_deleted,
-            error_message=state.error_message
+            error_message=state.error_message,
+            progress_done=state.progress_done or 0,
+            progress_total=state.progress_total or 0,
+            progress_phase=state.progress_phase,
         ) for state in states
     ]
 
@@ -79,9 +82,13 @@ def stop_sync(subscription_id: int, sync_type: str, db: Session = Depends(get_db
     # Revoke the task
     celery_app.control.revoke(sync_state.task_id, terminate=True)
     
-    # Update status
+    # Update status. The killed worker never gets to clear its own counters,
+    # so a stopped sync would otherwise stay frozen at whatever bar it reached.
     sync_state.status = "idle"
     sync_state.task_id = None
+    sync_state.progress_phase = None
+    sync_state.progress_done = 0
+    sync_state.progress_total = 0
     db.commit()
     
     return {"message": f"{sync_type.capitalize()} sync stopped successfully"}

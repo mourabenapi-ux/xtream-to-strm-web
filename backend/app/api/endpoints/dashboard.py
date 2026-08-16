@@ -335,11 +335,17 @@ def get_active_tasks(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
     # 1. Sync tasks
     syncing = db.query(SyncState).filter(SyncState.status == SyncStatus.RUNNING).all()
     for s in syncing:
+        # The sync now publishes its own counters. They stay at 0 while the
+        # catalogue is being read, which is honest: the size of the job is not
+        # known yet.
+        total = s.progress_total or 0
+        done = s.progress_done or 0
         tasks.append({
             "id": f"sync_{s.id}",
             "type": "sync",
             "name": f"Sync {s.type}",
-            "progress": 0, # We don't have fine-grained progress for sync yet
+            "progress": round(min(done / total, 1) * 100, 1) if total else 0,
+            "phase": s.progress_phase,
             "status": "running"
         })
         

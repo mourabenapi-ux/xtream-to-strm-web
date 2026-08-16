@@ -32,3 +32,10 @@ class SyncState(Base):
     # When it no longer matches the current settings, every cached item is
     # rebuilt once — otherwise a settings change never reaches the library.
     layout_signature = Column(String, nullable=True)
+    # Live progress of the run currently in flight. A sync spends most of its
+    # time in the per-item loop, and a spinner says nothing about whether that
+    # is 3 titles or 3000 — these say how far along it is and what it is doing.
+    # Only meaningful while status is RUNNING.
+    progress_done = Column(Integer, nullable=False, default=0)
+    progress_total = Column(Integer, nullable=False, default=0)
+    progress_phase = Column(String, nullable=True)

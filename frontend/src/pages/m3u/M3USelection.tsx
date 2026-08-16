@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Save, CheckSquare, Square, Film, Tv, StopCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { SyncProgress } from "@/components/SyncProgress";
 import { useToast } from '@/contexts/ToastContext';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 import api from '@/lib/api';
@@ -30,6 +31,10 @@ interface SyncStatus {
     items_added: number;
     items_deleted: number;
     error_message?: string;
+    // Live counters of the run in flight; cleared by the backend when it ends.
+    progress_done?: number;
+    progress_total?: number;
+    progress_phase?: string | null;
 }
 
 type SortKey = 'name' | 'count';
@@ -68,7 +73,9 @@ export default function M3USelection() {
     useEffect(() => {
         fetchSources();
         fetchSyncStatus();
-        const interval = setInterval(fetchSyncStatus, 5000);
+        // 2s rather than 5s: this now drives a progress bar, and a bar that
+        // only moves every five seconds reads as stuck.
+        const interval = setInterval(fetchSyncStatus, 2000);
         return () => clearInterval(interval);
     }, []);
 
@@ -482,6 +489,12 @@ export default function M3USelection() {
                                             </div>
                                         )}
                                     </div>
+                                    <SyncProgress
+                                        status={getStatus(selectedSourceId, 'movies')?.status}
+                                        phase={getStatus(selectedSourceId, 'movies')?.progress_phase}
+                                        done={getStatus(selectedSourceId, 'movies')?.progress_done}
+                                        total={getStatus(selectedSourceId, 'movies')?.progress_total}
+                                    />
                                     <div className="mt-4">
                                         {getStatus(selectedSourceId, 'movies')?.status === 'running' ? (
                                             <Button
@@ -541,6 +554,12 @@ export default function M3USelection() {
                                             </div>
                                         )}
                                     </div>
+                                    <SyncProgress
+                                        status={getStatus(selectedSourceId, 'series')?.status}
+                                        phase={getStatus(selectedSourceId, 'series')?.progress_phase}
+                                        done={getStatus(selectedSourceId, 'series')?.progress_done}
+                                        total={getStatus(selectedSourceId, 'series')?.progress_total}
+                                    />
                                     <div className="mt-4">
                                         {getStatus(selectedSourceId, 'series')?.status === 'running' ? (
                                             <Button

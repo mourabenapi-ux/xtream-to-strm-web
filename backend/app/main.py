@@ -88,6 +88,30 @@ def _ensure_schema_up_to_date():
                     except Exception as e:
                         print(f"  ⚠️ Could not add 'layout_signature': {e}")
 
+        # 3b-bis. Live progress columns on both sync state tables. Without them
+        # the UI can only show a spinner for a run that may last minutes.
+        for table_name in ("sync_state", "m3u_sync_state"):
+            if table_name not in existing_tables:
+                continue
+            cols = [c['name'] for c in inspector.get_columns(table_name)]
+            for col_name, col_type in (
+                ("progress_done", "INTEGER DEFAULT 0"),
+                ("progress_total", "INTEGER DEFAULT 0"),
+                ("progress_phase", "VARCHAR"),
+            ):
+                if col_name in cols:
+                    continue
+                print(f"🔧 Missing '{col_name}' in '{table_name}'. Repairing...")
+                with engine.connect() as conn:
+                    try:
+                        conn.execute(text(
+                            f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}"
+                        ))
+                        conn.commit()
+                        print(f"  ✅ Added '{col_name}' column.")
+                    except Exception as e:
+                        print(f"  ⚠️ Could not add '{col_name}': {e}")
+
         # 3c. Check 'series_cache' columns.
         # Both drive the "has this series gained episodes?" decision; without
         # them a cached series is only re-fetched when its name changes.
