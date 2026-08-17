@@ -24,8 +24,9 @@ from app.models.downloads import (
 from app.models.subscription import Subscription
 from app.models.cache import MovieCache, SeriesCache, EpisodeCache
 from app.models.settings import SettingsModel
-from app.services.xtream import XtreamClient
+from app.services.catalog import get_catalog
 from app.services.file_manager import FileManager
+from app.services.tmdb_overrides import resolve_one
 
 logger = logging.getLogger(__name__)
 
@@ -352,7 +353,7 @@ def _resolve_target_path(db: Session, download: DownloadTask, subscription: Subs
     base_dir = _download_base_dir(db, subscription, download.media_type)
     fm = FileManager(base_dir)
     cat_name = "Uncategorized"
-    xc = XtreamClient(subscription.xtream_url, subscription.username, subscription.password)
+    xc = get_catalog(db, subscription)
 
     if download.media_type == "movie":
         movie_cache = db.query(MovieCache).filter(
@@ -404,6 +405,13 @@ def _resolve_target_path(db: Session, download: DownloadTask, subscription: Subs
                         movie_data['tmdb'] = info['tmdb_id']
         except Exception as e:
             logger.warning(f"Failed to fetch VOD info for NFO ({download.media_id}): {e}")
+
+        # Last word on the id, after every provider source has had its say. The
+        # downloaded file has to land in the same {tmdb-…} folder the .strm
+        # library uses, or Jellyfin sees two different films.
+        movie_data['tmdb'], _ = resolve_one(
+            db, download.subscription_id, "movie", download.media_id,
+            movie_name, movie_data.get('tmdb'))
 
         target_info = fm.get_movie_target_info(movie_data, cat_name, prefix_regex, format_date, clean_name, movie_use_category_folders)
 
@@ -524,6 +532,11 @@ def _resolve_target_path(db: Session, download: DownloadTask, subscription: Subs
             except Exception as e:
                 logger.warning(f"Failed to fetch series categories: {e}")
         
+        # See the movie branch: the correction wins, so the episode lands in the
+        # same show folder the .strm library writes.
+        tmdb_id, _ = resolve_one(db, download.subscription_id, "series",
+                                 series_id, series_name, tmdb_id)
+
         series_data = {
             "name": series_name,
             "tmdb": tmdb_id
@@ -829,7 +842,7 @@ def _process_auto_downloads_sync(db: Session):
         subscription = db.query(Subscription).filter(Subscription.id == item.subscription_id).first()
         if not subscription: continue
         
-        xc = XtreamClient(subscription.xtream_url, subscription.username, subscription.password)
+        xc = get_catalog(db, subscription)
         existing_ids = {str(t.media_id) for t in db.query(DownloadTask.media_id)
                        .filter(DownloadTask.subscription_id == item.subscription_id).all()}
         

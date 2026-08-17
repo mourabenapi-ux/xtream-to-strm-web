@@ -72,7 +72,7 @@ export default function EPGAdmin() {
 
     const fetchSubscriptions = async () => {
         try {
-            const res = await api.get('/subscriptions/');
+            const res = await api.get('/subscriptions/?kind=xtream');
             setSubscriptions(res.data.map((s: any) => ({ id: s.id, name: s.name })));
         } catch (error) {
             console.error("Failed to fetch subscriptions", error);

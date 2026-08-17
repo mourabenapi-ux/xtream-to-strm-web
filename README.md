@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.4.0-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -91,10 +91,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.3.0
+  mourabena2ui/xtream-to-strm-web:4.4.0
 ```
 
-Available tags: `4.3.0` (pin this in production), `4.3`, `latest`.
+Available tags: `4.4.0` (pin this in production), `4.4`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -108,7 +108,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.3.0
+    image: mourabena2ui/xtream-to-strm-web:4.4.0
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -219,7 +219,76 @@ output/
 
 ## 📝 Version History
 
-### v4.3.0 (Current)
+### v4.4.0 (Current)
+
+La plus grosse version depuis la 4.0 : les sources M3U et Xtream ne sont plus deux
+applications qui se ressemblent, et trois fonctions demandées arrivent en même temps.
+
+**Une seule notion de source**
+- 🔗 **M3U et Xtream sont enfin la même chose.** Il y avait deux tables, deux syncs, deux
+  écrans de sélection et deux jeux de bugs. Il n'y a plus qu'un modèle `Source` lu à
+  travers un adaptateur de catalogue : le sync, les téléchargements, l'EPG et la
+  résolution live ne demandent plus de quel type est la source. Ajouter un format, c'est
+  écrire un adaptateur — plus jamais un `if` dans un appelant.
+- 🧾 **Le côté M3U hérite de tout ce qu'il n'avait jamais eu** : statut partiel, signature
+  de layout, garde-fou catalogue vide, barre de progression, comptage des échecs par
+  élément, balayage protégé — et surtout, ses deux `rmtree` non protégés ont disparu.
+- 📺 **Les chaînes live d'une M3U ne sont plus jetées au parsing.** L'ancienne contrainte
+  n'acceptait que MOVIE/SERIES.
+- 🎞️ **Une série M3U devient vraiment des saisons et des épisodes**, déduites du titre, au
+  lieu d'un dossier par épisode. ⚠️ Le premier sync d'une source M3U contenant de la VOD
+  réécrit sa bibliothèque dans la nouvelle arborescence.
+- 🖥️ Un seul écran *Sources* (identifiants, URL de playlist ou fichier envoyé) et un seul
+  écran de sélection. La section M3U du menu disparaît.
+
+**Organisation automatique des chaînes**
+- 🪄 **Nouvel écran *Auto Organizer*** (`/live-organizer`) : il lit vos catégories, retire
+  les entrées parasites, normalise les noms, fusionne les variantes d'une même chaîne et
+  propose une organisation complète. `Prévisualiser` n'écrit rien ; `Appliquer` crée une
+  **nouvelle playlist**, jamais une modification sur place.
+- 📚 Deux profils de référence (508 chaînes françaises, numérotation TNT) : `detailed` en
+  11 blocs, `compact` en 8. Sur un catalogue réel : 2 114 chaînes, 9 bouquets, **plus rien
+  dans la file d'attente**, 392 chaînes avec un guide.
+- 🛟 Les variantes en double ne sont pas perdues : elles vont dans un groupe *Secours /
+  Alternatives*. Les flux décalés (`+1`) ont leur propre groupe et ne volent jamais le
+  numéro de la chaîne d'origine.
+- 🔢 **La M3U publie enfin `tvg-chno`**, donc TiviMate respecte votre ordre au lieu de
+  renuméroter lui-même. Activable par playlist (`use_channel_numbers`) — les playlists
+  existantes gardent leur comportement.
+- 🐛 **Corrigé : sept chaînes étaient diffusées sous le nom d'une autre.** Des alias de la
+  référence pointaient vers des chaînes déjà listées séparément (les OCS, Comédie+) ; la
+  première insérée capturait le nom et les autres devenaient injoignables. Un contrôle
+  automatique interdit désormais ce cas.
+- 🐛 **Corrigé : une playlist pouvait servir une M3U vide sans la moindre erreur** — un
+  groupe virtuel exigeait un abonnement sur le bouquet alors que chaque chaîne porte le
+  sien.
+
+**Replay (catch-up)**
+- ⏪ **Les informations de replay survivent jusqu'au lecteur.** `catchup`, `catchup-days`,
+  `catchup-source` et les anciens `tvg-rec` / `timeshift` sont lus, stockés et réémis.
+  Le catalogue renvoyait un `0` en dur, ce qui détruisait l'information avant que quoi que
+  ce soit puisse s'en servir.
+- 🚫 **Rien n'est inventé** : les balises d'une source M3U sont recopiées telles quelles,
+  une source Xtream reçoit `catchup="xc"`, et une source qui ne déclare rien ne reçoit
+  aucune balise. `/validation` indique maintenant le nombre de chaînes avec replay.
+
+**Correction manuelle des identifiants TMDB**
+- 🎯 **Nouvel écran *TMDB Fixes*** (`/tmdb-fixes`) : quand un film est associé à la mauvaise
+  fiche, vous imposez le bon identifiant. La correction bat le catalogue *et* la fiche
+  détaillée du fournisseur, et elle décide du nom de dossier.
+- 💾 Les corrections vivent dans leur propre table, pas dans les caches : un cache est vidé
+  dès qu'un fournisseur cesse de lister un titre, une correction ne doit pas s'évaporer
+  avec lui. Un identifiant vide est une réponse valable (« pas de fiche TMDB ») ; supprimer
+  la ligne rend la main au fournisseur.
+- 📥 Les téléchargements passent par le même service, donc le fichier et son `.strm`
+  atterrissent dans le même dossier `{tmdb-…}`.
+
+**Qualité**
+- ✅ 145 tests, tous verts, dont la toute première couverture de la résolution des
+  playlists live et 38 tests sur le moteur d'organisation.
+- 🗃️ Migrations 006 à 009 appliquées automatiquement au démarrage.
+
+### v4.3.0
 
 - 📊 **The sync now shows how far it has got.** A run spends most of its time in its
   per-item loop, and a spinner said nothing about whether that was 3 titles or 3 000. Both

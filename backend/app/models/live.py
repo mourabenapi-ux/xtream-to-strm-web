@@ -11,6 +11,12 @@ class LivePlaylist(Base):
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # Publish each channel's order as tvg-chno, so a player shows the numbering
+    # the playlist was built with instead of applying its own. Off by default:
+    # on a playlist whose orders are plain 0,1,2… positions, broadcasting them
+    # as channel numbers would renumber a working setup for no reason.
+    use_channel_numbers = Column(Boolean, default=False, nullable=False,
+                                 server_default="0")
     
     # Relations
     subscription = relationship("Subscription")

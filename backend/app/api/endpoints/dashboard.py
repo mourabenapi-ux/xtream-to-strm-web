@@ -4,8 +4,7 @@ from sqlalchemy import func
 from typing import Dict, List, Any
 from app.db.session import get_db
 from app.models.subscription import Subscription
-from app.models.m3u_source import M3USource
-from app.models.m3u_entry import M3UEntry, EntryType
+from app.models.subscription import SourceKind
 from app.models.sync_state import SyncState, SyncStatus
 from app.models.schedule import Schedule
 from app.models.cache import MovieCache, SeriesCache
@@ -29,24 +28,22 @@ router = APIRouter()
 def get_dashboard_stats(db: Session = Depends(get_db)) -> Dict[str, Any]:
     """Get overall dashboard statistics"""
     
-    # Source statistics
-    xtream_total = db.query(Subscription).count()
-    xtream_active = db.query(Subscription).filter(Subscription.is_active == True).count()
-    
-    m3u_total = db.query(M3USource).count()
-    m3u_active = db.query(M3USource).filter(M3USource.is_active == True).count()
-    
-    # Content statistics from M3U entries
-    m3u_movies = db.query(M3UEntry).filter(M3UEntry.entry_type == EntryType.MOVIE).count()
-    m3u_series = db.query(M3UEntry).filter(M3UEntry.entry_type == EntryType.SERIES).count()
-    
-    # Content statistics from Xtream Cache
-    xtream_movies = db.query(MovieCache).count()
-    xtream_series = db.query(SeriesCache).count()
-    
-    movies_count = m3u_movies + xtream_movies
-    series_count = m3u_series + xtream_series
-    
+    # Source statistics. Both kinds live in `subscriptions` now, told apart by
+    # `kind` — counting the table wholesale would report every M3U source as an
+    # Xtream subscription.
+    xtream = db.query(Subscription).filter(Subscription.kind == SourceKind.XTREAM.value)
+    xtream_total = xtream.count()
+    xtream_active = xtream.filter(Subscription.is_active == True).count()
+
+    m3u = db.query(Subscription).filter(Subscription.kind == SourceKind.M3U.value)
+    m3u_total = m3u.count()
+    m3u_active = m3u.filter(Subscription.is_active == True).count()
+
+    # Content statistics. One sync fills these caches for both kinds of source,
+    # so there is a single pair of counts to read.
+    movies_count = db.query(MovieCache).count()
+    series_count = db.query(SeriesCache).count()
+
     # Sync status
     recent_syncs = db.query(SyncState).order_by(
         SyncState.last_sync.desc()
@@ -253,48 +250,26 @@ def get_content_by_source(db: Session = Depends(get_db)) -> List[Dict[str, Any]]
     """Get content breakdown by source"""
     
     result = []
-    
-    # XtreamTV sources
-    subscriptions = db.query(Subscription).all()
-    for sub in subscriptions:
-        # Count from Cache
+
+    # One loop for every source: the caches are filled by the one sync, so an
+    # M3U playlist and an Xtream subscription are counted the same way.
+    for sub in db.query(Subscription).all():
         movies_count = db.query(MovieCache).filter(
             MovieCache.subscription_id == sub.id
         ).count()
-        
+
         series_count = db.query(SeriesCache).filter(
             SeriesCache.subscription_id == sub.id
         ).count()
-        
+
         result.append({
             "source_name": sub.name,
-            "source_type": "xtream",
+            "source_type": sub.kind or SourceKind.XTREAM.value,
             "movies": movies_count,
             "series": series_count,
             "total": movies_count + series_count
         })
-    
-    # M3U sources
-    m3u_sources = db.query(M3USource).all()
-    for source in m3u_sources:
-        movies = db.query(M3UEntry).filter(
-            M3UEntry.m3u_source_id == source.id,
-            M3UEntry.entry_type == EntryType.MOVIE
-        ).count()
-        
-        series = db.query(M3UEntry).filter(
-            M3UEntry.m3u_source_id == source.id,
-            M3UEntry.entry_type == EntryType.SERIES
-        ).count()
-        
-        result.append({
-            "source_name": source.name,
-            "source_type": "m3u",
-            "movies": movies,
-            "series": series,
-            "total": movies + series
-        })
-    
+
     return result
 @router.get("/live-playlists-detail")
 def get_live_playlists_detail(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:

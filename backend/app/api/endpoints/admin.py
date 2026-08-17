@@ -8,9 +8,7 @@ from app.models.selection import SelectedCategory
 from app.models.cache import MovieCache, SeriesCache, EpisodeCache
 from app.models.schedule import Schedule
 from app.models.schedule_execution import ScheduleExecution
-from app.models.m3u_source import M3USource
-from app.models.m3u_entry import M3UEntry
-from app.models.m3u_selection import M3USelection
+from app.models.source_entry import SourceEntry
 from app.core.config import settings
 import os
 import shutil
@@ -49,11 +47,10 @@ def delete_generated_files(db: Session = Depends(get_db)):
                 except Exception as e:
                     errors.append(f"Error deleting files from {sub.series_dir}: {str(e)}")
         
-        # Get all M3U sources to find their output directories
-        m3u_sources = db.query(M3USource).all()
-        
-        for source in m3u_sources:
-            # Delete files from output directory
+        # M3U sources are ordinary sources now — their movies_dir and series_dir
+        # were swept with everything else above. Only their legacy output_dir,
+        # which nothing else knows about, is left to clear.
+        for source in db.query(Subscription).filter(Subscription.output_dir != None).all():
             if source.output_dir and os.path.exists(source.output_dir):
                 try:
                     shutil.rmtree(source.output_dir)
@@ -126,15 +123,14 @@ def reset_database(db: Session = Depends(get_db)):
         db.query(SyncState).delete()
         
         # We DO NOT delete:
-        # - Subscription (User config)
-        # - SelectedCategory (User preferences)
+        # - Subscription (user config — both Xtream and M3U sources)
+        # - SelectedCategory (user preferences, both kinds)
         # - Schedule (User config)
         # - SettingsModel (App config)
-        # - M3USource (User config)
-        # - M3USelection (User preferences)
-        
-        # Clear M3U Cache/Entries only
-        db.query(M3UEntry).delete()
+
+        # The parsed playlists are a cache like the others: refilled on the
+        # next sync.
+        db.query(SourceEntry).delete()
         
         db.commit()
         

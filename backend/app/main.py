@@ -45,7 +45,20 @@ def _ensure_schema_up_to_date():
             ("download_movies_dir", "TEXT DEFAULT '/output/downloads/movies'"),
             ("download_series_dir", "TEXT DEFAULT '/output/downloads/series'"),
             ("max_parallel_downloads", "INTEGER DEFAULT 2"),
-            ("download_segments", "INTEGER DEFAULT 1")
+            ("download_segments", "INTEGER DEFAULT 1"),
+            # Unified sources (migration 007). Repeated here because the SQL
+            # runner is a separate entrypoint step: if it did not run, an M3U
+            # source would be unreadable rather than merely un-migrated.
+            ("kind", "VARCHAR NOT NULL DEFAULT 'xtream'"),
+            ("source_type", "VARCHAR"),
+            ("url", "VARCHAR"),
+            ("file_path", "VARCHAR"),
+            ("output_dir", "VARCHAR"),
+            ("sync_status", "VARCHAR DEFAULT 'idle'"),
+            ("last_sync", "DATETIME"),
+            ("created_at", "DATETIME"),
+            ("updated_at", "DATETIME"),
+            ("legacy_m3u_source_id", "INTEGER"),
         ]
         
         missing = [m for m in required_migrations if m[0] not in columns]

@@ -85,11 +85,21 @@ class SyncResponse(BaseModel):
 
 class SubscriptionBase(BaseModel):
     name: str
-    xtream_url: str
-    username: str
-    password: str
-    movies_dir: str
-    series_dir: str
+    # "xtream" or "m3u". Defaulted so every caller that predates the unified
+    # sources — and every Xtream subscription created without saying so —
+    # still describes itself correctly.
+    kind: str = "xtream"
+    # Empty on an M3U source, which authenticates with nothing.
+    xtream_url: str = ""
+    username: str = ""
+    password: str = ""
+    # Filled on an M3U source only.
+    source_type: Optional[str] = None
+    url: Optional[str] = None
+    file_path: Optional[str] = None
+    output_dir: Optional[str] = None
+    movies_dir: str = ""
+    series_dir: str = ""
     download_movies_dir: Optional[str] = "/output/downloads/movies"
     download_series_dir: Optional[str] = "/output/downloads/series"
     max_parallel_downloads: int = 2
@@ -304,10 +314,12 @@ class LivePlaylistCreate(LivePlaylistBase):
 class LivePlaylistUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    use_channel_numbers: Optional[bool] = None
 
 class LivePlaylist(LivePlaylistBase):
     id: int
     created_at: datetime
+    use_channel_numbers: bool = False
     model_config = ConfigDict(from_attributes=True)
 
 class LivePlaylistDetail(LivePlaylist):
@@ -404,3 +416,23 @@ class EPGMatchCandidate(BaseModel):
 class EPGMatchDebugResponse(BaseModel):
     target_name: str
     candidates: List[EPGMatchCandidate]
+
+# --- Hand-corrected TMDB ids -------------------------------------------------
+
+class TmdbOverrideUpsert(BaseModel):
+    subscription_id: int
+    media_type: str          # "movie" or "series"
+    item_id: str             # stream_id for a movie, series_id for a show
+    label: Optional[str] = None
+    # None means "this title has no TMDB id" — an answer, not an omission.
+    tmdb_id: Optional[str] = None
+
+class TmdbOverrideResponse(BaseModel):
+    id: int
+    subscription_id: int
+    media_type: str
+    item_id: str
+    label: Optional[str] = None
+    tmdb_id: Optional[str] = None
+    updated_at: Optional[datetime] = None
+    model_config = ConfigDict(from_attributes=True)

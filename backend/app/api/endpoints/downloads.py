@@ -4,7 +4,7 @@ from typing import List
 from app.api import deps
 from app.models.downloads import DownloadTask, DownloadStatus, DownloadSettings, MonitoredMedia, DownloadSettingsGlobal, DownloadStatistics
 from app.models.subscription import Subscription
-from app.services.xtream import XtreamClient
+from app.services.catalog import get_catalog
 from app.tasks.downloads import download_media_task, process_download_queue, check_auto_downloads
 from app import schemas
 import asyncio
@@ -59,7 +59,7 @@ def get_download_tasks(
 
 async def resolve_container_extension(
     db: Session,
-    xc: XtreamClient,
+    xc,
     subscription_id: int,
     media_type: str,
     media_id: int | str,
@@ -123,8 +123,8 @@ async def queue_download(
     from app.services.file_manager import FileManager
     fm = FileManager("") # Output dir doesn't matter for clean_title
     
-    # Fetch media info from Xtream
-    xc = XtreamClient(subscription.xtream_url, subscription.username, subscription.password)
+    # Read the item from whichever kind of source it came from
+    xc = get_catalog(db, subscription)
 
     # The provider returns HTTP 551 on a wrong extension, so resolve the real one
     ext = container_extension or await resolve_container_extension(
@@ -223,7 +223,7 @@ async def queue_bulk_download(
         
     xc = None
     if data.media_type == "series":
-        xc = XtreamClient(subscription.xtream_url, subscription.username, subscription.password)
+        xc = get_catalog(db, subscription)
     
     for i, media_id in enumerate(data.media_ids):
         title = data.titles[i] if data.titles and i < len(data.titles) else None
@@ -236,7 +236,7 @@ async def queue_bulk_download(
             if data.media_type == "series":
                 # Expand series into episodes (Expansion uses its own title generation)
                 if not xc:
-                    xc = XtreamClient(subscription.xtream_url, subscription.username, subscription.password)
+                    xc = get_catalog(db, subscription)
                 
                 try:
                     series_info = await xc.get_series_info(str(media_id))
@@ -596,7 +596,7 @@ async def browse_media(
     if not subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
 
-    xc = XtreamClient(subscription.xtream_url, subscription.username, subscription.password)
+    xc = get_catalog(db, subscription)
 
     if media_type == "movies":
         categories = await xc.get_vod_categories()
@@ -665,7 +665,7 @@ async def get_series_details(
     if not subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
     
-    xc = XtreamClient(subscription.xtream_url, subscription.username, subscription.password)
+    xc = get_catalog(db, subscription)
     
     try:
         data = await xc.get_series_info(series_id)

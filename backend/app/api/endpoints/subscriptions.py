@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from app.api import deps
 from app.models.subscription import Subscription
 from app.schemas import SubscriptionCreate, SubscriptionUpdate, SubscriptionResponse
@@ -12,9 +12,18 @@ def read_subscriptions(
     db: Session = Depends(deps.get_db),
     skip: int = 0,
     limit: int = 100,
+    kind: Optional[str] = None,
 ):
-    subscriptions = db.query(Subscription).offset(skip).limit(limit).all()
-    return subscriptions
+    """Every source, or only those of one kind.
+
+    Both Xtream subscriptions and M3U playlists live in this table now. Callers
+    that work with any source — the live selection, the organiser — ask for all
+    of them; the Xtream credentials screen asks for `kind=xtream`.
+    """
+    query = db.query(Subscription)
+    if kind:
+        query = query.filter(Subscription.kind == kind)
+    return query.offset(skip).limit(limit).all()
 
 @router.post("/", response_model=SubscriptionResponse)
 def create_subscription(

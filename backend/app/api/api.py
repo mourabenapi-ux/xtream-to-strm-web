@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints import config, sync, login, selection, logs, scheduler, subscriptions, admin, m3u_sources, m3u_selection, dashboard, m3u_sync, downloads
+from app.api.endpoints import config, sync, login, selection, logs, scheduler, subscriptions, admin, m3u_sources, m3u_selection, dashboard, m3u_sync, downloads, tmdb_overrides
 
 api_router = APIRouter()
 api_router.include_router(login.router, tags=["login"])
@@ -15,6 +15,8 @@ api_router.include_router(m3u_sources.router, prefix="/m3u-sources", tags=["m3u"
 api_router.include_router(m3u_selection.router, prefix="/m3u-selection", tags=["m3u"])
 api_router.include_router(m3u_sync.router, prefix="/m3u-sync", tags=["m3u-sync"])
 api_router.include_router(downloads.router, prefix="/downloads", tags=["downloads"])
-from app.api.api_v1.endpoints import live, epg_admin
+api_router.include_router(tmdb_overrides.router, prefix="/tmdb-overrides", tags=["tmdb"])
+from app.api.api_v1.endpoints import live, epg_admin, organizer
 api_router.include_router(live.router, prefix="/live", tags=["live"])
 api_router.include_router(epg_admin.router, prefix="/epg-sources", tags=["epg"])
+api_router.include_router(organizer.router, prefix="/organizer", tags=["organizer"])

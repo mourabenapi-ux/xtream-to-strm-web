@@ -1,0 +1,6262 @@
+{
+ "version": "2026-08-17",
+ "profile": "compact",
+ "generated_at": "2026-08-17T17:31:51+00:00",
+ "derived_from": "fr_channel_reference.json",
+ "sources": {
+  "numbering_1_to_26": "ARCOM, délibération du 9 janvier 2025 (en vigueur 6 juin 2025)",
+  "identifiers_and_logos": "guide XMLTV de l'utilisateur (xmltvfr.fr)",
+  "categories_and_aliases": "https://iptv-org.github.io/api/channels.json",
+  "premium_block": "curaté à la main — aucune source publique n'ordonne les chaînes payantes"
+ },
+ "notes": {
+  "why": "Huit bouquets au lieu de quatorze, et un « Hors référence » quasi vide : les familles placent en bloc ce que la référence ne nommera jamais chaîne par chaîne.",
+  "merges": "TNT + Généralistes + Divers + Régionales = un bouquet ; Découverte + Jeunesse = un bouquet ; les décalées (+1) vont dans Secours au lieu d'un bouquet à elles.",
+  "families": "Consultées seulement quand la référence n'a pas reconnu la chaîne. Une chaîne placée par règle reste comptée comme non reconnue : le placement n'est pas une identification."
+ },
+ "blocks": [
+  {
+   "group": "Généralistes & TNT",
+   "start": 1,
+   "end": 349,
+   "count": 174
+  },
+  {
+   "group": "Info",
+   "start": 350,
+   "end": 399,
+   "count": 16
+  },
+  {
+   "group": "Cinéma & Séries",
+   "start": 400,
+   "end": 999,
+   "count": 46
+  },
+  {
+   "group": "Découverte & Jeunesse",
+   "start": 1000,
+   "end": 1299,
+   "count": 51
+  },
+  {
+   "group": "Musique",
+   "start": 1300,
+   "end": 1449,
+   "count": 41
+  },
+  {
+   "group": "Sport",
+   "start": 1500,
+   "end": 2999,
+   "count": 180
+  },
+  {
+   "group": "Événements & PPV",
+   "start": 3000,
+   "end": 4999,
+   "count": 0
+  },
+  {
+   "group": "Monde & Outre-mer",
+   "start": 5000,
+   "end": 7999,
+   "count": 0
+  }
+ ],
+ "families": [
+  {
+   "id": "only_events",
+   "group": "Événements & PPV",
+   "start": 3900,
+   "when": {
+    "category_regex": "SPORT",
+    "name_regex": "ONLY\\s*EVENTS"
+   },
+   "label": "",
+   "number_from": "sequence"
+  },
+  {
+   "id": "max_ppv_vip",
+   "group": "Événements & PPV",
+   "start": 3200,
+   "when": {
+    "category_regex": "MAX\\s*PPV\\s*VIP"
+   },
+   "label": "Max PPV VIP",
+   "number_from": "trailing"
+  },
+  {
+   "id": "max_ppv",
+   "group": "Événements & PPV",
+   "start": 3000,
+   "when": {
+    "category_regex": "MAX\\s*PPV"
+   },
+   "label": "Max PPV",
+   "number_from": "trailing"
+  },
+  {
+   "id": "soccer_ppv",
+   "group": "Événements & PPV",
+   "start": 3400,
+   "when": {
+    "category_regex": "SOCCER\\s*PPV"
+   },
+   "label": "Soccer PPV",
+   "number_from": "trailing"
+  },
+  {
+   "id": "dazn_ppv",
+   "group": "Événements & PPV",
+   "start": 3650,
+   "when": {
+    "category_regex": "DAZN\\s*PPV"
+   },
+   "label": "DAZN PPV",
+   "number_from": "trailing"
+  },
+  {
+   "id": "fff_ppv",
+   "group": "Événements & PPV",
+   "start": 3800,
+   "when": {
+    "category_regex": "FFF\\s*TV\\s*PPV"
+   },
+   "label": "",
+   "number_from": "sequence"
+  },
+  {
+   "id": "caribbean",
+   "group": "Monde & Outre-mer",
+   "start": 5000,
+   "when": {
+    "category_regex": "CARIBBEAN|CARAIBE"
+   },
+   "label": "",
+   "number_from": "sequence"
+  },
+  {
+   "id": "africa",
+   "group": "Monde & Outre-mer",
+   "start": 6000,
+   "when": {
+    "category_regex": "^\\s*AFR?[\\s_:|.\\-]|AFRICA|AFRIQUE"
+   },
+   "label": "",
+   "number_from": "sequence"
+  },
+  {
+   "id": "vod_loops",
+   "group": "Cinéma & Séries",
+   "start": 500,
+   "when": {
+    "category_regex": "LUXPLAY|PREMIUM\\s*PLAY|NETFLIX|24/7|DISNEY\\+|CANALPLAY"
+   },
+   "label": "",
+   "number_from": "sequence"
+  },
+  {
+   "id": "cinema",
+   "group": "Cinéma & Séries",
+   "start": 460,
+   "when": {
+    "category_regex": "CINEMA|CINÉMA|SERIE|SÉRIE|FILM"
+   },
+   "label": "",
+   "number_from": "sequence"
+  },
+  {
+   "id": "kids",
+   "group": "Découverte & Jeunesse",
+   "start": 1150,
+   "when": {
+    "category_regex": "ENFANT|KIDS|JEUNESSE|JUNIOR"
+   },
+   "label": "",
+   "number_from": "sequence"
+  },
+  {
+   "id": "docs",
+   "group": "Découverte & Jeunesse",
+   "start": 1050,
+   "when": {
+    "category_regex": "DOCUMENTAIRE|DOCU|DECOUVERTE|DÉCOUVERTE"
+   },
+   "label": "",
+   "number_from": "sequence"
+  },
+  {
+   "id": "music",
+   "group": "Musique",
+   "start": 1350,
+   "when": {
+    "category_regex": "MUSIQUE|MUSIC|RADIO"
+   },
+   "label": "",
+   "number_from": "sequence"
+  },
+  {
+   "id": "sport",
+   "group": "Sport",
+   "start": 2000,
+   "when": {
+    "category_regex": "SPORT|EQUIPE|ÉQUIPE|LIGUE1|LIGUE\\s*1|DAZN|FOOT|CANAL\\+\\s*LIVE|TENNIS|GOLF"
+   },
+   "label": "",
+   "number_from": "sequence"
+  },
+  {
+   "id": "info",
+   "group": "Info",
+   "start": 380,
+   "when": {
+    "category_regex": "\\bINFO\\b|NEWS|ACTUALITE"
+   },
+   "label": "",
+   "number_from": "sequence"
+  },
+  {
+   "id": "general",
+   "group": "Généralistes & TNT",
+   "start": 240,
+   "when": {
+    "category_regex": "FRANCE|GENERAL|GÉNÉRAL|PRIME|HEVC|\\bVIP\\b|DIVERS"
+   },
+   "label": "",
+   "number_from": "sequence"
+  }
+ ],
+ "tail_starts_at": 8000,
+ "timeshift_starts_at": 9000,
+ "timeshift_group": "Secours / Alternatives",
+ "backup_starts_at": 20000,
+ "channels": [
+  {
+   "number": 1,
+   "group": "Généralistes & TNT",
+   "name": "TF1",
+   "tvg_id": "TF1.fr",
+   "aliases": [
+    "television francaise 1",
+    "tf1 + 1",
+    "tf1 4k",
+    "tf1 hd",
+    "tf1 uhd",
+    "tf14k",
+    "tf1plus1"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~f2b6de26acc4dc3e.png/480x480/quality/100/tf1.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 1
+  },
+  {
+   "number": 2,
+   "group": "Généralistes & TNT",
+   "name": "France 2",
+   "tvg_id": "France2.fr",
+   "aliases": [
+    "fr2",
+    "france2"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~606394a5b095653a.png/480x480/quality/100/france-2.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 2
+  },
+  {
+   "number": 3,
+   "group": "Généralistes & TNT",
+   "name": "France 3",
+   "tvg_id": "France3.fr",
+   "aliases": [
+    "fr3",
+    "france3"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~61eebbb6e38360ae.png/480x480/quality/100/france-3.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 3
+  },
+  {
+   "number": 4,
+   "group": "Généralistes & TNT",
+   "name": "France 4",
+   "tvg_id": "France4.fr",
+   "aliases": [
+    "france4"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~e02946cfb82e5310.png/480x480/quality/100/france-4.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 4
+  },
+  {
+   "number": 5,
+   "group": "Généralistes & TNT",
+   "name": "France 5",
+   "tvg_id": "France5.fr",
+   "aliases": [
+    "france5"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~5f611b705ca3f017.png/480x480/quality/100/france-5.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 5
+  },
+  {
+   "number": 6,
+   "group": "Généralistes & TNT",
+   "name": "M6",
+   "tvg_id": "M6.fr",
+   "aliases": [
+    "m 6",
+    "rtl6"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~46c2dbade9ac9fed.png/480x480/quality/100/m6.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 6
+  },
+  {
+   "number": 7,
+   "group": "Généralistes & TNT",
+   "name": "Arte",
+   "tvg_id": "Arte.fr",
+   "aliases": [
+    "arte fr",
+    "arte hd"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~d6bb7624abff43ac.png/480x480/quality/100/arte.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 7
+  },
+  {
+   "number": 8,
+   "group": "Généralistes & TNT",
+   "name": "LCP-Public Sénat",
+   "tvg_id": "LaChaineParlementaire.fr",
+   "aliases": [
+    "la chaine parlementaire",
+    "lcp",
+    "public senat"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~080eb27517dd16c6.png/480x480/quality/100/la-chaine-parlementaire.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 8
+  },
+  {
+   "number": 9,
+   "group": "Généralistes & TNT",
+   "name": "W9",
+   "tvg_id": "W9.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~15acfc705e2d4dd8.png/480x480/quality/100/w9.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 9
+  },
+  {
+   "number": 10,
+   "group": "Généralistes & TNT",
+   "name": "TMC",
+   "tvg_id": "TMC.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~b2c9618d914140d0.png/480x480/quality/100/tmc.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 10
+  },
+  {
+   "number": 11,
+   "group": "Généralistes & TNT",
+   "name": "TFX",
+   "tvg_id": "NT1.fr",
+   "aliases": [
+    "nt1",
+    "tfx hd"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~71e551462d6114e5.png/480x480/quality/100/tfx.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 11
+  },
+  {
+   "number": 12,
+   "group": "Généralistes & TNT",
+   "name": "Gulli",
+   "tvg_id": "Gulli.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~059a8175b83117fd.png/480x480/quality/100/gulli.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 12
+  },
+  {
+   "number": 13,
+   "group": "Généralistes & TNT",
+   "name": "BFM TV",
+   "tvg_id": "BFMTV.fr",
+   "aliases": [
+    "bfm",
+    "bfmtv"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~9048e02338fb1134.png/480x480/quality/100/bfmtv.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 13
+  },
+  {
+   "number": 14,
+   "group": "Généralistes & TNT",
+   "name": "CNEWS",
+   "tvg_id": "CNews.fr",
+   "aliases": [
+    "c news"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~952ec4ae63b20c1b.png/480x480/quality/100/cnews.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 14
+  },
+  {
+   "number": 15,
+   "group": "Généralistes & TNT",
+   "name": "LCI",
+   "tvg_id": "LCI.fr",
+   "aliases": [
+    "la chaine info"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~1314d39cfeea2a5c.png/480x480/quality/100/lci-la-chaine-info.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 15
+  },
+  {
+   "number": 16,
+   "group": "Généralistes & TNT",
+   "name": "Franceinfo",
+   "tvg_id": "FranceInfo.fr",
+   "aliases": [
+    "france info",
+    "france info tv",
+    "france nfo"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~367eff2d23ab1357.png/480x480/quality/100/franceinfo.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 16
+  },
+  {
+   "number": 17,
+   "group": "Généralistes & TNT",
+   "name": "CStar",
+   "tvg_id": "CStar.fr",
+   "aliases": [
+    "c star"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~9583d8a6fa9d6ade.png/480x480/quality/100/cstar.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 17
+  },
+  {
+   "number": 18,
+   "group": "Généralistes & TNT",
+   "name": "T18",
+   "tvg_id": "T18.fr",
+   "aliases": [
+    "t 18"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~3deccc95e7e75463.png/480x480/quality/100/t18.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 18
+  },
+  {
+   "number": 19,
+   "group": "Généralistes & TNT",
+   "name": "NOVO19",
+   "tvg_id": "NOVO19.fr",
+   "aliases": [
+    "novo 19"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~113b817bb2e5c3a6.png/480x480/quality/100/novo19.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 19
+  },
+  {
+   "number": 20,
+   "group": "Généralistes & TNT",
+   "name": "TF1 Séries Films",
+   "tvg_id": "TF1SeriesFilms.fr",
+   "aliases": [
+    "tf1 serie film",
+    "tf1 series film"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~3104ccb3015a8669.png/480x480/quality/100/tf1-series-films.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 20
+  },
+  {
+   "number": 21,
+   "group": "Généralistes & TNT",
+   "name": "L'Équipe",
+   "tvg_id": "LEquipe21.fr",
+   "aliases": [
+    "equipe 21",
+    "l equipe 21",
+    "l equipe21",
+    "la chaine l equipe"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~060edf53b072af43.png/480x480/quality/100/l-equipe.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 21
+  },
+  {
+   "number": 22,
+   "group": "Généralistes & TNT",
+   "name": "6ter",
+   "tvg_id": "6ter.fr",
+   "aliases": [
+    "6 ter"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~ceee54072118570a.png/480x480/quality/100/6ter.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 22
+  },
+  {
+   "number": 23,
+   "group": "Généralistes & TNT",
+   "name": "RMC Story",
+   "tvg_id": "Numero23.fr",
+   "aliases": [
+    "numero 23"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~56b83775344955b8.png/480x480/quality/100/rmc-story.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 23
+  },
+  {
+   "number": 24,
+   "group": "Généralistes & TNT",
+   "name": "RMC Découverte",
+   "tvg_id": "RMCDecouverte.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~a95c9fa646201300.png/480x480/quality/100/rmc-decouverte.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 24
+  },
+  {
+   "number": 25,
+   "group": "Généralistes & TNT",
+   "name": "RMC Life",
+   "tvg_id": "Cherie25.fr",
+   "aliases": [
+    "cherie 25",
+    "cherie25"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~91bf2b7762746d0c.png/480x480/quality/100/rmc-life.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 25
+  },
+  {
+   "number": 26,
+   "group": "Généralistes & TNT",
+   "name": "Paris Première",
+   "tvg_id": "ParisPremiere.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~ecf598fd002ccb9a.png/480x480/quality/100/paris-premiere.png",
+   "source": "arcom",
+   "has_guide": true,
+   "canonical_number": 26
+  },
+  {
+   "number": 30,
+   "group": "Généralistes & TNT",
+   "name": "TV Breizh",
+   "tvg_id": "TvBreizh.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~eda4c23255b4fed2.png/480x480/quality/100/tvbreizh.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 30
+  },
+  {
+   "number": 31,
+   "group": "Généralistes & TNT",
+   "name": "Teva",
+   "tvg_id": "Teva.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~4421904d874fa072.png/480x480/quality/100/teva.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 31
+  },
+  {
+   "number": 32,
+   "group": "Généralistes & TNT",
+   "name": "RTL9",
+   "tvg_id": "RTL9.fr",
+   "aliases": [
+    "rtl 9"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~39e76725dfcc33a3.png/480x480/quality/100/rtl-9.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 32
+  },
+  {
+   "number": 33,
+   "group": "Généralistes & TNT",
+   "name": "RMC WOW",
+   "tvg_id": "RMCWOW.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300RMCWOWmono.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 33
+  },
+  {
+   "number": 34,
+   "group": "Généralistes & TNT",
+   "name": "RMC Mystère",
+   "tvg_id": "RMCMystere.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300RMCMYSTERESmono.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 34
+  },
+  {
+   "number": 35,
+   "group": "Généralistes & TNT",
+   "name": "RMC Mecanic",
+   "tvg_id": "RMCMecanic.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300RMCMECANICmono.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 35
+  },
+  {
+   "number": 36,
+   "group": "Généralistes & TNT",
+   "name": "RMC Alerte Secours",
+   "tvg_id": "RMCAlerteSecours.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300RMCALERTESECOURSmono.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 36
+  },
+  {
+   "number": 37,
+   "group": "Généralistes & TNT",
+   "name": "C8",
+   "tvg_id": "",
+   "aliases": [
+    "c 8"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 37
+  },
+  {
+   "number": 38,
+   "group": "Généralistes & TNT",
+   "name": "NRJ 12",
+   "tvg_id": "",
+   "aliases": [
+    "nrj12"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 38
+  },
+  {
+   "number": 39,
+   "group": "Généralistes & TNT",
+   "name": "20 Minutes TV",
+   "tvg_id": "IDF1.fr",
+   "aliases": [
+    "20 tv"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~cd8973767ef8796c.png/480x480/quality/100/20-minutes-tv.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 39
+  },
+  {
+   "number": 40,
+   "group": "Généralistes & TNT",
+   "name": "A+",
+   "tvg_id": "APlusInternational.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~1a1c0301d113309c.png/480x480/quality/100/a-international-france.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 40
+  },
+  {
+   "number": 41,
+   "group": "Généralistes & TNT",
+   "name": "AdultSwim",
+   "tvg_id": "AdultSwim.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 41
+  },
+  {
+   "number": 42,
+   "group": "Généralistes & TNT",
+   "name": "Astrocenter TV",
+   "tvg_id": "AstroCenter.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/64174310?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 42
+  },
+  {
+   "number": 43,
+   "group": "Généralistes & TNT",
+   "name": "ASTV",
+   "tvg_id": "ASTV.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/ASTV100x100couleuir.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 43
+  },
+  {
+   "number": 44,
+   "group": "Généralistes & TNT",
+   "name": "BET",
+   "tvg_id": "BET.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 44
+  },
+  {
+   "number": 45,
+   "group": "Généralistes & TNT",
+   "name": "Canal 32",
+   "tvg_id": "Canal32.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~6d0e7341e1a8b708.png/480x480/quality/100/canal-32.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 45
+  },
+  {
+   "number": 46,
+   "group": "Généralistes & TNT",
+   "name": "Canvas",
+   "tvg_id": "Canvas.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~86a0a6b6ce187d6b.png/480x480/quality/100/canvas.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 46
+  },
+  {
+   "number": 47,
+   "group": "Généralistes & TNT",
+   "name": "CGTN",
+   "tvg_id": "CGTN.fr",
+   "aliases": [],
+   "logo": "https://focus.telerama.fr/500x500/0000/00/01/clear-318.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 47
+  },
+  {
+   "number": 48,
+   "group": "Généralistes & TNT",
+   "name": "DemainTV",
+   "tvg_id": "DemainTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~effa4114de086963.png/480x480/quality/100/demain-tv.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 48
+  },
+  {
+   "number": 49,
+   "group": "Généralistes & TNT",
+   "name": "Enquetes Criminelles 24/24",
+   "tvg_id": "EnquetesCriminelles2424.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/BhT1VQo.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 49
+  },
+  {
+   "number": 50,
+   "group": "Généralistes & TNT",
+   "name": "Fashion TV",
+   "tvg_id": "FashionTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~90cf553801cecc51.png/480x480/quality/100/fashion-tv.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 50
+  },
+  {
+   "number": 51,
+   "group": "Généralistes & TNT",
+   "name": "HLive",
+   "tvg_id": "HLive.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 51
+  },
+  {
+   "number": 52,
+   "group": "Généralistes & TNT",
+   "name": "Incroyables Transformations 24/24",
+   "tvg_id": "IncroyablesTransformations2424.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/tHI2Ewu.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 52
+  },
+  {
+   "number": 53,
+   "group": "Généralistes & TNT",
+   "name": "KTO",
+   "tvg_id": "KTO.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~1f0a26a873b15a88.png/480x480/quality/100/kto.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 53
+  },
+  {
+   "number": 54,
+   "group": "Généralistes & TNT",
+   "name": "Les Marsellais 24/24",
+   "tvg_id": "LesMarseillais2424.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/eI9fjaY.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 54
+  },
+  {
+   "number": 55,
+   "group": "Généralistes & TNT",
+   "name": "Les Reines du Shopping 24/24",
+   "tvg_id": "LesReinesDuShopping2424.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/NiIDN66.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 55
+  },
+  {
+   "number": 56,
+   "group": "Généralistes & TNT",
+   "name": "M6 INTERNATIONAL",
+   "tvg_id": "M6International.fr",
+   "aliases": [],
+   "logo": "https://cdn.tvpassport.com/image/station/640x480/v2/s116290_h15_ab.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 56
+  },
+  {
+   "number": 57,
+   "group": "Généralistes & TNT",
+   "name": "MandarinTV",
+   "tvg_id": "MandarinTV.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 57
+  },
+  {
+   "number": 58,
+   "group": "Généralistes & TNT",
+   "name": "Maritima TV",
+   "tvg_id": "MaritimaTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~6261975a3ed0433b.png/480x480/quality/100/maritima-tv.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 58
+  },
+  {
+   "number": 59,
+   "group": "Généralistes & TNT",
+   "name": "MAURIENNE TV",
+   "tvg_id": "MaurienneTV.fr",
+   "aliases": [
+    "matv"
+   ],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/mauriennetv100x100.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 59
+  },
+  {
+   "number": 60,
+   "group": "Généralistes & TNT",
+   "name": "Men's Up TV",
+   "tvg_id": "MensUpTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~83697ac19b2ac67d.png/480x480/quality/100/men-s-up.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 60
+  },
+  {
+   "number": 61,
+   "group": "Généralistes & TNT",
+   "name": "Mosaïk Cristal",
+   "tvg_id": "Mosaik.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/Mosaik_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 61
+  },
+  {
+   "number": 62,
+   "group": "Généralistes & TNT",
+   "name": "MosaikCristal",
+   "tvg_id": "MosaikCristal.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 62
+  },
+  {
+   "number": 63,
+   "group": "Généralistes & TNT",
+   "name": "My Zen TV",
+   "tvg_id": "MyZenTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~ec3f9d3c15d50776.png/480x480/quality/100/myzen-tv.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 63
+  },
+  {
+   "number": 64,
+   "group": "Généralistes & TNT",
+   "name": "NA TV",
+   "tvg_id": "NATV.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/NATV100x100couleur.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 64
+  },
+  {
+   "number": 65,
+   "group": "Généralistes & TNT",
+   "name": "OlympiaTV",
+   "tvg_id": "OlympiaTV.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/93985302?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 65
+  },
+  {
+   "number": 66,
+   "group": "Généralistes & TNT",
+   "name": "TL7",
+   "tvg_id": "TL7SaintEtienne.fr",
+   "aliases": [
+    "television loire 7"
+   ],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/TL7_Saint_etienne_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 66
+  },
+  {
+   "number": 67,
+   "group": "Généralistes & TNT",
+   "name": "Top Santé TV",
+   "tvg_id": "TopSanteTV.fr",
+   "aliases": [],
+   "logo": "https://freebox.cdn.scw.iliad.fr/large_top_sante_ea66c2d6c5.jpg",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 67
+  },
+  {
+   "number": 68,
+   "group": "Généralistes & TNT",
+   "name": "TV5 Monde",
+   "tvg_id": "TV5Monde.fr",
+   "aliases": [
+    "tv5"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~0231873fab336015.png/480x480/quality/100/tv5monde.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 68
+  },
+  {
+   "number": 69,
+   "group": "Généralistes & TNT",
+   "name": "TV5 Monde Afrique",
+   "tvg_id": "TV5MondeAfrique.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/180105/canal-ouah/CHN43FB/TV5MONDEAFRIQUE_640x480-SLr8?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 69
+  },
+  {
+   "number": 70,
+   "group": "Généralistes & TNT",
+   "name": "TV5 Monde Asie",
+   "tvg_id": "TV5MondeAsie.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIp5gn02MpoZFNnXjMbIY8RwgAw56wNab_U0Ci0T7uh0oD8kfMUkRQdo443WU&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 70
+  },
+  {
+   "number": 71,
+   "group": "Généralistes & TNT",
+   "name": "TV5 Monde Europe",
+   "tvg_id": "TV5MondeEurope.fr",
+   "aliases": [],
+   "logo": "https://focus.telerama.fr/500x500/0000/00/01/clear-232.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 71
+  },
+  {
+   "number": 72,
+   "group": "Généralistes & TNT",
+   "name": "TV5 Monde Pacifique",
+   "tvg_id": "TV5MondePacifique.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIp5gn02MpoZFNnXjMbIY8RwgAw56wNab_U0Ci0T7uh0oD8kfMUkRQdo443WU&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 72
+  },
+  {
+   "number": 73,
+   "group": "Généralistes & TNT",
+   "name": "TV5 Style",
+   "tvg_id": "TV5Style.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5bBhY8llmKCpPQJDCta8lgkZdSxsWvEZA3V5qqLi8H1XqH0paQ6dVLfwgSjo&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 73
+  },
+  {
+   "number": 74,
+   "group": "Généralistes & TNT",
+   "name": "TV5MondeAmeriqueLatine",
+   "tvg_id": "TV5MondeAmeriqueLatine.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 74
+  },
+  {
+   "number": 75,
+   "group": "Généralistes & TNT",
+   "name": "TV5MondeEtatsUnis",
+   "tvg_id": "TV5MondeEtatsUnis.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 75
+  },
+  {
+   "number": 76,
+   "group": "Généralistes & TNT",
+   "name": "TV5MondeMaghrebOrient",
+   "tvg_id": "TV5MondeMaghrebOrient.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 76
+  },
+  {
+   "number": 77,
+   "group": "Généralistes & TNT",
+   "name": "TV Vendée",
+   "tvg_id": "TVVendee.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/TV_Vendee_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 77
+  },
+  {
+   "number": 78,
+   "group": "Généralistes & TNT",
+   "name": "TVPI",
+   "tvg_id": "TVPI.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~60bc9ce69aa38f02.png/480x480/quality/100/tvpi.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 78
+  },
+  {
+   "number": 79,
+   "group": "Généralistes & TNT",
+   "name": "Zone Interdite 24/24",
+   "tvg_id": "ZoneInterdite2424.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/Tga6YU3.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 79
+  },
+  {
+   "number": 100,
+   "group": "Généralistes & TNT",
+   "name": "2M Maroc",
+   "tvg_id": "2MMonde.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/54/canal-ouah/CHN43FB/CHN43FB_54_20251013-ePgp?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 950
+  },
+  {
+   "number": 101,
+   "group": "Généralistes & TNT",
+   "name": "8 Mont Blanc",
+   "tvg_id": "8MontBlanc.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~13cb973b12bc553a.png/480x480/quality/100/8-mont-blanc.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 951
+  },
+  {
+   "number": 102,
+   "group": "Généralistes & TNT",
+   "name": "ABXplore",
+   "tvg_id": "ABXploreFR.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~055ec590f83aa135.png/480x480/quality/100/abxplore.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 952
+  },
+  {
+   "number": 103,
+   "group": "Généralistes & TNT",
+   "name": "BBlack",
+   "tvg_id": "BBlack.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 953
+  },
+  {
+   "number": 104,
+   "group": "Généralistes & TNT",
+   "name": "BipTV",
+   "tvg_id": "BipTV.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 954
+  },
+  {
+   "number": 105,
+   "group": "Généralistes & TNT",
+   "name": "BSmartTV",
+   "tvg_id": "BSmartTV.fr",
+   "aliases": [],
+   "logo": "https://pbs.twimg.com/profile_images/1262702152155308032/96HGtdpa_400x400.jpg",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 955
+  },
+  {
+   "number": 106,
+   "group": "Généralistes & TNT",
+   "name": "Canal Partagé TNT IDF",
+   "tvg_id": "CanalpartageTNTIDF.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~bcc7f89e9900f3ea.png/480x480/quality/100/canal-partage-tnt-ile-de-france.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 956
+  },
+  {
+   "number": 107,
+   "group": "Généralistes & TNT",
+   "name": "CanalPlusAntilles",
+   "tvg_id": "CanalPlusAntilles.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 957
+  },
+  {
+   "number": 108,
+   "group": "Généralistes & TNT",
+   "name": "E! Entertainment",
+   "tvg_id": "EEntertainment.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~935480ccb24320a7.png/480x480/quality/100/e.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 958
+  },
+  {
+   "number": 109,
+   "group": "Généralistes & TNT",
+   "name": "ElleGirl",
+   "tvg_id": "ElleGirl.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYXh9iY0Xbt-lY8J6SajBoJMrgCKkClrJJuFPiX8dV8Z3FAq8uvQCrJZ0gM9g&s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 959
+  },
+  {
+   "number": 110,
+   "group": "Généralistes & TNT",
+   "name": "Eurochannel",
+   "tvg_id": "Eurochannel.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~34df6f95d8064751.png/480x480/quality/100/eurochannel.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 960
+  },
+  {
+   "number": 111,
+   "group": "Généralistes & TNT",
+   "name": "France TV Docs",
+   "tvg_id": "FranceTVDocs.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1159/canal-ouah/CHN43FB/CHN43FB_1159_20260106--waH?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 961
+  },
+  {
+   "number": 112,
+   "group": "Généralistes & TNT",
+   "name": "LCP100",
+   "tvg_id": "LCP100.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 962
+  },
+  {
+   "number": 113,
+   "group": "Généralistes & TNT",
+   "name": "LEspritSorcier",
+   "tvg_id": "LEspritSorcier.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 963
+  },
+  {
+   "number": 114,
+   "group": "Généralistes & TNT",
+   "name": "PinkTV",
+   "tvg_id": "PinkTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~db1124e839974f97.png/480x480/quality/100/pink-tv.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 964
+  },
+  {
+   "number": 115,
+   "group": "Généralistes & TNT",
+   "name": "PULAAGU",
+   "tvg_id": "Pulaagu.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1184/canal-ouah/CHN43FB/CHN43FB_1184_20251013-vXEp?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 965
+  },
+  {
+   "number": 116,
+   "group": "Généralistes & TNT",
+   "name": "Souvenirs From Earth",
+   "tvg_id": "SouvenirsFromEarth.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvnOTBqGzG7wD9tD1GZgvbRa1UWRgpTwzxlswxhK5PspNVtF139wxKdGV_mpE&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 966
+  },
+  {
+   "number": 117,
+   "group": "Généralistes & TNT",
+   "name": "Tivi5",
+   "tvg_id": "Tivi5.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRpcAytYRQf0WCYv17p-4MHv0YKLWK-Rmh2JFMZmqzrv_S-RjqXHy9Nnht9TQ&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 967
+  },
+  {
+   "number": 118,
+   "group": "Généralistes & TNT",
+   "name": "TVSUDNimes",
+   "tvg_id": "TVSUDNimes.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 968
+  },
+  {
+   "number": 130,
+   "group": "Généralistes & TNT",
+   "name": "7 A LIMOGES",
+   "tvg_id": "7ALimoges.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/7_A_LIMOGES_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 600
+  },
+  {
+   "number": 131,
+   "group": "Généralistes & TNT",
+   "name": "Angers télé",
+   "tvg_id": "AngersTele.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/AngersTV100x100.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 601
+  },
+  {
+   "number": 132,
+   "group": "Généralistes & TNT",
+   "name": "ANTENNE REUNION",
+   "tvg_id": "AntenneReunion.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/160005/canal-ouah/CHN43FB/ANTENNEREUNION_myCANAL_640x480?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 602
+  },
+  {
+   "number": 133,
+   "group": "Généralistes & TNT",
+   "name": "ATVGuadeloupe",
+   "tvg_id": "ATVGuadeloupe.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 603
+  },
+  {
+   "number": 134,
+   "group": "Généralistes & TNT",
+   "name": "ATVGuyane",
+   "tvg_id": "ATVGuyane.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 604
+  },
+  {
+   "number": 135,
+   "group": "Généralistes & TNT",
+   "name": "ATVMartinique",
+   "tvg_id": "ATVMartinique.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 605
+  },
+  {
+   "number": 136,
+   "group": "Généralistes & TNT",
+   "name": "BFM ALSACE",
+   "tvg_id": "Alsace20.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~8bb328e022ffe2db.png/480x480/quality/100/bfm-alsace.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 606
+  },
+  {
+   "number": 137,
+   "group": "Généralistes & TNT",
+   "name": "BFM DICI ALPES DU SUD",
+   "tvg_id": "DiciTvAlpes.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~839817d4dece5460.png/480x480/quality/100/bfm-dici-alpes-du-sud.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 607
+  },
+  {
+   "number": 138,
+   "group": "Généralistes & TNT",
+   "name": "BFM DICI HAUTE-PROVENCE",
+   "tvg_id": "DiciTvProvence.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~80b0472d341b708b.png/480x480/quality/100/bfm-dici-haute-provence.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 608
+  },
+  {
+   "number": 139,
+   "group": "Généralistes & TNT",
+   "name": "BFM Grand Lille",
+   "tvg_id": "BFMGrandLille.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~5a012f0d7afc9c4c.png/480x480/quality/100/bfm-grand-lille.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 609
+  },
+  {
+   "number": 140,
+   "group": "Généralistes & TNT",
+   "name": "BFM Grand Littoral",
+   "tvg_id": "BFMGrandLittoral.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/bfmgrandlittoral-100x100.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 610
+  },
+  {
+   "number": 141,
+   "group": "Généralistes & TNT",
+   "name": "BFM Grands Reportages",
+   "tvg_id": "BFMGrandsReportages.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300BFMGRANDSREPORTAGESmono.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 611
+  },
+  {
+   "number": 142,
+   "group": "Généralistes & TNT",
+   "name": "BFM Lyon",
+   "tvg_id": "TeleLyonMetropole.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~cc81bc1e6fb67547.png/480x480/quality/100/bfm-lyon-metropole.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 612
+  },
+  {
+   "number": 143,
+   "group": "Généralistes & TNT",
+   "name": "BFM MARSEILLE PROVENCE",
+   "tvg_id": "ProvenceAzur.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/NEUFBFMMARSEILLEPROV100x100.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 613
+  },
+  {
+   "number": 144,
+   "group": "Généralistes & TNT",
+   "name": "BFM NICE COTE D'AZUR",
+   "tvg_id": "AzurTV.fr",
+   "aliases": [
+    "bfm cote d azur"
+   ],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/NEUFBFMNICECOTEDAZUR100x100.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 614
+  },
+  {
+   "number": 145,
+   "group": "Généralistes & TNT",
+   "name": "BFM NORMANDIE",
+   "tvg_id": "LaChaineNormande.fr",
+   "aliases": [
+    "la chaine normande"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~91ef926478b318cb.png/480x480/quality/100/la-chaine-normande.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 615
+  },
+  {
+   "number": 146,
+   "group": "Généralistes & TNT",
+   "name": "BFM TOULON VAR",
+   "tvg_id": "VarAzur.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/NEUFBFMTOULONVAR100x100.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 616
+  },
+  {
+   "number": 147,
+   "group": "Généralistes & TNT",
+   "name": "Canal9",
+   "tvg_id": "Canal9.fr",
+   "aliases": [],
+   "logo": "https://static.teleboy.ch/shared/stations/408/icon320_light.png?v2023_48_0",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 617
+  },
+  {
+   "number": 148,
+   "group": "Généralistes & TNT",
+   "name": "Canal10Guadeloupe",
+   "tvg_id": "Canal10Guadeloupe.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 618
+  },
+  {
+   "number": 149,
+   "group": "Généralistes & TNT",
+   "name": "Canal 21",
+   "tvg_id": "Canal21.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/Canal_21_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 619
+  },
+  {
+   "number": 150,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Alpes",
+   "tvg_id": "France3Alpes.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~2cacda0b07c6858e.png/480x480/quality/100/france-3-alpes.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 620
+  },
+  {
+   "number": 151,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Alsace",
+   "tvg_id": "France3Alsace.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~7dfc89e4cd29fbd3.png/480x480/quality/100/france-3-alsace.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 621
+  },
+  {
+   "number": 152,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Aquitaine",
+   "tvg_id": "France3Aquitaine.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~8af372dffa51ee4c.png/480x480/quality/100/france-3-aquitaine.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 622
+  },
+  {
+   "number": 153,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Auvergne",
+   "tvg_id": "France3Auvergne.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~1c887afd8ce7eb5f.png/480x480/quality/100/france-3-auvergne.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 623
+  },
+  {
+   "number": 154,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Basse-Normandie",
+   "tvg_id": "France3BasseNormandie.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~814af4b7715d3d58.png/480x480/quality/100/france-3-basse-normandie.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 624
+  },
+  {
+   "number": 155,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Bourgogne",
+   "tvg_id": "France3Bourgogne.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~69fb2d5a2234547b.png/480x480/quality/100/france-3-bourgogne.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 625
+  },
+  {
+   "number": 156,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Bretagne",
+   "tvg_id": "France3Bretagne.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~8da92d1f212b1764.png/480x480/quality/100/france-3-bretagne.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 626
+  },
+  {
+   "number": 157,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Centre",
+   "tvg_id": "France3Centre.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~8dc26949f4b66350.png/480x480/quality/100/france-3-centre-val-de-loire.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 627
+  },
+  {
+   "number": 158,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Champagne-Ardenne",
+   "tvg_id": "France3ChampagneArdenne.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~55217eb171884358.png/480x480/quality/100/france-3-champagne-ardennes.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 628
+  },
+  {
+   "number": 159,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Corse",
+   "tvg_id": "France3CorseViaStella.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~b677a630de9bbb79.png/480x480/quality/100/france-3-corse-via-stella.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 629
+  },
+  {
+   "number": 160,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Côte d'Azur",
+   "tvg_id": "France3CotedAzur.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~a9955aa0f14cc358.png/480x480/quality/100/france-3-cote-d-azur.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 630
+  },
+  {
+   "number": 161,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Franche-Comté",
+   "tvg_id": "France3FrancheComte.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~11026d6bed70ed33.png/480x480/quality/100/france-3-franche-comte.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 631
+  },
+  {
+   "number": 162,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Haute-Normandie",
+   "tvg_id": "France3HauteNormandie.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~353085acfcc91c37.png/480x480/quality/100/france-3-haute-normandie.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 632
+  },
+  {
+   "number": 163,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Languedoc",
+   "tvg_id": "France3Languedoc.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~6ef25317dfdada38.png/480x480/quality/100/france-3-languedoc-roussillon.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 633
+  },
+  {
+   "number": 164,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Limousin",
+   "tvg_id": "France3Limousin.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~fb65aa2ce9ac4b73.png/480x480/quality/100/france-3-limousin.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 634
+  },
+  {
+   "number": 165,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Lorraine",
+   "tvg_id": "France3Lorraine.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~5a8f9c7ccee59a7b.png/480x480/quality/100/france-3-lorraine.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 635
+  },
+  {
+   "number": 166,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Midi-Pyrénées",
+   "tvg_id": "France3MidiPyrenees.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~98420a88ec7af3ed.png/480x480/quality/100/france-3-midi-pyrenees.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 636
+  },
+  {
+   "number": 167,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Nord Pas-de-Calais",
+   "tvg_id": "France3NordPasDeCalais.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~6bfa69e654993fe6.png/480x480/quality/100/france-3-nord-pas-de-calais.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 637
+  },
+  {
+   "number": 168,
+   "group": "Généralistes & TNT",
+   "name": "France 3 Nouvelle Aquitaine",
+   "tvg_id": "France3NouvelleAquitaine.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/998/canal-ouah/CHN43FB/CHN43FB_998_20220112?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 638
+  },
+  {
+   "number": 169,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Paris Ile-de-France",
+   "tvg_id": "France3ParisIdF.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~12c7d1a5646604f3.png/480x480/quality/100/france-3-paris-ile-de-france.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 639
+  },
+  {
+   "number": 170,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Pays de Loire",
+   "tvg_id": "France3PaysDeLaLoire.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~a7f082fc81cbba07.png/480x480/quality/100/france-3-pays-de-la-loire.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 640
+  },
+  {
+   "number": 171,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Picardie",
+   "tvg_id": "France3Picardie.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~38a48a051fc09e26.png/480x480/quality/100/france-3-picardie.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 641
+  },
+  {
+   "number": 172,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Poitou-Charentes",
+   "tvg_id": "France3PoitouCharentes.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~e036cd7509a4f4b5.png/480x480/quality/100/france-3-poitou-charentes.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 642
+  },
+  {
+   "number": 173,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Provence Alpes",
+   "tvg_id": "France3ProvenceAlpes.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~bb4195282d659a86.png/480x480/quality/100/france-3-provence-alpes.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 643
+  },
+  {
+   "number": 174,
+   "group": "Généralistes & TNT",
+   "name": "France 3 - Rhône-Alpes",
+   "tvg_id": "France3RhoneAlpes.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~58f0562b1a91ef1d.png/480x480/quality/100/france-3-rhone-alpes.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 644
+  },
+  {
+   "number": 175,
+   "group": "Généralistes & TNT",
+   "name": "Guadeloupe 1ère",
+   "tvg_id": "Guadeloupe1.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/150083/canal-ouah/CHN43FB/GUADELOUPE_1ER_FB_myCANAL_640x480?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 645
+  },
+  {
+   "number": 176,
+   "group": "Généralistes & TNT",
+   "name": "Guyane 1ère",
+   "tvg_id": "Guyane1.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/150084/canal-ouah/CHN43FB/GUYANE_1ER_FB_myCANAL_640x480?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 646
+  },
+  {
+   "number": 177,
+   "group": "Généralistes & TNT",
+   "name": "IL TV",
+   "tvg_id": "ILTV.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/IL_TV_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 647
+  },
+  {
+   "number": 178,
+   "group": "Généralistes & TNT",
+   "name": "LMtv Sarthe",
+   "tvg_id": "LMTVSarthe.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~6db902fe1c335a98.png/480x480/quality/100/lm-tv-sarthe.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 648
+  },
+  {
+   "number": 179,
+   "group": "Généralistes & TNT",
+   "name": "Martinique 1ère",
+   "tvg_id": "Martinique1.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/150085/canal-ouah/CHN43FB/MARTINIQUE_1ER_FB_myCANAL_640x480?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 649
+  },
+  {
+   "number": 180,
+   "group": "Généralistes & TNT",
+   "name": "Mayotte 1ère",
+   "tvg_id": "Mayotte1.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/160206/canal-ouah/CHN43FB/MAYOTTE_1ERE_FB_myCANAL_640x480?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 650
+  },
+  {
+   "number": 181,
+   "group": "Généralistes & TNT",
+   "name": "NouvelleCaledonie",
+   "tvg_id": "NouvelleCaledonie.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/170086/canal-ouah/CHN43FB/_thumb_526566?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 651
+  },
+  {
+   "number": 182,
+   "group": "Généralistes & TNT",
+   "name": "Polynesie 1ère",
+   "tvg_id": "Polynesie1.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/200046/canal-ouah/CHN43FB/PREMIEREPOLYNESIE_NOIR_myCANAL_640x480?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 652
+  },
+  {
+   "number": 183,
+   "group": "Généralistes & TNT",
+   "name": "Reunion 1ère",
+   "tvg_id": "Reunion1.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/160088/canal-ouah/CHN43FB/REUNION_1ERE_FB_myCANAL_640x480?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 653
+  },
+  {
+   "number": 184,
+   "group": "Généralistes & TNT",
+   "name": "St Pierre Et Miquelon 1ère",
+   "tvg_id": "StPierreEtMiquelon1.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQXi7vs8TNuYmCbPMi6jy5vP0i11qA4FJwHD6Eak-PNpqBkBAQEvjmx7zWfBg&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 654
+  },
+  {
+   "number": 185,
+   "group": "Généralistes & TNT",
+   "name": "Tahiti Nui TV",
+   "tvg_id": "TahitiNuiTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~4f89934309c38843.png/480x480/quality/100/tntv-france.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 655
+  },
+  {
+   "number": 186,
+   "group": "Généralistes & TNT",
+   "name": "TEBEO",
+   "tvg_id": "Tebeo.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~1a03f02780399e00.png/480x480/quality/100/tebeo.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 656
+  },
+  {
+   "number": 187,
+   "group": "Généralistes & TNT",
+   "name": "TébéSud",
+   "tvg_id": "TebeSud.fr",
+   "aliases": [],
+   "logo": "https://upload.wikimedia.org/wikipedia/fr/2/20/T%C3%A9b%C3%A9Sud_logo_2013.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 657
+  },
+  {
+   "number": 188,
+   "group": "Généralistes & TNT",
+   "name": "Télé Bocal",
+   "tvg_id": "TeleBocal.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/Tele_Bocal_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 658
+  },
+  {
+   "number": 189,
+   "group": "Généralistes & TNT",
+   "name": "Télé Grenoble",
+   "tvg_id": "TeleGrenobleIsere.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~a9c6360b76772dd2.png/480x480/quality/100/tele-grenoble-isere.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 659
+  },
+  {
+   "number": 190,
+   "group": "Généralistes & TNT",
+   "name": "TELE KREOL",
+   "tvg_id": "TeleKreol.frdrom",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/160203/canal-ouah/CHN43FB/TELEKREOL_myCANAL_640x480?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 660
+  },
+  {
+   "number": 191,
+   "group": "Généralistes & TNT",
+   "name": "Télé Paese",
+   "tvg_id": "TelePaese.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/Tele_Paese_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 661
+  },
+  {
+   "number": 192,
+   "group": "Généralistes & TNT",
+   "name": "TELE-VISION MONTREUIL",
+   "tvg_id": "TVMEstParisien.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/TELE_VISION_MONTREUIL_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 662
+  },
+  {
+   "number": 193,
+   "group": "Généralistes & TNT",
+   "name": "Télénantes",
+   "tvg_id": "Telenantes.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~c13f589440531485.png/480x480/quality/100/telenantes.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 663
+  },
+  {
+   "number": 194,
+   "group": "Généralistes & TNT",
+   "name": "Télésud",
+   "tvg_id": "Telesud.fr",
+   "aliases": [],
+   "logo": "https://focus.telerama.fr/500x500/0000/00/01/clear-449.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 664
+  },
+  {
+   "number": 195,
+   "group": "Généralistes & TNT",
+   "name": "TV2COM",
+   "tvg_id": "TV2Com.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/100x100tv2com.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 665
+  },
+  {
+   "number": 196,
+   "group": "Généralistes & TNT",
+   "name": "TV7 Bordeaux",
+   "tvg_id": "TV7Bordeaux.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~4f1c8ecf76e8af37.png/480x480/quality/100/tv7-bordeaux.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 666
+  },
+  {
+   "number": 197,
+   "group": "Généralistes & TNT",
+   "name": "TV8 Moselle-Est",
+   "tvg_id": "TV8MoselleEst.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/TV8_Moselle_Est_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 667
+  },
+  {
+   "number": 198,
+   "group": "Généralistes & TNT",
+   "name": "TV78",
+   "tvg_id": "TV78.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/TV78100x100COULEUR.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 668
+  },
+  {
+   "number": 199,
+   "group": "Généralistes & TNT",
+   "name": "TV RENNES 35",
+   "tvg_id": "TVRennes35Bretagne.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~44a40e28fbd42184.png/480x480/quality/100/tvr-rennes-35-bretagne.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 669
+  },
+  {
+   "number": 200,
+   "group": "Généralistes & TNT",
+   "name": "TV Tours",
+   "tvg_id": "TVTours.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~069614a025efebd6.png/480x480/quality/100/tv-tours.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 670
+  },
+  {
+   "number": 201,
+   "group": "Généralistes & TNT",
+   "name": "UNION TV",
+   "tvg_id": "UnionTV.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1082/canal-ouah/CHN43FB/CHN43FB_1082_20240223-UfeX?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 671
+  },
+  {
+   "number": 202,
+   "group": "Généralistes & TNT",
+   "name": "Vià MATÉLÉ",
+   "tvg_id": "viaMaTele.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/viamatele100x100couleur.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 672
+  },
+  {
+   "number": 203,
+   "group": "Généralistes & TNT",
+   "name": "VIA Mirabelle",
+   "tvg_id": "MirabelleTV.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/VIA_Mirabelle_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 673
+  },
+  {
+   "number": 204,
+   "group": "Généralistes & TNT",
+   "name": "viaATV",
+   "tvg_id": "viaATV.fr",
+   "aliases": [],
+   "logo": "https://focus.telerama.fr/500x500/0000/00/01/clear-295.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 674
+  },
+  {
+   "number": 205,
+   "group": "Généralistes & TNT",
+   "name": "Vosges tv",
+   "tvg_id": "VosgesTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~cd72a83bfe5b6ae7.png/480x480/quality/100/vosges-television.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 675
+  },
+  {
+   "number": 206,
+   "group": "Généralistes & TNT",
+   "name": "Wallis Et Futuna 1ère",
+   "tvg_id": "WallisEtFutuna1.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/170089/canal-ouah/CHN43FB/_thumb_526569?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 676
+  },
+  {
+   "number": 207,
+   "group": "Généralistes & TNT",
+   "name": "Wéo Picardie",
+   "tvg_id": "WeoPicardie.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/WeoPicardie100x100.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 677
+  },
+  {
+   "number": 208,
+   "group": "Généralistes & TNT",
+   "name": "Wéo TV, La voix du nord",
+   "tvg_id": "Weo.fr",
+   "aliases": [
+    "weo"
+   ],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/WEOLAVDN100x100.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 678
+  },
+  {
+   "number": 350,
+   "group": "Info",
+   "name": "France 24",
+   "tvg_id": "France24.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~afbbeba076c073d9.png/480x480/quality/100/france-24.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 100
+  },
+  {
+   "number": 351,
+   "group": "Info",
+   "name": "BFM Business",
+   "tvg_id": "BFMBusiness.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~7eb91da112d351e5.png/480x480/quality/100/bfm-business.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 101
+  },
+  {
+   "number": 352,
+   "group": "Info",
+   "name": "CNews Prime",
+   "tvg_id": "CNewsPrime.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1172/canal-ouah/CHN43FB/CHN43FB_1172_20251124-fNSv?=.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 102
+  },
+  {
+   "number": 353,
+   "group": "Info",
+   "name": "RMC Talk Info",
+   "tvg_id": "RMCTalkInfo.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300RMCTALKINFOmono.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 103
+  },
+  {
+   "number": 354,
+   "group": "Info",
+   "name": "TECH & CO",
+   "tvg_id": "01TV.fr",
+   "aliases": [
+    "01 tv",
+    "01tv",
+    "tech eco"
+   ],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/SFR100x100COLORTECHCO.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 104
+  },
+  {
+   "number": 355,
+   "group": "Info",
+   "name": "BFM 2",
+   "tvg_id": "BFM2.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300BFM2coul.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 105
+  },
+  {
+   "number": 356,
+   "group": "Info",
+   "name": "BFMJiraiDormirChezVous",
+   "tvg_id": "BFMJiraiDormirChezVous.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 106
+  },
+  {
+   "number": 357,
+   "group": "Info",
+   "name": "Euronews",
+   "tvg_id": "Euronews.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~648eb1fd8a151da0.png/480x480/quality/100/euronews.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 107
+  },
+  {
+   "number": 358,
+   "group": "Info",
+   "name": "Europe 1 TV",
+   "tvg_id": "Europe1TV.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1173/canal-ouah/CHN43FB/CHN43FB_1173_20251210-Vb4L?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 108
+  },
+  {
+   "number": 359,
+   "group": "Info",
+   "name": "i24 news",
+   "tvg_id": "I24news.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~9c9fab3a99e71b53.png/480x480/quality/100/i24news.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 109
+  },
+  {
+   "number": 360,
+   "group": "Info",
+   "name": "LaChaineMeteo",
+   "tvg_id": "LaChaineMeteo.fr",
+   "aliases": [
+    "la chaine meteo"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~cdd331aeb0c20b3e.png/480x480/quality/100/la-chaine-meteo.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 110
+  },
+  {
+   "number": 361,
+   "group": "Info",
+   "name": "Le Figaro TV",
+   "tvg_id": "ViaGrandParis.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1102/canal-ouah/CHN43FB/CHN43FB_1102_20241115-fDKx?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 111
+  },
+  {
+   "number": 362,
+   "group": "Info",
+   "name": "Lyon Capitale TV",
+   "tvg_id": "LyonTV.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/lyoncapitaletv1100x100couleur.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 112
+  },
+  {
+   "number": 363,
+   "group": "Info",
+   "name": "PublicSenat",
+   "tvg_id": "PublicSenat.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 113
+  },
+  {
+   "number": 364,
+   "group": "Info",
+   "name": "PublicSenat2424",
+   "tvg_id": "PublicSenat2424.fr",
+   "aliases": [
+    "public senat",
+    "public senat 24 24"
+   ],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 114
+  },
+  {
+   "number": 365,
+   "group": "Info",
+   "name": "TV5 Monde Info",
+   "tvg_id": "TV5MondeInfo.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQblq2bYzk22pzh2Eb652NvyfwpDfXQp0k6b9YYytZSQyGbDXTSSxuHeQuNn9E&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 115
+  },
+  {
+   "number": 400,
+   "group": "Cinéma & Séries",
+   "name": "Canal+",
+   "tvg_id": "CanalPlus.fr",
+   "aliases": [
+    "canal",
+    "canal plus",
+    "canalplus 4k",
+    "canalplus hd",
+    "canalplus uhd",
+    "canalplusuhd"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~897223a57e2e8ae5.png/480x480/quality/100/canal.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 200
+  },
+  {
+   "number": 401,
+   "group": "Cinéma & Séries",
+   "name": "Canal+ Cinéma",
+   "tvg_id": "CanalPlusCinema.fr",
+   "aliases": [
+    "canal plus cinema",
+    "canalpluscinema"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~0b078790aeb2d121.png/480x480/quality/100/canal-cinema.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 201
+  },
+  {
+   "number": 402,
+   "group": "Cinéma & Séries",
+   "name": "Canal+ Séries",
+   "tvg_id": "CanalPlusSeries.fr",
+   "aliases": [
+    "canalplusseries"
+   ],
+   "logo": "https://focus.telerama.fr/500x500/0000/00/01/clear-1563.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 202
+  },
+  {
+   "number": 403,
+   "group": "Cinéma & Séries",
+   "name": "CANAL+ BOX OFFICE",
+   "tvg_id": "CanalPlusBoxOffice.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~69a3e9057bb45421.png/480x480/quality/100/canal-box-office.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 203
+  },
+  {
+   "number": 404,
+   "group": "Cinéma & Séries",
+   "name": "Canal+ Grand Écran",
+   "tvg_id": "CanalPlusGrandEcran.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~6826f74c606125a6.png/480x480/quality/100/canal-grand-ecran.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 204
+  },
+  {
+   "number": 405,
+   "group": "Cinéma & Séries",
+   "name": "OCS",
+   "tvg_id": "CinePlusPremier.fr",
+   "aliases": [
+    "ocs fr",
+    "ocs hd"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~7246bab97d61b8e2.png/480x480/quality/100/cine-premier.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 205
+  },
+  {
+   "number": 406,
+   "group": "Cinéma & Séries",
+   "name": "Ciné+ Premier",
+   "tvg_id": "",
+   "aliases": [
+    "cine cinema premier",
+    "cine premier",
+    "cine premiere",
+    "cine+ premiere"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 206
+  },
+  {
+   "number": 407,
+   "group": "Cinéma & Séries",
+   "name": "OCS Max",
+   "tvg_id": "",
+   "aliases": [
+    "orange cine max"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 207
+  },
+  {
+   "number": 408,
+   "group": "Cinéma & Séries",
+   "name": "OCS Choc",
+   "tvg_id": "",
+   "aliases": [
+    "orange cine choc"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 208
+  },
+  {
+   "number": 409,
+   "group": "Cinéma & Séries",
+   "name": "OCS City",
+   "tvg_id": "",
+   "aliases": [
+    "ocs city generation hbo",
+    "orange cine novo"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 209
+  },
+  {
+   "number": 410,
+   "group": "Cinéma & Séries",
+   "name": "OCS Géants",
+   "tvg_id": "",
+   "aliases": [
+    "ocs geant",
+    "orange cine geants"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 210
+  },
+  {
+   "number": 411,
+   "group": "Cinéma & Séries",
+   "name": "OCS Pulp",
+   "tvg_id": "",
+   "aliases": [
+    "orange cine happy"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 211
+  },
+  {
+   "number": 412,
+   "group": "Cinéma & Séries",
+   "name": "Ciné+ Frisson",
+   "tvg_id": "CinePlusFrisson.fr",
+   "aliases": [
+    "cine cinema frissons",
+    "cine frisson"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~75b212bb20dd0d9f.png/480x480/quality/100/cine-frisson.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 212
+  },
+  {
+   "number": 413,
+   "group": "Cinéma & Séries",
+   "name": "Ciné+ Émotion",
+   "tvg_id": "CinePlusEmotion.fr",
+   "aliases": [
+    "cine + emotion",
+    "cine emotion",
+    "cinecinema emotion",
+    "cinecinemas 2",
+    "cinecinemas prime"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~a4315e8ee099e046.png/480x480/quality/100/cine-emotion.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 213
+  },
+  {
+   "number": 414,
+   "group": "Cinéma & Séries",
+   "name": "Ciné+ Classic",
+   "tvg_id": "CinePlusClassic.fr",
+   "aliases": [
+    "cine classic"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~2d69cbbd735c68d3.png/480x480/quality/100/cine-classic.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 214
+  },
+  {
+   "number": 415,
+   "group": "Cinéma & Séries",
+   "name": "Ciné+ Festival",
+   "tvg_id": "CinePlusClub.fr",
+   "aliases": [
+    "cine + club",
+    "cine club",
+    "cine+ club",
+    "cinecinema club",
+    "cinecinema culte",
+    "cinefaz films de a a z",
+    "tps cineculte",
+    "tps cinefaz"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~1bda9959c4080bd1.png/480x480/quality/100/cine-club.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 215
+  },
+  {
+   "number": 416,
+   "group": "Cinéma & Séries",
+   "name": "Ciné+ Family",
+   "tvg_id": "CinePlusFamiz.fr",
+   "aliases": [
+    "cine famiz",
+    "cine+ famiz",
+    "cinecinema famiz",
+    "cinecinema succes"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~aa3a208e4af5aa5c.png/480x480/quality/100/cine-famiz.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 216
+  },
+  {
+   "number": 417,
+   "group": "Cinéma & Séries",
+   "name": "Action",
+   "tvg_id": "Action.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~c9d2c60078632b83.png/480x480/quality/100/action.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 217
+  },
+  {
+   "number": 418,
+   "group": "Cinéma & Séries",
+   "name": "TCM Cinéma",
+   "tvg_id": "TCM.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~1380c434ba314175.png/480x480/quality/100/tcm-cinema.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 218
+  },
+  {
+   "number": 419,
+   "group": "Cinéma & Séries",
+   "name": "Paramount Channel",
+   "tvg_id": "ParamountChannel.fr",
+   "aliases": [
+    "paramountchannel",
+    "paramountchanneldecale"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 219
+  },
+  {
+   "number": 420,
+   "group": "Cinéma & Séries",
+   "name": "Warner TV",
+   "tvg_id": "WarnerTV.fr",
+   "aliases": [
+    "warner bros",
+    "warnertv"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~6d75450123e766d6.png/480x480/quality/100/warner-tv.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 220
+  },
+  {
+   "number": 421,
+   "group": "Cinéma & Séries",
+   "name": "Syfy",
+   "tvg_id": "Syfy.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~fdf578c5513fc680.png/480x480/quality/100/syfy.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 221
+  },
+  {
+   "number": 422,
+   "group": "Cinéma & Séries",
+   "name": "13ème Rue",
+   "tvg_id": "13eRue.fr",
+   "aliases": [
+    "13 eme rue",
+    "13th street france"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~c7a8275787244ffe.png/480x480/quality/100/13eme-rue.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 222
+  },
+  {
+   "number": 423,
+   "group": "Cinéma & Séries",
+   "name": "Polar+",
+   "tvg_id": "PolarPlus.fr",
+   "aliases": [
+    "polar +",
+    "polar plus"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~138de7b2386a5c10.png/480x480/quality/100/polar.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 223
+  },
+  {
+   "number": 424,
+   "group": "Cinéma & Séries",
+   "name": "Comédie+",
+   "tvg_id": "ComediePlus.fr",
+   "aliases": [
+    "comedie",
+    "comedie +"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~b419616020702bc2.png/480x480/quality/100/comedie.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 224
+  },
+  {
+   "number": 425,
+   "group": "Cinéma & Séries",
+   "name": "Série Club",
+   "tvg_id": "serieclub.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~a341f0fb3b68e0be.png/480x480/quality/100/serieclub.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 225
+  },
+  {
+   "number": 426,
+   "group": "Cinéma & Séries",
+   "name": "AB3",
+   "tvg_id": "AB3.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~deec8bc0a9e988af.png/480x480/quality/100/ab-3.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 226
+  },
+  {
+   "number": 427,
+   "group": "Cinéma & Séries",
+   "name": "AB1",
+   "tvg_id": "AB1.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~a15b4a2cb74dfd54.png/480x480/quality/100/ab-1.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 227
+  },
+  {
+   "number": 428,
+   "group": "Cinéma & Séries",
+   "name": "OCS Go Ciné 1",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 228
+  },
+  {
+   "number": 429,
+   "group": "Cinéma & Séries",
+   "name": "OCS Go Ciné 2",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 229
+  },
+  {
+   "number": 430,
+   "group": "Cinéma & Séries",
+   "name": "OCS Go Ciné 3",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 230
+  },
+  {
+   "number": 431,
+   "group": "Cinéma & Séries",
+   "name": "OCS Go Ciné 4",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 231
+  },
+  {
+   "number": 432,
+   "group": "Cinéma & Séries",
+   "name": "OCS Go Ciné 5",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 232
+  },
+  {
+   "number": 433,
+   "group": "Cinéma & Séries",
+   "name": "OCS Go Ciné 6",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 233
+  },
+  {
+   "number": 434,
+   "group": "Cinéma & Séries",
+   "name": "OCS Go Ciné 7",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 234
+  },
+  {
+   "number": 435,
+   "group": "Cinéma & Séries",
+   "name": "OCS Go Ciné 8",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 235
+  },
+  {
+   "number": 436,
+   "group": "Cinéma & Séries",
+   "name": "CINE+ Festival",
+   "tvg_id": "CinePlusClub.frdrom",
+   "aliases": [
+    "cine + festival"
+   ],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/160024/canal-ouah/CHN43FB/cinefestival_CHN43FN-SV3n?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 236
+  },
+  {
+   "number": 437,
+   "group": "Cinéma & Séries",
+   "name": "Comedy Central",
+   "tvg_id": "ComedyCentral.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~9c61401af35f66ed.png/480x480/quality/100/comedy-central.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 237
+  },
+  {
+   "number": 438,
+   "group": "Cinéma & Séries",
+   "name": "Crime District",
+   "tvg_id": "CrimeDistrict.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~1bcbad6f4e80e540.png/480x480/quality/100/crime-district.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 238
+  },
+  {
+   "number": 439,
+   "group": "Cinéma & Séries",
+   "name": "DriveInMovieChannel",
+   "tvg_id": "DriveInMovieChannel.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 239
+  },
+  {
+   "number": 440,
+   "group": "Cinéma & Séries",
+   "name": "France TV Séries",
+   "tvg_id": "FranceTVSeries.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1092/canal-ouah/CHN43FB/CHN43FB_1092_20260126-de3E?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 240
+  },
+  {
+   "number": 441,
+   "group": "Cinéma & Séries",
+   "name": "NinaNovelas",
+   "tvg_id": "NinaNovelas.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 241
+  },
+  {
+   "number": 442,
+   "group": "Cinéma & Séries",
+   "name": "Nollywood TV",
+   "tvg_id": "NollywoodTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~9a6d17c67f4b3300.png/480x480/quality/100/nollywood-tv.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 242
+  },
+  {
+   "number": 443,
+   "group": "Cinéma & Séries",
+   "name": "NOVELAS",
+   "tvg_id": "NovelasTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~f3163a740d07c24f.png/480x480/quality/100/novelas-tv.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 243
+  },
+  {
+   "number": 444,
+   "group": "Cinéma & Séries",
+   "name": "Sundance TV",
+   "tvg_id": "SundanceTV.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRHLuhaj35IsHpTUk_xOLNlWrnauqkRg_sb1l8bpcjkpWN0NYblKkalgpyremc&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 244
+  },
+  {
+   "number": 445,
+   "group": "Cinéma & Séries",
+   "name": "Téléfilms Romance 24/24",
+   "tvg_id": "TelefilmsRomance2424.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/3c5IMZ5.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 245
+  },
+  {
+   "number": 1000,
+   "group": "Découverte & Jeunesse",
+   "name": "National Geographic",
+   "tvg_id": "NationalGeographic.fr",
+   "aliases": [
+    "nat geo",
+    "national geo",
+    "national geographic channel"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~c00912008deb7144.png/480x480/quality/100/national-geographic.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 400
+  },
+  {
+   "number": 1001,
+   "group": "Découverte & Jeunesse",
+   "name": "Ushuaïa TV",
+   "tvg_id": "UshuaiaTV.fr",
+   "aliases": [
+    "ushuaia"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~778073cbbd827d7a.png/480x480/quality/100/ushuaia-tv.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 401
+  },
+  {
+   "number": 1002,
+   "group": "Découverte & Jeunesse",
+   "name": "Planète+",
+   "tvg_id": "PlanetePlus.fr",
+   "aliases": [
+    "planet plus",
+    "planete plus"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~475677d45988adc5.png/480x480/quality/100/planete.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 402
+  },
+  {
+   "number": 1003,
+   "group": "Découverte & Jeunesse",
+   "name": "Planète+ Aventure",
+   "tvg_id": "PlaneteAction.fr",
+   "aliases": [
+    "forum planete",
+    "planete a e",
+    "planete choc",
+    "planete futur",
+    "planete future",
+    "planete no limit",
+    "planete+ a e",
+    "planete+ action experience"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~aa6befb976febe46.png/480x480/quality/100/planete-aventure-experience.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 403
+  },
+  {
+   "number": 1004,
+   "group": "Découverte & Jeunesse",
+   "name": "Planète+ Crime",
+   "tvg_id": "PLANETEJustice.fr",
+   "aliases": [
+    "planete ci",
+    "planete justice",
+    "planete+ ci",
+    "planete+ crime investigation",
+    "planete+ crime+investigation",
+    "planete+ justice"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~a17e094d24ee1484.png/480x480/quality/100/planete-crime-investigation.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 404
+  },
+  {
+   "number": 1005,
+   "group": "Découverte & Jeunesse",
+   "name": "Histoire TV",
+   "tvg_id": "Histoire.fr",
+   "aliases": [
+    "histoire"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~354060da3ea6eca2.png/480x480/quality/100/histoire-tv.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 405
+  },
+  {
+   "number": 1006,
+   "group": "Découverte & Jeunesse",
+   "name": "Toute l'Histoire",
+   "tvg_id": "TouteHistoire.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~37b4a846e6d5f66d.png/480x480/quality/100/toute-l-histoire.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 406
+  },
+  {
+   "number": 1007,
+   "group": "Découverte & Jeunesse",
+   "name": "Science & Vie TV",
+   "tvg_id": "ScienceEtVieTV.fr",
+   "aliases": [
+    "science et vie",
+    "science et vie tv",
+    "sciences vie"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~b6e7fa007605d89d.png/480x480/quality/100/science-vie-tv.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 407
+  },
+  {
+   "number": 1008,
+   "group": "Découverte & Jeunesse",
+   "name": "Discovery Channel",
+   "tvg_id": "DiscoveryChannel.fr",
+   "aliases": [
+    "discovery",
+    "discovery tv"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~14a98ca33c9c2ff1.png/480x480/quality/100/discovery-channel.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 408
+  },
+  {
+   "number": 1009,
+   "group": "Découverte & Jeunesse",
+   "name": "Discovery Investigation",
+   "tvg_id": "DiscoveryInvestigation.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1098/canal-ouah/CHN43FB/CHN43FB_1098_20240611-nQTl?=.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 409
+  },
+  {
+   "number": 1010,
+   "group": "Découverte & Jeunesse",
+   "name": "TLC",
+   "tvg_id": "DiscoveryScience.fr",
+   "aliases": [
+    "discovery science",
+    "television locale du choletais"
+   ],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1097/canal-ouah/CHN43FB/CHN43FB_1097_20240611-L4JP?=.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 410
+  },
+  {
+   "number": 1011,
+   "group": "Découverte & Jeunesse",
+   "name": "Seasons",
+   "tvg_id": "Seasons.fr",
+   "aliases": [
+    "season"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~16297b964b1804cc.png/480x480/quality/100/seasons.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 411
+  },
+  {
+   "number": 1012,
+   "group": "Découverte & Jeunesse",
+   "name": "Chasse et Pêche",
+   "tvg_id": "ChasseEtPeche.fr",
+   "aliases": [
+    "chasse peche"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~1da0d9af361d68eb.png/480x480/quality/100/chasse-et-peche.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 412
+  },
+  {
+   "number": 1013,
+   "group": "Découverte & Jeunesse",
+   "name": "Animaux",
+   "tvg_id": "Animaux.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~d5bfad7c376468c6.png/480x480/quality/100/animaux.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 413
+  },
+  {
+   "number": 1014,
+   "group": "Découverte & Jeunesse",
+   "name": "MUSEUM TV",
+   "tvg_id": "Museum.fr",
+   "aliases": [
+    "museum"
+   ],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/95900534?=.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 414
+  },
+  {
+   "number": 1015,
+   "group": "Découverte & Jeunesse",
+   "name": "Canal+ Docs",
+   "tvg_id": "CanalPlusDocs.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~b0dab3f2632272a9.png/480x480/quality/100/canal-docs.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 415
+  },
+  {
+   "number": 1016,
+   "group": "Découverte & Jeunesse",
+   "name": "Auto Plus TV",
+   "tvg_id": "AutoPlusTV.fr",
+   "aliases": [],
+   "logo": "https://freebox.cdn.scw.iliad.fr/large_AUTOPLUS_61b02519b4.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 416
+  },
+  {
+   "number": 1017,
+   "group": "Découverte & Jeunesse",
+   "name": "Cheval TV",
+   "tvg_id": "ChevalTV.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1182/canal-ouah/CHN43FB/CHN43FB_1182_20251013-UlME?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 417
+  },
+  {
+   "number": 1018,
+   "group": "Découverte & Jeunesse",
+   "name": "Lucky Jack",
+   "tvg_id": "LuckyJack.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/Lucky_Jack_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 418
+  },
+  {
+   "number": 1019,
+   "group": "Découverte & Jeunesse",
+   "name": "Luxe TV",
+   "tvg_id": "LuxeTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~1f30e3d55096de3b.png/480x480/quality/100/luxe-tv.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 419
+  },
+  {
+   "number": 1020,
+   "group": "Découverte & Jeunesse",
+   "name": "MaisonEtTravaux",
+   "tvg_id": "MaisonEtTravaux.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 420
+  },
+  {
+   "number": 1021,
+   "group": "Découverte & Jeunesse",
+   "name": "Marmiton TV",
+   "tvg_id": "MarmitonTV.fr",
+   "aliases": [],
+   "logo": "https://freebox.cdn.scw.iliad.fr/large_Logo_Marmiton_TV_bis_8e336d6d66.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 421
+  },
+  {
+   "number": 1022,
+   "group": "Découverte & Jeunesse",
+   "name": "NatGeoWild",
+   "tvg_id": "NatGeoWild.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~14a37deb1ba9efc4.png/480x480/quality/100/nat-geo-wild.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 422
+  },
+  {
+   "number": 1023,
+   "group": "Découverte & Jeunesse",
+   "name": "Nautical Channel",
+   "tvg_id": "NauticalChannel.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~20b8b9cb6d9c4582.png/480x480/quality/100/nautical-channel.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 423
+  },
+  {
+   "number": 1024,
+   "group": "Découverte & Jeunesse",
+   "name": "TREK",
+   "tvg_id": "Trek.fr",
+   "aliases": [
+    "escales"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~12312ff19aafd42a.png/480x480/quality/100/trek.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 424
+  },
+  {
+   "number": 1025,
+   "group": "Découverte & Jeunesse",
+   "name": "Turbo 24/24",
+   "tvg_id": "Turbo2424.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/FtT302g.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 425
+  },
+  {
+   "number": 1100,
+   "group": "Découverte & Jeunesse",
+   "name": "Disney Channel",
+   "tvg_id": "DisneyChannel.fr",
+   "aliases": [
+    "disneychannelplus1"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~ab11120cc94674c8.png/480x480/quality/100/disney-channel.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 500
+  },
+  {
+   "number": 1101,
+   "group": "Découverte & Jeunesse",
+   "name": "Disney Junior",
+   "tvg_id": "DisneyJunior.fr",
+   "aliases": [
+    "disneyjunior",
+    "playhouse disney"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~a8f41a637b5bb2b8.png/480x480/quality/100/disney-junior.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 501
+  },
+  {
+   "number": 1102,
+   "group": "Découverte & Jeunesse",
+   "name": "Disney XD",
+   "tvg_id": "DisneyXD.fr",
+   "aliases": [],
+   "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Logo_Disney_XD.svg/1200px-Logo_Disney_XD.svg.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 502
+  },
+  {
+   "number": 1103,
+   "group": "Découverte & Jeunesse",
+   "name": "Nickelodeon",
+   "tvg_id": "Nickelodeon.fr",
+   "aliases": [
+    "nickeledon",
+    "nickelodeon+1",
+    "nickelodeonplus1"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~96073033160e9e0f.png/480x480/quality/100/nickelodeon.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 503
+  },
+  {
+   "number": 1104,
+   "group": "Découverte & Jeunesse",
+   "name": "Nickelodeon Junior",
+   "tvg_id": "NickelodeonJunior.fr",
+   "aliases": [
+    "nick jr"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~4978e09688e54ba3.png/480x480/quality/100/nickelodeon-junior.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 504
+  },
+  {
+   "number": 1105,
+   "group": "Découverte & Jeunesse",
+   "name": "Nickelodeon Teen",
+   "tvg_id": "Nickelodeon4Teen.fr",
+   "aliases": [
+    "nickelodeon 4 teen"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~46b4b009c1f49864.png/480x480/quality/100/nickelodeon-teen.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 505
+  },
+  {
+   "number": 1106,
+   "group": "Découverte & Jeunesse",
+   "name": "Cartoon Network",
+   "tvg_id": "CartoonNetwork.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~98316e754a46584c.png/480x480/quality/100/cartoon-network.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 506
+  },
+  {
+   "number": 1107,
+   "group": "Découverte & Jeunesse",
+   "name": "Cartoonito",
+   "tvg_id": "Boing.fr",
+   "aliases": [
+    "boing"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~8b00d7887720df90.png/480x480/quality/100/cartoonito.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 507
+  },
+  {
+   "number": 1108,
+   "group": "Découverte & Jeunesse",
+   "name": "Boomerang",
+   "tvg_id": "Boomerang.fr",
+   "aliases": [
+    "boomerang +1",
+    "boomerangplus1"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~2d1423f31cdcab25.png/480x480/quality/100/boomerang.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 508
+  },
+  {
+   "number": 1109,
+   "group": "Découverte & Jeunesse",
+   "name": "Piwi+",
+   "tvg_id": "PIWI.fr",
+   "aliases": [
+    "piwi",
+    "piwi +"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~c35f8535cf204eb6.png/480x480/quality/100/piwi.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 509
+  },
+  {
+   "number": 1110,
+   "group": "Découverte & Jeunesse",
+   "name": "TIJI",
+   "tvg_id": "TIJI.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~bca7f0d3d25813cd.png/480x480/quality/100/tiji.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 510
+  },
+  {
+   "number": 1111,
+   "group": "Découverte & Jeunesse",
+   "name": "CANAL J",
+   "tvg_id": "CanalJ.fr",
+   "aliases": [
+    "canalplusj"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~af78921dcd4437f4.png/480x480/quality/100/canal-j.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 511
+  },
+  {
+   "number": 1112,
+   "group": "Découverte & Jeunesse",
+   "name": "Mangas",
+   "tvg_id": "Mangas.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~a624ee4f7be827c4.png/480x480/quality/100/mangas.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 512
+  },
+  {
+   "number": 1113,
+   "group": "Découverte & Jeunesse",
+   "name": "Warner TV Next",
+   "tvg_id": "Toonami.fr",
+   "aliases": [
+    "toonami"
+   ],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1095/canal-ouah/CHN43FB/CHN43FB_1095_20240611-RIcT?=.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 513
+  },
+  {
+   "number": 1114,
+   "group": "Découverte & Jeunesse",
+   "name": "GameOne",
+   "tvg_id": "GameOne.fr",
+   "aliases": [
+    "c",
+    "game one",
+    "gameoneplus1"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 514
+  },
+  {
+   "number": 1115,
+   "group": "Découverte & Jeunesse",
+   "name": "J-One",
+   "tvg_id": "JOne.fr",
+   "aliases": [
+    "jone"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 515
+  },
+  {
+   "number": 1116,
+   "group": "Découverte & Jeunesse",
+   "name": "Canal+ Kids",
+   "tvg_id": "CanalPlusKIDS.fr",
+   "aliases": [
+    "canalplus family",
+    "canalpluskids"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~a0c591e8c97c5f9d.png/480x480/quality/100/canal-kids.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 516
+  },
+  {
+   "number": 1117,
+   "group": "Découverte & Jeunesse",
+   "name": "BabyTV",
+   "tvg_id": "BabyTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~346eb6ce286fe2fd.png/480x480/quality/100/baby-tv.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 517
+  },
+  {
+   "number": 1118,
+   "group": "Découverte & Jeunesse",
+   "name": "Disney+",
+   "tvg_id": "DisneyPlus.fr",
+   "aliases": [],
+   "logo": "https://focus.telerama.fr/500x500/0000/00/01/clear-2974.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 518
+  },
+  {
+   "number": 1119,
+   "group": "Découverte & Jeunesse",
+   "name": "DREAMWORKS",
+   "tvg_id": "Dreamworks.fr",
+   "aliases": [
+    "dreamworks channel"
+   ],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/DREAMWORKS100x100.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 519
+  },
+  {
+   "number": 1120,
+   "group": "Découverte & Jeunesse",
+   "name": "Gong",
+   "tvg_id": "Gong.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 520
+  },
+  {
+   "number": 1121,
+   "group": "Découverte & Jeunesse",
+   "name": "GongMax",
+   "tvg_id": "GongMax.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~419233d56dacf793.png/480x480/quality/100/gong-max.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 521
+  },
+  {
+   "number": 1122,
+   "group": "Découverte & Jeunesse",
+   "name": "Télétoon +1",
+   "tvg_id": "TeleTOONplus1.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/21523015?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 522
+  },
+  {
+   "number": 1123,
+   "group": "Découverte & Jeunesse",
+   "name": "TéléToon+",
+   "tvg_id": "TeleToonPlus.fr",
+   "aliases": [
+    "teletoon"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~4812394f3595c85a.png/480x480/quality/100/teletoon.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 523
+  },
+  {
+   "number": 1124,
+   "group": "Découverte & Jeunesse",
+   "name": "TV Pitchoun",
+   "tvg_id": "TVPitchoun.fr",
+   "aliases": [],
+   "logo": "https://static.wikia.nocookie.net/logopedia/images/3/3c/PITCHOUN_TV_2018.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 524
+  },
+  {
+   "number": 1300,
+   "group": "Musique",
+   "name": "M6 Music",
+   "tvg_id": "M6Music.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~b4eb6aa19b3ef5f1.png/480x480/quality/100/m6-music.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 550
+  },
+  {
+   "number": 1301,
+   "group": "Musique",
+   "name": "MCM",
+   "tvg_id": "MCM.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~9f3991bdc4b3b017.png/480x480/quality/100/mcm.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 551
+  },
+  {
+   "number": 1302,
+   "group": "Musique",
+   "name": "MCM Top",
+   "tvg_id": "MCMTop.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~2d0f105d5d08b651.png/480x480/quality/100/mcm-top.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 552
+  },
+  {
+   "number": 1303,
+   "group": "Musique",
+   "name": "MTV",
+   "tvg_id": "MTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~12551345857d7548.png/480x480/quality/100/mtv.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 553
+  },
+  {
+   "number": 1304,
+   "group": "Musique",
+   "name": "NRJ Hits",
+   "tvg_id": "NRJHits.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~5fcf445d3654fc44.png/480x480/quality/100/nrj-hits.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 554
+  },
+  {
+   "number": 1305,
+   "group": "Musique",
+   "name": "RFM TV",
+   "tvg_id": "RFMTV.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~c4e3c171a764c4e1.png/480x480/quality/100/rfm-tv.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 555
+  },
+  {
+   "number": 1306,
+   "group": "Musique",
+   "name": "Trace Urban",
+   "tvg_id": "TraceUrban.fr",
+   "aliases": [
+    "trace tv"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~b672a3a7ae0004dc.png/480x480/quality/100/trace-urban.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 556
+  },
+  {
+   "number": 1307,
+   "group": "Musique",
+   "name": "StingrayDjazz",
+   "tvg_id": "StingrayDjazz.fr",
+   "aliases": [
+    "djazz",
+    "djazz 1"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~8c1d40f28aa66dfd.png/480x480/quality/100/stingray-djazz.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 557
+  },
+  {
+   "number": 1308,
+   "group": "Musique",
+   "name": "Melody TV",
+   "tvg_id": "Melody.fr",
+   "aliases": [
+    "melody"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~627c155dadd4f6ca.png/480x480/quality/100/melody.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 558
+  },
+  {
+   "number": 1309,
+   "group": "Musique",
+   "name": "MTV Live",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 559
+  },
+  {
+   "number": 1310,
+   "group": "Musique",
+   "name": "BBLACK Africa",
+   "tvg_id": "BBlackAfrica.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/BBLACK_AFRICA_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 560
+  },
+  {
+   "number": 1311,
+   "group": "Musique",
+   "name": "BBLACK Caribbean",
+   "tvg_id": "BBlackCaribbean.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/BBLACK_CARIBBEAN_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 561
+  },
+  {
+   "number": 1312,
+   "group": "Musique",
+   "name": "BBLACK Classik",
+   "tvg_id": "BBlackClassik.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/BBLACK_CLASSIK_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 562
+  },
+  {
+   "number": 1313,
+   "group": "Musique",
+   "name": "Classica",
+   "tvg_id": "Classica.fr",
+   "aliases": [],
+   "logo": "https://upload.wikimedia.org/wikipedia/commons/b/b0/Logo_Classica_bandeau_noir.jpg",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 563
+  },
+  {
+   "number": 1314,
+   "group": "Musique",
+   "name": "ClubbingTV",
+   "tvg_id": "ClubbingTV.fr",
+   "aliases": [],
+   "logo": "https://upload.wikimedia.org/wikipedia/fr/3/39/Clubbing_TV.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 564
+  },
+  {
+   "number": 1315,
+   "group": "Musique",
+   "name": "CStar Hits France",
+   "tvg_id": "CStarHitsFrance.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~60e55ca9703f07f9.png/480x480/quality/100/cstar-hits-france.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 565
+  },
+  {
+   "number": 1316,
+   "group": "Musique",
+   "name": "DJAZ",
+   "tvg_id": "DJAZ.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 566
+  },
+  {
+   "number": 1317,
+   "group": "Musique",
+   "name": "Mezzo",
+   "tvg_id": "Mezzo.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~f9c76c49decc08ac.png/480x480/quality/100/mezzo.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 567
+  },
+  {
+   "number": 1318,
+   "group": "Musique",
+   "name": "Mezzo Live HD",
+   "tvg_id": "MezzoLive.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/268/canal-ouah/CHN43FB/NEW_MEZZOLIVE_FN_BLANC_myCANAL_640x480?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 568
+  },
+  {
+   "number": 1319,
+   "group": "Musique",
+   "name": "MezzoLiveHD",
+   "tvg_id": "MezzoLiveHD.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~2b4c3e46620b9d00.png/480x480/quality/100/mezzo-live-hd.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 569
+  },
+  {
+   "number": 1320,
+   "group": "Musique",
+   "name": "MFMTV",
+   "tvg_id": "MFMTV.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 570
+  },
+  {
+   "number": 1321,
+   "group": "Musique",
+   "name": "MTV00s",
+   "tvg_id": "MTV00s.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 571
+  },
+  {
+   "number": 1322,
+   "group": "Musique",
+   "name": "MTV80s",
+   "tvg_id": "MTV80s.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 572
+  },
+  {
+   "number": 1323,
+   "group": "Musique",
+   "name": "MTV90’s",
+   "tvg_id": "MTV90’s.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 573
+  },
+  {
+   "number": 1324,
+   "group": "Musique",
+   "name": "MTV Rocks",
+   "tvg_id": "MTVRocks.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTD7fcvXQKoOF10r_ukFfg14GymSHvnEKy2UldAWDfb2ld1WHrbT1zw4dhQf7s&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 574
+  },
+  {
+   "number": 1325,
+   "group": "Musique",
+   "name": "MTVDance",
+   "tvg_id": "MTVDance.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 575
+  },
+  {
+   "number": 1326,
+   "group": "Musique",
+   "name": "MTVHits",
+   "tvg_id": "MTVHits.fr",
+   "aliases": [
+    "mtv hits france"
+   ],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 576
+  },
+  {
+   "number": 1327,
+   "group": "Musique",
+   "name": "StingrayClassica",
+   "tvg_id": "StingrayClassica.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~116c4001c4dd0dd7.png/480x480/quality/100/stingray-classica.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 577
+  },
+  {
+   "number": 1328,
+   "group": "Musique",
+   "name": "StingrayFestival",
+   "tvg_id": "StingrayFestival.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 578
+  },
+  {
+   "number": 1329,
+   "group": "Musique",
+   "name": "StingrayiConcerts",
+   "tvg_id": "StingrayiConcerts.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~3356bba10e8643f4.png/480x480/quality/100/stingray-i-concerts.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 579
+  },
+  {
+   "number": 1330,
+   "group": "Musique",
+   "name": "Trace Africa",
+   "tvg_id": "TraceAfrica.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~cfa414c0987f9df9.png/480x480/quality/100/trace-africa.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 580
+  },
+  {
+   "number": 1331,
+   "group": "Musique",
+   "name": "Trace Ayiti",
+   "tvg_id": "TRACEAyiti.fr",
+   "aliases": [
+    "trace prime"
+   ],
+   "logo": "https://freebox.cdn.scw.iliad.fr/large_trace_ayiti_94de0df748.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 581
+  },
+  {
+   "number": 1332,
+   "group": "Musique",
+   "name": "TRACE CARIBBEAN",
+   "tvg_id": "TraceCaribbean.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/TRACE_CARIBBEAN_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 582
+  },
+  {
+   "number": 1333,
+   "group": "Musique",
+   "name": "Trace Gospel",
+   "tvg_id": "TraceGospel.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/Trace_Gospel_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 583
+  },
+  {
+   "number": 1334,
+   "group": "Musique",
+   "name": "Trace Latina",
+   "tvg_id": "TraceLatina.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/{resolutionXY}/filters:quality({imageQualityPercentage})/canalplus-cdn.canal-plus.io/p1/channel/784/canal-ouah/CHN43FB/TRACELATINA_myCANAL_640x480",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 584
+  },
+  {
+   "number": 1335,
+   "group": "Musique",
+   "name": "Trace Toca",
+   "tvg_id": "TraceToca.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/Trace_Toca_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 585
+  },
+  {
+   "number": 1336,
+   "group": "Musique",
+   "name": "Trace Tropical",
+   "tvg_id": "TraceTropical.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTZjYaCZUHfwSB1sDQf0PzbUDiV0QuRvOe3_71eJSgUphA_fj2yGS9oeYhk1w&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 586
+  },
+  {
+   "number": 1337,
+   "group": "Musique",
+   "name": "TRACE VANILLA",
+   "tvg_id": "TraceVanilla.frdrom",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/160800/canal-ouah/CHN43FB/TRACEVANILLA_myCANAL_640x480?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 587
+  },
+  {
+   "number": 1338,
+   "group": "Musique",
+   "name": "VH1",
+   "tvg_id": "VH1.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQytdEW8hexcyLQuA5JkBO4_aZBs3_JPI9uK1aYWtmJuf-xA8WN9v8_VJsoTw&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 588
+  },
+  {
+   "number": 1339,
+   "group": "Musique",
+   "name": "VH1 Classic",
+   "tvg_id": "VH1Classic.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSP_d4dzC_OxuU1tK8kVzLy8gTfuoG95QKbCTSAC2aFCPEWe2rByUXS883FBVM&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 589
+  },
+  {
+   "number": 1340,
+   "group": "Musique",
+   "name": "ZOUK TV",
+   "tvg_id": "ZoukTV.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/logos/tv_services/ZOUK_TV_color.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 590
+  },
+  {
+   "number": 1500,
+   "group": "Sport",
+   "name": "beIN SPORTS 1",
+   "tvg_id": "beINSPORTS1.fr",
+   "aliases": [
+    "bein 1",
+    "bein sport 1"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~8884f09c3361af44.png/480x480/quality/100/bein-sports-1.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 300
+  },
+  {
+   "number": 1501,
+   "group": "Sport",
+   "name": "beIN SPORTS 2",
+   "tvg_id": "beINSPORTS2.fr",
+   "aliases": [
+    "bein 2",
+    "bein sport 2"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~2fa633f39d6c3033.png/480x480/quality/100/bein-sports-2.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 301
+  },
+  {
+   "number": 1502,
+   "group": "Sport",
+   "name": "beIN SPORTS 3",
+   "tvg_id": "beINSPORTS3.fr",
+   "aliases": [
+    "bein 3",
+    "bein sport 3"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~d5aee128665b32a9.png/480x480/quality/100/bein-sports-3.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 302
+  },
+  {
+   "number": 1503,
+   "group": "Sport",
+   "name": "beIN SPORTS MAX 4",
+   "tvg_id": "beINSPORTSMAX4.fr",
+   "aliases": [
+    "bein max 4",
+    "bein sport max 4"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~f477968320ad7f2d.png/480x480/quality/100/bein-sports-max-4.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 303
+  },
+  {
+   "number": 1504,
+   "group": "Sport",
+   "name": "beIN SPORTS MAX 5",
+   "tvg_id": "beINSPORTSMAX5.fr",
+   "aliases": [
+    "bein max 5",
+    "bein sport max 5"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~c4ea43a2003fd8f8.png/480x480/quality/100/bein-sports-max-5.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 304
+  },
+  {
+   "number": 1505,
+   "group": "Sport",
+   "name": "beIN SPORTS MAX 6",
+   "tvg_id": "beINSPORTSMAX6.fr",
+   "aliases": [
+    "bein max 6",
+    "bein sport max 6"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~1c56a2b0848f53c9.png/480x480/quality/100/bein-sports-max-6.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 305
+  },
+  {
+   "number": 1506,
+   "group": "Sport",
+   "name": "beIN SPORTS MAX 7",
+   "tvg_id": "beINSPORTSMAX7.fr",
+   "aliases": [
+    "bein max 7",
+    "bein sport max 7"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~3f6b355dbbc53d15.png/480x480/quality/100/bein-sports-max-7.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 306
+  },
+  {
+   "number": 1507,
+   "group": "Sport",
+   "name": "beIN SPORTS MAX 8",
+   "tvg_id": "beINSPORTSMAX8.fr",
+   "aliases": [
+    "bein max 8",
+    "bein sport max 8"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~d158ab4de3140d50.png/480x480/quality/100/bein-sports-max-8.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 307
+  },
+  {
+   "number": 1508,
+   "group": "Sport",
+   "name": "beIN SPORTS MAX 9",
+   "tvg_id": "beINSPORTSMAX9.fr",
+   "aliases": [
+    "bein max 9",
+    "bein sport max 9"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~3149edbf3b3b1738.png/480x480/quality/100/bein-sports-max-9.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 308
+  },
+  {
+   "number": 1509,
+   "group": "Sport",
+   "name": "beIN SPORTS MAX 10",
+   "tvg_id": "beINSPORTSMAX10.fr",
+   "aliases": [
+    "bein max 10",
+    "bein sport max 10"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~57cc7cfcf4f15450.png/480x480/quality/100/bein-sports-max-10.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 309
+  },
+  {
+   "number": 1510,
+   "group": "Sport",
+   "name": "Canal+ Sport",
+   "tvg_id": "CanalPlusSport.fr",
+   "aliases": [
+    "canal plus sport",
+    "canalplussport"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~2b97b0fb1264c28d.png/480x480/quality/100/canal-sport.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 310
+  },
+  {
+   "number": 1511,
+   "group": "Sport",
+   "name": "Canal+ Sport 360",
+   "tvg_id": "CanalPlusSport360.fr",
+   "aliases": [
+    "anal+sport 360",
+    "canal plus sport 360",
+    "canalplus 360",
+    "canalplussport 360"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~c883cdc8949cc276.png/480x480/quality/100/canal-sport-360.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 311
+  },
+  {
+   "number": 1512,
+   "group": "Sport",
+   "name": "Canal+ Foot",
+   "tvg_id": "CanalPlusFoot.fr",
+   "aliases": [
+    "canal plus foot",
+    "canalplusfoot"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~335ee2c06aacae64.png/480x480/quality/100/canal-foot.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 312
+  },
+  {
+   "number": 1513,
+   "group": "Sport",
+   "name": "CANAL+ Ligue 1",
+   "tvg_id": "CanalPlusLigue1.fr",
+   "aliases": [
+    "canalplus ligue 1 uber eats",
+    "canalplus ligue1",
+    "canalplusligue1"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~82089336e45e2d47.png/480x480/quality/100/canal-ligue-1.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 313
+  },
+  {
+   "number": 1514,
+   "group": "Sport",
+   "name": "Canal+ Premier League",
+   "tvg_id": "CanalPlusPremierLeague.fr",
+   "aliases": [
+    "canalpluspremier league"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~6f1b7ba211ef9b56.png/480x480/quality/100/canal-premier-league.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 314
+  },
+  {
+   "number": 1515,
+   "group": "Sport",
+   "name": "Ligue 1+",
+   "tvg_id": "Ligue1Plus.fr",
+   "aliases": [
+    "ligue 1 plus",
+    "ligue1+"
+   ],
+   "logo": "https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 315
+  },
+  {
+   "number": 1516,
+   "group": "Sport",
+   "name": "RMC Sport 1",
+   "tvg_id": "RMCSport1.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~e08d0f4124b46a3e.png/480x480/quality/100/rmc-sport-1.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 316
+  },
+  {
+   "number": 1517,
+   "group": "Sport",
+   "name": "RMC Sport 2",
+   "tvg_id": "RMCSport2.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~7123b0e700cbccac.png/480x480/quality/100/rmc-sport-2.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 317
+  },
+  {
+   "number": 1518,
+   "group": "Sport",
+   "name": "RMC Sport 3",
+   "tvg_id": "RMCSport3.fr",
+   "aliases": [],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/RMCSPORTLIVE3100x100.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 318
+  },
+  {
+   "number": 1519,
+   "group": "Sport",
+   "name": "RMC Sport 4",
+   "tvg_id": "RMCSport4.fr",
+   "aliases": [
+    "rmcsport4"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 319
+  },
+  {
+   "number": 1520,
+   "group": "Sport",
+   "name": "RMC Sport UHD",
+   "tvg_id": "RMCSportUHD.fr",
+   "aliases": [
+    "rmc sport 4k"
+   ],
+   "logo": "https://focus.telerama.fr/500x500/0000/00/01/clear-2029.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 320
+  },
+  {
+   "number": 1521,
+   "group": "Sport",
+   "name": "Eurosport 1",
+   "tvg_id": "Eurosport1.fr",
+   "aliases": [
+    "euro sport 1",
+    "eurosport1"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~277882f801bd3f7b.png/480x480/quality/100/eurosport-1.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 321
+  },
+  {
+   "number": 1522,
+   "group": "Sport",
+   "name": "Eurosport 2",
+   "tvg_id": "Eurosport2.fr",
+   "aliases": [
+    "euro sport 2",
+    "eurosport2"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~196acf0142c66a68.png/480x480/quality/100/eurosport-2.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 322
+  },
+  {
+   "number": 1523,
+   "group": "Sport",
+   "name": "DAZN 1",
+   "tvg_id": "DAZN.fr",
+   "aliases": [
+    "dazn",
+    "dazn1"
+   ],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/{resolutionXY}/filters:quality({imageQualityPercentage})/canalplus-cdn.canal-plus.io/p1/channel/1077/canal-ouah/CHN43FB/CHN43FB_1077_20231002",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 323
+  },
+  {
+   "number": 1524,
+   "group": "Sport",
+   "name": "DAZN 2",
+   "tvg_id": "DAZN2.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/{resolutionXY}/filters:quality({imageQualityPercentage})/canalplus-cdn.canal-plus.io/p1/channel/1155/canal-ouah/CHN43FB/CHN43FN_1155_20240813-FjVl",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 324
+  },
+  {
+   "number": 1525,
+   "group": "Sport",
+   "name": "DAZN 3",
+   "tvg_id": "DAZN3.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/{resolutionXY}/filters:quality({imageQualityPercentage})/canalplus-cdn.canal-plus.io/p1/channel/1156/canal-ouah/CHN43FB/CHN43FN_1156_20240813-UxAQ",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 325
+  },
+  {
+   "number": 1526,
+   "group": "Sport",
+   "name": "DAZN 4",
+   "tvg_id": "DAZN4.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/{resolutionXY}/filters:quality({imageQualityPercentage})/canalplus-cdn.canal-plus.io/p1/channel/1157/canal-ouah/CHN43FB/CHN43FN_1157_20240904-VPvq",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 326
+  },
+  {
+   "number": 1527,
+   "group": "Sport",
+   "name": "DAZN 5",
+   "tvg_id": "DAZN5.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/{resolutionXY}/filters:quality({imageQualityPercentage})/canalplus-cdn.canal-plus.io/p1/channel/1158/canal-ouah/CHN43FB/CHN43FN_1158_20240904-4nWl",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 327
+  },
+  {
+   "number": 1528,
+   "group": "Sport",
+   "name": "InfosportPlus",
+   "tvg_id": "InfosportPlus.fr",
+   "aliases": [
+    "infosport",
+    "infosport+"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~fa910210e6776e9a.png/480x480/quality/100/infosport.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 328
+  },
+  {
+   "number": 1529,
+   "group": "Sport",
+   "name": "Golf+",
+   "tvg_id": "GolfPlus.fr",
+   "aliases": [
+    "golf channel",
+    "golf plus"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~222f4c51ddee1398.png/480x480/quality/100/golf.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 329
+  },
+  {
+   "number": 1530,
+   "group": "Sport",
+   "name": "Equidia",
+   "tvg_id": "Equidia.fr",
+   "aliases": [
+    "equidia live"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~cef3a55acddd13b3.png/480x480/quality/100/equidia.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 330
+  },
+  {
+   "number": 1531,
+   "group": "Sport",
+   "name": "Automoto la chaîne",
+   "tvg_id": "ABMoteurs.fr",
+   "aliases": [
+    "ab moteur",
+    "ab moteurs",
+    "automoto tv"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~af9996c05345acc0.png/480x480/quality/100/automoto.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 331
+  },
+  {
+   "number": 1532,
+   "group": "Sport",
+   "name": "RMC Talk Sport",
+   "tvg_id": "RMCTalkSport.fr",
+   "aliases": [
+    "rmc after foot tv"
+   ],
+   "logo": "https://static-cdn.tv.sfr.net/data/img/apps/chaines/logos/img300RMCTALKSPORTmono.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 332
+  },
+  {
+   "number": 1533,
+   "group": "Sport",
+   "name": "OLPLAY",
+   "tvg_id": "OLTV.fr",
+   "aliases": [
+    "ol tv",
+    "oltv"
+   ],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~289e3217baa702c7.png/480x480/quality/100/oltv.png",
+   "source": "curated",
+   "has_guide": true,
+   "canonical_number": 333
+  },
+  {
+   "number": 1534,
+   "group": "Sport",
+   "name": "Canal+ Formula 1",
+   "tvg_id": "",
+   "aliases": [
+    "canalplus f1",
+    "canalplus formula1",
+    "canalplusformula1"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 334
+  },
+  {
+   "number": 1535,
+   "group": "Sport",
+   "name": "Canal+ Top 14",
+   "tvg_id": "",
+   "aliases": [
+    "canalplus top14",
+    "canalplustop14"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 335
+  },
+  {
+   "number": 1536,
+   "group": "Sport",
+   "name": "Canal+ Moto GP",
+   "tvg_id": "",
+   "aliases": [
+    "canalplusmoto gp",
+    "canalplusmotogp"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 336
+  },
+  {
+   "number": 1537,
+   "group": "Sport",
+   "name": "Canal+ CAN",
+   "tvg_id": "",
+   "aliases": [
+    "canalpluscan"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 337
+  },
+  {
+   "number": 1538,
+   "group": "Sport",
+   "name": "Extreme Sports",
+   "tvg_id": "",
+   "aliases": [
+    "extreme sport"
+   ],
+   "logo": "",
+   "source": "curated",
+   "has_guide": false,
+   "canonical_number": 338
+  },
+  {
+   "number": 1539,
+   "group": "Sport",
+   "name": "Eurosport International 1",
+   "tvg_id": "EurosportInternational1.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/101/canal-ouah/CHN43FB/CHN43FB_101_20220110?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 339
+  },
+  {
+   "number": 1540,
+   "group": "Sport",
+   "name": "FightSports",
+   "tvg_id": "FightSports.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 340
+  },
+  {
+   "number": 1541,
+   "group": "Sport",
+   "name": "Ginx",
+   "tvg_id": "Ginx.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~c26394113a939abd.png/480x480/quality/100/ginx.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 341
+  },
+  {
+   "number": 1542,
+   "group": "Sport",
+   "name": "L'Equipe Live Foot",
+   "tvg_id": "LEquipeLiveFoot.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/vxoiXmc.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 342
+  },
+  {
+   "number": 1543,
+   "group": "Sport",
+   "name": "MGG TV",
+   "tvg_id": "ES1.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/819/canal-ouah/CHN43FB/CHN43FB_819_20220127?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 343
+  },
+  {
+   "number": 1544,
+   "group": "Sport",
+   "name": "MotorVision TV",
+   "tvg_id": "MotorVisionTV.fr",
+   "aliases": [],
+   "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQuEKF4mLTy1d2W3Jw4NQR47ODPSzbhQkjli_roOyw8xlF7pJsf-8jbcXwY3iI&amp;s",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 344
+  },
+  {
+   "number": 1545,
+   "group": "Sport",
+   "name": "Sport en France",
+   "tvg_id": "SportEnFrance.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1080/canal-ouah/CHN43FB/CHN43FB_1080_20240206-ykFF?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 345
+  },
+  {
+   "number": 1546,
+   "group": "Sport",
+   "name": "TRACESportStars",
+   "tvg_id": "TRACESportStars.fr",
+   "aliases": [],
+   "logo": "https://www.programme-tv.net/imgre/fit/~2~channel~d815841a915cc32f.png/480x480/quality/100/trace-sport-stars.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 346
+  },
+  {
+   "number": 1600,
+   "group": "Sport",
+   "name": "RMC Sport 5",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 750
+  },
+  {
+   "number": 1601,
+   "group": "Sport",
+   "name": "RMC Sport 6",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 751
+  },
+  {
+   "number": 1602,
+   "group": "Sport",
+   "name": "RMC Sport 7",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 752
+  },
+  {
+   "number": 1603,
+   "group": "Sport",
+   "name": "RMC Sport 8",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 753
+  },
+  {
+   "number": 1604,
+   "group": "Sport",
+   "name": "RMC Sport 9",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 754
+  },
+  {
+   "number": 1605,
+   "group": "Sport",
+   "name": "RMC Sport 10",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 755
+  },
+  {
+   "number": 1606,
+   "group": "Sport",
+   "name": "RMC Sport 11",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 756
+  },
+  {
+   "number": 1607,
+   "group": "Sport",
+   "name": "RMC Sport 12",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 757
+  },
+  {
+   "number": 1608,
+   "group": "Sport",
+   "name": "RMC Sport 13",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 758
+  },
+  {
+   "number": 1609,
+   "group": "Sport",
+   "name": "RMC Sport 14",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 759
+  },
+  {
+   "number": 1610,
+   "group": "Sport",
+   "name": "RMC Sport 15",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 760
+  },
+  {
+   "number": 1611,
+   "group": "Sport",
+   "name": "RMC Sport Live 1",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 1"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 761
+  },
+  {
+   "number": 1612,
+   "group": "Sport",
+   "name": "RMC Sport Live 2",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 2"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 762
+  },
+  {
+   "number": 1613,
+   "group": "Sport",
+   "name": "RMC Sport Live 3",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 3"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 763
+  },
+  {
+   "number": 1614,
+   "group": "Sport",
+   "name": "RMC Sport Live 4",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 4"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 764
+  },
+  {
+   "number": 1615,
+   "group": "Sport",
+   "name": "RMC Sport Live 5",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 5"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 765
+  },
+  {
+   "number": 1616,
+   "group": "Sport",
+   "name": "RMC Sport Live 6",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 6"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 766
+  },
+  {
+   "number": 1617,
+   "group": "Sport",
+   "name": "RMC Sport Live 7",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 7"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 767
+  },
+  {
+   "number": 1618,
+   "group": "Sport",
+   "name": "RMC Sport Live 8",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 8"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 768
+  },
+  {
+   "number": 1619,
+   "group": "Sport",
+   "name": "RMC Sport Live 9",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 9"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 769
+  },
+  {
+   "number": 1620,
+   "group": "Sport",
+   "name": "RMC Sport Live 10",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 10"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 770
+  },
+  {
+   "number": 1621,
+   "group": "Sport",
+   "name": "RMC Sport Live 11",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 11"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 771
+  },
+  {
+   "number": 1622,
+   "group": "Sport",
+   "name": "RMC Sport Live 12",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 12"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 772
+  },
+  {
+   "number": 1623,
+   "group": "Sport",
+   "name": "RMC Sport Live 13",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 13"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 773
+  },
+  {
+   "number": 1624,
+   "group": "Sport",
+   "name": "RMC Sport Live 14",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 14"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 774
+  },
+  {
+   "number": 1625,
+   "group": "Sport",
+   "name": "RMC Sport Live 15",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 15"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 775
+  },
+  {
+   "number": 1626,
+   "group": "Sport",
+   "name": "RMC Sport Live 16",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 16"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 776
+  },
+  {
+   "number": 1627,
+   "group": "Sport",
+   "name": "RMC Sport Live 17",
+   "tvg_id": "",
+   "aliases": [
+    "rmc access sport 17"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 777
+  },
+  {
+   "number": 1628,
+   "group": "Sport",
+   "name": "Canal+ Play 1",
+   "tvg_id": "",
+   "aliases": [
+    "canalplusplay1"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 778
+  },
+  {
+   "number": 1629,
+   "group": "Sport",
+   "name": "Canal+ Play 2",
+   "tvg_id": "",
+   "aliases": [
+    "canalplusplay2"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 779
+  },
+  {
+   "number": 1630,
+   "group": "Sport",
+   "name": "Canal+ Play 3",
+   "tvg_id": "",
+   "aliases": [
+    "canalplusplay3"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 780
+  },
+  {
+   "number": 1631,
+   "group": "Sport",
+   "name": "Canal+ Play 4",
+   "tvg_id": "",
+   "aliases": [
+    "canalplusplay4"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 781
+  },
+  {
+   "number": 1632,
+   "group": "Sport",
+   "name": "Canal+ Play 5",
+   "tvg_id": "",
+   "aliases": [
+    "canalplusplay5"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 782
+  },
+  {
+   "number": 1633,
+   "group": "Sport",
+   "name": "Canal+ Play 6",
+   "tvg_id": "",
+   "aliases": [
+    "canalplusplay6"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 783
+  },
+  {
+   "number": 1634,
+   "group": "Sport",
+   "name": "Canal+ Play 7",
+   "tvg_id": "",
+   "aliases": [
+    "canalplusplay7"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 784
+  },
+  {
+   "number": 1635,
+   "group": "Sport",
+   "name": "Canal+ Play 8",
+   "tvg_id": "",
+   "aliases": [
+    "canalplusplay8"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 785
+  },
+  {
+   "number": 1636,
+   "group": "Sport",
+   "name": "My Canal+ 1",
+   "tvg_id": "",
+   "aliases": [
+    "my canalplus1"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 786
+  },
+  {
+   "number": 1637,
+   "group": "Sport",
+   "name": "My Canal+ 2",
+   "tvg_id": "",
+   "aliases": [
+    "my canalplus2"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 787
+  },
+  {
+   "number": 1638,
+   "group": "Sport",
+   "name": "My Canal+ 3",
+   "tvg_id": "",
+   "aliases": [
+    "my canalplus3"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 788
+  },
+  {
+   "number": 1639,
+   "group": "Sport",
+   "name": "My Canal+ 4",
+   "tvg_id": "",
+   "aliases": [
+    "my canalplus4"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 789
+  },
+  {
+   "number": 1640,
+   "group": "Sport",
+   "name": "My Canal+ 5",
+   "tvg_id": "",
+   "aliases": [
+    "my canalplus5"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 790
+  },
+  {
+   "number": 1641,
+   "group": "Sport",
+   "name": "À la carte 1",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 791
+  },
+  {
+   "number": 1642,
+   "group": "Sport",
+   "name": "À la carte 2",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 792
+  },
+  {
+   "number": 1643,
+   "group": "Sport",
+   "name": "À la carte 3",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 793
+  },
+  {
+   "number": 1644,
+   "group": "Sport",
+   "name": "À la carte 4",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 794
+  },
+  {
+   "number": 1645,
+   "group": "Sport",
+   "name": "À la carte 5",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 795
+  },
+  {
+   "number": 1646,
+   "group": "Sport",
+   "name": "À la carte 6",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 796
+  },
+  {
+   "number": 1647,
+   "group": "Sport",
+   "name": "À la carte 7",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 797
+  },
+  {
+   "number": 1648,
+   "group": "Sport",
+   "name": "À la carte 8",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 798
+  },
+  {
+   "number": 1649,
+   "group": "Sport",
+   "name": "À la carte 9",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 799
+  },
+  {
+   "number": 1650,
+   "group": "Sport",
+   "name": "À la carte 10",
+   "tvg_id": "",
+   "aliases": [],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 800
+  },
+  {
+   "number": 1651,
+   "group": "Sport",
+   "name": "Sports 1",
+   "tvg_id": "",
+   "aliases": [
+    "sport 1"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 801
+  },
+  {
+   "number": 1652,
+   "group": "Sport",
+   "name": "Sports 2",
+   "tvg_id": "",
+   "aliases": [
+    "sport 2"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 802
+  },
+  {
+   "number": 1653,
+   "group": "Sport",
+   "name": "Sports 3",
+   "tvg_id": "",
+   "aliases": [
+    "sport 3"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 803
+  },
+  {
+   "number": 1654,
+   "group": "Sport",
+   "name": "Sports 4",
+   "tvg_id": "",
+   "aliases": [
+    "sport 4"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 804
+  },
+  {
+   "number": 1655,
+   "group": "Sport",
+   "name": "Sports 5",
+   "tvg_id": "",
+   "aliases": [
+    "sport 5"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 805
+  },
+  {
+   "number": 1656,
+   "group": "Sport",
+   "name": "Sports 6",
+   "tvg_id": "",
+   "aliases": [
+    "sport 6"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 806
+  },
+  {
+   "number": 1657,
+   "group": "Sport",
+   "name": "Eurosport 4",
+   "tvg_id": "",
+   "aliases": [
+    "euro sport 4"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 807
+  },
+  {
+   "number": 1658,
+   "group": "Sport",
+   "name": "Eurosport 5",
+   "tvg_id": "",
+   "aliases": [
+    "euro sport 5"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 808
+  },
+  {
+   "number": 1659,
+   "group": "Sport",
+   "name": "Eurosport 6",
+   "tvg_id": "",
+   "aliases": [
+    "euro sport 6"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 809
+  },
+  {
+   "number": 1660,
+   "group": "Sport",
+   "name": "Eurosport 7",
+   "tvg_id": "",
+   "aliases": [
+    "euro sport 7"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 810
+  },
+  {
+   "number": 1661,
+   "group": "Sport",
+   "name": "Eurosport 8",
+   "tvg_id": "",
+   "aliases": [
+    "euro sport 8"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 811
+  },
+  {
+   "number": 1662,
+   "group": "Sport",
+   "name": "Eurosport 9",
+   "tvg_id": "",
+   "aliases": [
+    "euro sport 9"
+   ],
+   "logo": "",
+   "source": "family",
+   "has_guide": false,
+   "canonical_number": 812
+  },
+  {
+   "number": 1663,
+   "group": "Sport",
+   "name": "Canal+ Live 1",
+   "tvg_id": "CanalPlusLive1.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1135/canal-ouah/CHN43FB/CHN43FB_1135_10092024-NNKZ?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 813
+  },
+  {
+   "number": 1664,
+   "group": "Sport",
+   "name": "Canal+ Live 2",
+   "tvg_id": "CanalPlusLive2.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1136/canal-ouah/CHN43FB/CHN43FB_1136_20240910-9f4P?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 814
+  },
+  {
+   "number": 1665,
+   "group": "Sport",
+   "name": "Canal+ Live 3",
+   "tvg_id": "CanalPlusLive3.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1137/canal-ouah/CHN43FB/CHN43FB_1137_20240910-oIpK?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 815
+  },
+  {
+   "number": 1666,
+   "group": "Sport",
+   "name": "Canal+ Live 4",
+   "tvg_id": "CanalPlusLive4.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1138/canal-ouah/CHN43FB/CHN43FB_1138_20240910-Ejre?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 816
+  },
+  {
+   "number": 1667,
+   "group": "Sport",
+   "name": "Canal+ Live 5",
+   "tvg_id": "CanalPlusLive5.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1139/canal-ouah/CHN43FB/CHN43FB_1139_20240910-2Z2M?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 817
+  },
+  {
+   "number": 1668,
+   "group": "Sport",
+   "name": "Canal+ Live 6",
+   "tvg_id": "CanalPlusLive6.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1140/canal-ouah/CHN43FB/CHN43FB_1140_20240910-9Csx?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 818
+  },
+  {
+   "number": 1669,
+   "group": "Sport",
+   "name": "Canal+ Live 7",
+   "tvg_id": "CanalPlusLive7.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1141/canal-ouah/CHN43FB/CHN43FB_1141_20240910-56u_?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 819
+  },
+  {
+   "number": 1670,
+   "group": "Sport",
+   "name": "Canal+ Live 8",
+   "tvg_id": "CanalPlusLive8.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1142/canal-ouah/CHN43FB/CHN43FB_1142_20240910-kFEr?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 820
+  },
+  {
+   "number": 1671,
+   "group": "Sport",
+   "name": "Canal+ Live 9",
+   "tvg_id": "CanalPlusLive9.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1143/canal-ouah/CHN43FB/CHN43FB_1143_20240910-vvez?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 821
+  },
+  {
+   "number": 1672,
+   "group": "Sport",
+   "name": "Canal+ Live 10",
+   "tvg_id": "CanalPlusLive10.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1144/canal-ouah/CHN43FB/CHN43FB_1144_20240910-_8oo?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 822
+  },
+  {
+   "number": 1673,
+   "group": "Sport",
+   "name": "Canal+ Live 11",
+   "tvg_id": "CanalPlusLive11.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1145/canal-ouah/CHN43FB/CHN43FB_1145_20240910-x1TP?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 823
+  },
+  {
+   "number": 1674,
+   "group": "Sport",
+   "name": "Canal+ Live 12",
+   "tvg_id": "CanalPlusLive12.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1146/canal-ouah/CHN43FB/CHN43FB_1146_20240910-40D_?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 824
+  },
+  {
+   "number": 1675,
+   "group": "Sport",
+   "name": "Canal+ Live 13",
+   "tvg_id": "CanalPlusLive13.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1147/canal-ouah/CHN43FB/CHN43FB_1147_20240910-Ip9r?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 825
+  },
+  {
+   "number": 1676,
+   "group": "Sport",
+   "name": "Canal+ Live 14",
+   "tvg_id": "CanalPlusLive14.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1148/canal-ouah/CHN43FB/CHN43FB_1148_20240910-ulgW?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 826
+  },
+  {
+   "number": 1677,
+   "group": "Sport",
+   "name": "Canal+ Live 15",
+   "tvg_id": "CanalPlusLive15.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1149/canal-ouah/CHN43FB/CHN43FB_1149_20240910-Ga-Z?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 827
+  },
+  {
+   "number": 1678,
+   "group": "Sport",
+   "name": "Canal+ Live 16",
+   "tvg_id": "CanalPlusLive16.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1150/canal-ouah/CHN43FB/CHN43FB_1150_20240910-K1Su?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 828
+  },
+  {
+   "number": 1679,
+   "group": "Sport",
+   "name": "Canal+ Live 17",
+   "tvg_id": "CanalPlusLive17.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1151/canal-ouah/CHN43FB/CHN43FB_1151_20240910-H0Di?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 829
+  },
+  {
+   "number": 1680,
+   "group": "Sport",
+   "name": "Canal+ Live 18",
+   "tvg_id": "CanalPlusLive18.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1152/canal-ouah/CHN43FB/CHN43FB_1152_20240910-Fmmk?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 830
+  },
+  {
+   "number": 1681,
+   "group": "Sport",
+   "name": "Canal+ Live 19",
+   "tvg_id": "CanalPlusLive19.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1153/canal-ouah/CHN43FB/CHN43FB_1153_20240910-jfiB?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 831
+  },
+  {
+   "number": 1682,
+   "group": "Sport",
+   "name": "Chaine Evenement",
+   "tvg_id": "ChaineEvenement.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/289/canal-ouah/CHN43FB/CHN43FB_289_20190201?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 832
+  },
+  {
+   "number": 1683,
+   "group": "Sport",
+   "name": "Eurosport 360 - 1",
+   "tvg_id": "Eurosport3601.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/635/canal-ouah/CHN43FB/CHN43FB_635_20220110?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 833
+  },
+  {
+   "number": 1684,
+   "group": "Sport",
+   "name": "Eurosport 360 - 2",
+   "tvg_id": "Eurosport3602.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/636/canal-ouah/CHN43FB/CHN43FB_636_20220110?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 834
+  },
+  {
+   "number": 1685,
+   "group": "Sport",
+   "name": "Eurosport 360 - 3",
+   "tvg_id": "Eurosport3603.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/637/canal-ouah/CHN43FB/CHN43FB_637_20220110?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 835
+  },
+  {
+   "number": 1686,
+   "group": "Sport",
+   "name": "Eurosport 360 - 4",
+   "tvg_id": "Eurosport3604.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/638/canal-ouah/CHN43FB/CHN43FB_638_20220110?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 836
+  },
+  {
+   "number": 1687,
+   "group": "Sport",
+   "name": "Eurosport 360 - 5",
+   "tvg_id": "Eurosport3605.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/650/canal-ouah/CHN43FB/CHN43FB_650_20220110?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 837
+  },
+  {
+   "number": 1688,
+   "group": "Sport",
+   "name": "Eurosport 360 - 6",
+   "tvg_id": "Eurosport3606.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/651/canal-ouah/CHN43FB/CHN43FB_651_20220110?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 838
+  },
+  {
+   "number": 1689,
+   "group": "Sport",
+   "name": "Eurosport 360 - 7",
+   "tvg_id": "Eurosport3607.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/652/canal-ouah/CHN43FB/CHN43FB_652_20220110?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 839
+  },
+  {
+   "number": 1690,
+   "group": "Sport",
+   "name": "Eurosport 360 - 8",
+   "tvg_id": "Eurosport3608.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/653/canal-ouah/CHN43FB/CHN43FB_653_20220110?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 840
+  },
+  {
+   "number": 1691,
+   "group": "Sport",
+   "name": "EUROSPORT 360 9",
+   "tvg_id": "Eurosport3609.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1105/canal-ouah/CHN43FB/CHN43FB_1105_07162024-YTyZ?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 841
+  },
+  {
+   "number": 1692,
+   "group": "Sport",
+   "name": "EUROSPORT 360 10",
+   "tvg_id": "Eurosport36010.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1106/canal-ouah/CHN43FB/CHN43FB_1106_07162024-6UID?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 842
+  },
+  {
+   "number": 1693,
+   "group": "Sport",
+   "name": "EUROSPORT 360 11",
+   "tvg_id": "Eurosport36011.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1107/canal-ouah/CHN43FB/CHN43FB_1107_20240716-EUam?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 843
+  },
+  {
+   "number": 1694,
+   "group": "Sport",
+   "name": "EUROSPORT 360 12",
+   "tvg_id": "Eurosport36012.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1108/canal-ouah/CHN43FB/CHN43FB_1108_20240716-n2Ka?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 844
+  },
+  {
+   "number": 1695,
+   "group": "Sport",
+   "name": "EUROSPORT 360 13",
+   "tvg_id": "Eurosport36013.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1109/canal-ouah/CHN43FB/CHN43FB_1109_20240716-fSFm?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 845
+  },
+  {
+   "number": 1696,
+   "group": "Sport",
+   "name": "EUROSPORT 360 14",
+   "tvg_id": "Eurosport36014.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1110/canal-ouah/CHN43FB/CHN43FB_1110_20240716-f6IO?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 846
+  },
+  {
+   "number": 1697,
+   "group": "Sport",
+   "name": "EUROSPORT 360 15",
+   "tvg_id": "Eurosport36015.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1111/canal-ouah/CHN43FB/CHN43FB_1111_20240716-3r9K?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 847
+  },
+  {
+   "number": 1698,
+   "group": "Sport",
+   "name": "EUROSPORT 360 16",
+   "tvg_id": "Eurosport36016.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1112/canal-ouah/CHN43FB/CHN43FB_1112_20240716-lUDu?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 848
+  },
+  {
+   "number": 1699,
+   "group": "Sport",
+   "name": "EUROSPORT 360 17",
+   "tvg_id": "Eurosport36017.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1113/canal-ouah/CHN43FB/CHN43FB_1113_20240716-Pe37?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 849
+  },
+  {
+   "number": 1700,
+   "group": "Sport",
+   "name": "EUROSPORT 360 18",
+   "tvg_id": "Eurosport36018.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1114/canal-ouah/CHN43FB/CHN43FB_1114_20240716-nqxZ?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 850
+  },
+  {
+   "number": 1701,
+   "group": "Sport",
+   "name": "EUROSPORT 360 19",
+   "tvg_id": "Eurosport36019.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1115/canal-ouah/CHN43FB/CHN43FB_1115_20240716-D8vX?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 851
+  },
+  {
+   "number": 1702,
+   "group": "Sport",
+   "name": "EUROSPORT 360 20",
+   "tvg_id": "Eurosport36020.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1116/canal-ouah/CHN43FB/CHN43FB_1116_20240716-hsgw?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 852
+  },
+  {
+   "number": 1703,
+   "group": "Sport",
+   "name": "EUROSPORT 360 21",
+   "tvg_id": "Eurosport36021.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1117/canal-ouah/CHN43FB/CHN43FB_1117_20240716-rb-2?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 853
+  },
+  {
+   "number": 1704,
+   "group": "Sport",
+   "name": "EUROSPORT 360 22",
+   "tvg_id": "Eurosport36022.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1118/canal-ouah/CHN43FB/CHN43FB_1118_20240716-yywV?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 854
+  },
+  {
+   "number": 1705,
+   "group": "Sport",
+   "name": "EUROSPORT 360 23",
+   "tvg_id": "Eurosport36023.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1119/canal-ouah/CHN43FB/CHN43FB_1119_20240716-FnEO?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 855
+  },
+  {
+   "number": 1706,
+   "group": "Sport",
+   "name": "EUROSPORT 360 24",
+   "tvg_id": "Eurosport36024.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1120/canal-ouah/CHN43FB/CHN43FB_1120_20240716-6Qxy?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 856
+  },
+  {
+   "number": 1707,
+   "group": "Sport",
+   "name": "EUROSPORT 360 25",
+   "tvg_id": "Eurosport36025.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1121/canal-ouah/CHN43FB/CHN43FB_1121_20240716--qBr?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 857
+  },
+  {
+   "number": 1708,
+   "group": "Sport",
+   "name": "EUROSPORT 360 26",
+   "tvg_id": "Eurosport36026.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1122/canal-ouah/CHN43FB/CHN43FB_1122_20240716-_IFA?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 858
+  },
+  {
+   "number": 1709,
+   "group": "Sport",
+   "name": "EUROSPORT 360 27",
+   "tvg_id": "Eurosport36027.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1123/canal-ouah/CHN43FB/CHN43FB_1123_20240716-uSCT?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 859
+  },
+  {
+   "number": 1710,
+   "group": "Sport",
+   "name": "EUROSPORT 360 28",
+   "tvg_id": "Eurosport36028.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1124/canal-ouah/CHN43FB/CHN43FB_1124_20240716-wJaD?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 860
+  },
+  {
+   "number": 1711,
+   "group": "Sport",
+   "name": "EUROSPORT 360 29",
+   "tvg_id": "Eurosport36029.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1125/canal-ouah/CHN43FB/CHN43FB_1125_20240716-K5nb?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 861
+  },
+  {
+   "number": 1712,
+   "group": "Sport",
+   "name": "EUROSPORT 360 30",
+   "tvg_id": "Eurosport36030.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1126/canal-ouah/CHN43FB/CHN43FB_1126_20240716-uog7?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 862
+  },
+  {
+   "number": 1713,
+   "group": "Sport",
+   "name": "EUROSPORT 360 31",
+   "tvg_id": "Eurosport36031.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1127/canal-ouah/CHN43FB/CHN43FB_1127_20240716-aJ7F?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 863
+  },
+  {
+   "number": 1714,
+   "group": "Sport",
+   "name": "EUROSPORT 360 32",
+   "tvg_id": "Eurosport36032.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/canalplus-cdn.canal-plus.io/p1/channel/1128/canal-ouah/CHN43FB/CHN43FB_1128_20240716-W6KX?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 864
+  },
+  {
+   "number": 1715,
+   "group": "Sport",
+   "name": "EVENEMENTALACARTE",
+   "tvg_id": "EVENEMENTALACARTE.fr",
+   "aliases": [],
+   "logo": "",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 865
+  },
+  {
+   "number": 1716,
+   "group": "Sport",
+   "name": "Evenements Sports 4K UHD",
+   "tvg_id": "EvenementsSports4KUHD.fr",
+   "aliases": [],
+   "logo": "https://thumb.canalplus.pro/http/unsafe/640x480/filters:quality(100)/img-hapi.canalplus.pro:80/ServiceImage/ImageID/74042707?=.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 866
+  },
+  {
+   "number": 1717,
+   "group": "Sport",
+   "name": "L'Equipe Live 1",
+   "tvg_id": "LEquipeLive1.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/vxoiXmc.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 867
+  },
+  {
+   "number": 1718,
+   "group": "Sport",
+   "name": "L'Equipe Live 2",
+   "tvg_id": "LEquipeLive2.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/vxoiXmc.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 868
+  },
+  {
+   "number": 1719,
+   "group": "Sport",
+   "name": "L'Equipe Live 3",
+   "tvg_id": "LEquipeLive3.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/vxoiXmc.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 869
+  },
+  {
+   "number": 1720,
+   "group": "Sport",
+   "name": "L'Equipe Live 4",
+   "tvg_id": "LEquipeLive4.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/vxoiXmc.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 870
+  },
+  {
+   "number": 1721,
+   "group": "Sport",
+   "name": "L'Equipe Live 5",
+   "tvg_id": "LEquipeLive5.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/vxoiXmc.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 871
+  },
+  {
+   "number": 1722,
+   "group": "Sport",
+   "name": "L'Equipe Live 6",
+   "tvg_id": "LEquipeLive6.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/vxoiXmc.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 872
+  },
+  {
+   "number": 1723,
+   "group": "Sport",
+   "name": "L'Equipe Live 7",
+   "tvg_id": "LEquipeLive7.fr",
+   "aliases": [],
+   "logo": "https://i.imgur.com/vxoiXmc.png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 873
+  },
+  {
+   "number": 1724,
+   "group": "Sport",
+   "name": "Ligue 1+ 2",
+   "tvg_id": "Ligue1Plus2.fr",
+   "aliases": [],
+   "logo": "https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 874
+  },
+  {
+   "number": 1725,
+   "group": "Sport",
+   "name": "Ligue 1+ 3",
+   "tvg_id": "Ligue1Plus3.fr",
+   "aliases": [],
+   "logo": "https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 875
+  },
+  {
+   "number": 1726,
+   "group": "Sport",
+   "name": "Ligue 1+ 4",
+   "tvg_id": "Ligue1Plus4.fr",
+   "aliases": [],
+   "logo": "https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 876
+  },
+  {
+   "number": 1727,
+   "group": "Sport",
+   "name": "Ligue 1+ 5",
+   "tvg_id": "Ligue1Plus5.fr",
+   "aliases": [],
+   "logo": "https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 877
+  },
+  {
+   "number": 1728,
+   "group": "Sport",
+   "name": "Ligue 1+ 6",
+   "tvg_id": "Ligue1Plus6.fr",
+   "aliases": [],
+   "logo": "https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 878
+  },
+  {
+   "number": 1729,
+   "group": "Sport",
+   "name": "Ligue 1+ 7",
+   "tvg_id": "Ligue1Plus7.fr",
+   "aliases": [],
+   "logo": "https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 879
+  },
+  {
+   "number": 1730,
+   "group": "Sport",
+   "name": "Ligue 1+ 8",
+   "tvg_id": "Ligue1Plus8.fr",
+   "aliases": [],
+   "logo": "https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 880
+  },
+  {
+   "number": 1731,
+   "group": "Sport",
+   "name": "Ligue 1+ 9",
+   "tvg_id": "Ligue1Plus9.fr",
+   "aliases": [],
+   "logo": "https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 881
+  },
+  {
+   "number": 1732,
+   "group": "Sport",
+   "name": "Ligue 1+ 10",
+   "tvg_id": "Ligue1Plus10.fr",
+   "aliases": [],
+   "logo": "https://fusion.molotov.tv/arts/i/130x39/Ch0SGwoUAoE5TX7gMXomTmBPDW49xAeHWyQSA3BuZw/png",
+   "source": "guide",
+   "has_guide": true,
+   "canonical_number": 882
+  }
+ ]
+}

@@ -556,7 +556,7 @@ class EPGService:
             strategy: "composite" (Weight * Score) or "strict" (Priority first)
         """
         from rapidfuzz import process, fuzz
-        from app.services.xtream import XtreamClient
+        from app.services.catalog import get_catalog
         import re
         import unicodedata
 
@@ -673,7 +673,7 @@ class EPGService:
             sub = db_session.query(Subscription).filter(Subscription.id == sid).first()
             if not sub:
                 continue
-            client = XtreamClient(sub.xtream_url, sub.username, sub.password)
+            client = get_catalog(db_session, sub)
             try:
                 for s in await client.get_live_streams():
                     key = (sid, str(s.get("stream_id")))

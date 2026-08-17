@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Settings, FileText, Activity, Radio, Download, ChevronDown, ChevronRight, Menu, X, LogOut, Database, Globe, Plus } from 'lucide-react';
+import { LayoutDashboard, Settings, FileText, Activity, Radio, Download, ChevronDown, ChevronRight, Menu, X, LogOut, Database, Globe, Plus, Wand2, Tags } from 'lucide-react';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ToastProvider } from './contexts/ToastContext';
@@ -15,23 +15,20 @@ import XTVSubscriptions from './pages/xtreamtv/XTVSubscriptions';
 import XTVSelection from './pages/xtreamtv/XTVSelection';
 import XTVScheduling from './pages/xtreamtv/XTVScheduling';
 
-// M3U Pages
-import M3USources from './pages/m3u/M3USources';
-import M3USelection from './pages/m3u/M3USelection';
-
 // Download Pages
 import Downloads from './pages/Downloads';
 import DownloadSelection from './pages/DownloadSelection';
 import LiveSelection from './pages/LiveSelection';
 import LivePlaylists from './pages/LivePlaylists';
+import LiveOrganizer from './pages/LiveOrganizer';
 import LiveEPG from './pages/LiveEPG';
 import EPGAdmin from './pages/EPGAdmin';
 import MonitoredList from './pages/MonitoredList';
+import TmdbFixes from './pages/TmdbFixes';
 
 function Layout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
     const [xtreamExpanded, setXtreamExpanded] = useState(true);
-    const [m3uExpanded, setM3uExpanded] = useState(true);
     const [downloadsExpanded, setDownloadsExpanded] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const navigate = useNavigate();
@@ -42,7 +39,6 @@ function Layout({ children }: { children: React.ReactNode }) {
     };
 
     const isXtreamActive = location.pathname.startsWith('/xtreamtv');
-    const isM3UActive = location.pathname.startsWith('/m3u');
     const isDownloadsActive = location.pathname.startsWith('/downloads');
 
     // Close sidebar when route changes on mobile
@@ -105,7 +101,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                                 }`}
                         >
                             <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground/70">
-                                <span>Xtream TV to STRM</span>
+                                <span>Sources &amp; sync</span>
                             </div>
                             {xtreamExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                         </button>
@@ -117,7 +113,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                                         }`}
                                 >
                                     <Database size={16} />
-                                    <span>Subscriptions</span>
+                                    <span>Sources</span>
                                 </Link>
                                 <Link
                                     to="/xtreamtv/selection"
@@ -131,39 +127,11 @@ function Layout({ children }: { children: React.ReactNode }) {
                         )}
                     </div>
 
-                    {/* M3U to STRM */}
-                    <div>
-                        <button
-                            onClick={() => setM3uExpanded(!m3uExpanded)}
-                            className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md transition-colors ${isM3UActive ? 'bg-accent/50 text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground'
-                                }`}
-                        >
-                            <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground/70">
-                                <span>M3U to STRM</span>
-                            </div>
-                            {m3uExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                        </button>
-                        {m3uExpanded && (
-                            <div className="ml-2 mt-1 space-y-1">
-                                <Link
-                                    to="/m3u/sources"
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${location.pathname === '/m3u/sources' ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground'
-                                        }`}
-                                >
-                                    <Globe size={16} />
-                                    <span>Sources</span>
-                                </Link>
-                                <Link
-                                    to="/m3u/selection"
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${location.pathname === '/m3u/selection' ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground'
-                                        }`}
-                                >
-                                    <X size={16} />
-                                    <span>Group Selection</span>
-                                </Link>
-                            </div>
-                        )}
-                    </div>
+                    {/* The "M3U to STRM" section used to live here. An M3U
+                        playlist is a source like any other now — it is added,
+                        selected and synchronised on the two screens above — so
+                        a section of its own only duplicated them. The /m3u/*
+                        routes still exist and redirect there. */}
 
                     <div className="h-4" />
 
@@ -182,6 +150,15 @@ function Layout({ children }: { children: React.ReactNode }) {
                     </Link>
 
                     <Link
+                        to="/live-organizer"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${location.pathname === '/live-organizer' ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground'
+                            }`}
+                    >
+                        <Wand2 size={20} className="text-primary" />
+                        <span>Auto Organizer</span>
+                    </Link>
+
+                    <Link
                         to="/epg-admin"
                         className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${location.pathname === '/epg-admin' ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground'
                             }`}
@@ -197,6 +174,15 @@ function Layout({ children }: { children: React.ReactNode }) {
                     >
                         <Globe size={20} className="text-primary" />
                         <span>Playlist EPG Mapping</span>
+                    </Link>
+
+                    <Link
+                        to="/tmdb-fixes"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${location.pathname === '/tmdb-fixes' ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-accent-foreground'
+                            }`}
+                    >
+                        <Tags size={20} className="text-primary" />
+                        <span>TMDB Fixes</span>
                     </Link>
 
                     <Link
@@ -290,7 +276,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                 <div className="mt-auto pt-4 border-t border-border">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground px-3">
                         <Activity size={16} />
-                        <span>v4.3.0</span>
+                        <span>v4.4.0</span>
                     </div>
                 </div>
             </aside>
@@ -319,13 +305,19 @@ function App() {
 
                 {/* Live TV */}
                 <Route path="/live-playlists" element={<ProtectedRoute><Layout><LivePlaylists /></Layout></ProtectedRoute>} />
+                <Route path="/live-organizer" element={<ProtectedRoute><Layout><LiveOrganizer /></Layout></ProtectedRoute>} />
                 <Route path="/live-selection" element={<ProtectedRoute><Layout><LiveSelection /></Layout></ProtectedRoute>} />
                 <Route path="/live-epg" element={<ProtectedRoute><Layout><LiveEPG /></Layout></ProtectedRoute>} />
                 <Route path="/epg-admin" element={<ProtectedRoute><Layout><EPGAdmin /></Layout></ProtectedRoute>} />
 
-                {/* M3U */}
-                <Route path="/m3u/sources" element={<ProtectedRoute><Layout><M3USources /></Layout></ProtectedRoute>} />
-                <Route path="/m3u/selection" element={<ProtectedRoute><Layout><M3USelection /></Layout></ProtectedRoute>} />
+                {/* Library metadata */}
+                <Route path="/tmdb-fixes" element={<ProtectedRoute><Layout><TmdbFixes /></Layout></ProtectedRoute>} />
+
+                {/* M3U — an M3U playlist is a source like any other since the
+                    unification, so these now land on the shared screens. The
+                    routes are kept so an existing bookmark still works. */}
+                <Route path="/m3u/sources" element={<Navigate to="/xtreamtv/subscriptions" replace />} />
+                <Route path="/m3u/selection" element={<Navigate to="/xtreamtv/selection" replace />} />
 
                 {/* Downloads */}
                 <Route path="/downloads/selection" element={<ProtectedRoute><Layout><DownloadSelection /></Layout></ProtectedRoute>} />

@@ -10,8 +10,9 @@ from app.models.selection import SelectedCategory
 from app.models.cache import MovieCache, SeriesCache, EpisodeCache
 from app.models.schedule import Schedule, SyncType as ScheduleSyncType
 from app.models.schedule_execution import ScheduleExecution, ExecutionStatus
-from app.services.xtream import XtreamClient
+from app.services.catalog import get_catalog
 from app.services.file_manager import FileManager
+from app.services.tmdb_overrides import load_overrides, normalise_id
 import logging
 from datetime import datetime, timedelta
 
@@ -154,6 +155,46 @@ def _disambiguate_paths(items, id_key: str, path_of) -> dict:
     return suffixes
 
 
+def _apply_tmdb_overrides(overrides, items: list, id_key: str) -> int:
+    """Put the user's corrected TMDB ids into the catalogue listing.
+
+    Done here, on the listing, rather than at the point each item is written:
+    the id decides the folder name, and the folder name is what
+    ``_disambiguate_paths`` reasons about below. Correcting it later would leave
+    two titles fighting over one path again.
+
+    The entries it touches are marked, so the per-item metadata fetch — which
+    runs after this and carries the provider's own tmdb_id — knows not to
+    overwrite an answer the user has already given.
+    """
+    if not overrides:
+        return 0
+
+    applied = 0
+    for item in items:
+        value, overridden = overrides.resolve(
+            item.get(id_key), item.get("name"), item.get("tmdb"))
+        if not overridden:
+            continue
+        # Both spellings: the NFO and path writers read `tmdb` and fall back to
+        # `tmdb_id`, so clearing an id means clearing both.
+        item["tmdb"] = value
+        item["tmdb_id"] = value
+        item["_tmdb_override"] = True
+        applied += 1
+    return applied
+
+
+def _tmdb_override_moved(item: dict, cached) -> bool:
+    """Whether a correction has changed since this item was last written.
+
+    Nothing else would notice: the provider's name and container are unchanged,
+    so the item looks up to date while its folder is named after the old id.
+    """
+    return (bool(item.get("_tmdb_override"))
+            and normalise_id(cached.tmdb_id) != normalise_id(item.get("tmdb")))
+
+
 def _record_outcome(sync_state: SyncState, attempted: int, succeeded: int, collisions: int = 0) -> None:
     """Report what the sync actually wrote, not what it set out to write.
 
@@ -235,7 +276,9 @@ def _protected_roots(db: Session, subscription_id: int, own_root: str) -> set:
     # Everything except the library currently being swept.
     return {os.path.abspath(p) for p in roots} - {own}
 
-async def process_movies(db: Session, xc: XtreamClient, fm: FileManager, subscription_id: int):
+async def process_movies(db: Session, xc, fm: FileManager, subscription_id: int):
+    """`xc` is whatever ``get_catalog`` returned — an Xtream client or an M3U
+    catalogue. They answer the same calls, so this function never asks."""
     # Get settings
     from app.models.settings import SettingsModel
     settings = {s.key: s.value for s in db.query(SettingsModel).all()}
@@ -289,6 +332,11 @@ async def process_movies(db: Session, xc: XtreamClient, fm: FileManager, subscri
         fetched_movies = all_movies
         all_movies = [m for m in all_movies if str(m.get('category_id')) in selected_ids]
 
+        corrected = _apply_tmdb_overrides(
+            load_overrides(db, subscription_id, "movie"), all_movies, "stream_id")
+        if corrected:
+            logger.info(f"{corrected} movie(s) use a hand-corrected TMDB id.")
+
         # Current Cache
         cached_movies = {m.stream_id: m for m in db.query(MovieCache).filter(MovieCache.subscription_id == subscription_id).all()}
 
@@ -339,6 +387,9 @@ async def process_movies(db: Session, xc: XtreamClient, fm: FileManager, subscri
             if not cached:
                 to_add_update.append(movie)
             elif cached.name != movie['name'] or cached.container_extension != movie['container_extension']:
+                to_add_update.append(movie)
+            elif _tmdb_override_moved(movie, cached):
+                # The user corrected this title's TMDB id since it was written.
                 to_add_update.append(movie)
             elif layout_changed:
                 # The naming or folder rules moved since this item was written.
@@ -418,8 +469,11 @@ async def process_movies(db: Session, xc: XtreamClient, fm: FileManager, subscri
                         detailed_info = await xc.get_vod_info(str(stream_id))
                         if detailed_info and 'info' in detailed_info:
                             movie['info'] = detailed_info['info'] # Inject info for NFO generator
-                            # Update TMDB if found
-                            if detailed_info['info'].get('tmdb_id'):
+                            # Update TMDB if found — unless the user has already
+                            # said what this title is. The provider's answer is
+                            # exactly the one being corrected.
+                            if (detailed_info['info'].get('tmdb_id')
+                                    and not movie.get('_tmdb_override')):
                                 tmdb_id = detailed_info['info'].get('tmdb_id')
                                 movie['tmdb'] = tmdb_id # Update for object
                     except Exception as e:
@@ -572,7 +626,8 @@ async def process_movies(db: Session, xc: XtreamClient, fm: FileManager, subscri
         db.commit()
         raise
 
-async def process_series(db: Session, xc: XtreamClient, fm: FileManager, subscription_id: int):
+async def process_series(db: Session, xc, fm: FileManager, subscription_id: int):
+    """See ``process_movies``: `xc` is any catalogue adapter."""
     # Get settings
     from app.models.settings import SettingsModel
     settings_rows = db.query(SettingsModel).all()
@@ -620,6 +675,11 @@ async def process_series(db: Session, xc: XtreamClient, fm: FileManager, subscri
         selected_ids = {str(s.category_id) for s in selected_cats}
         fetched_series = all_series
         all_series = [s for s in all_series if str(s.get('category_id')) in selected_ids]
+
+        corrected = _apply_tmdb_overrides(
+            load_overrides(db, subscription_id, "series"), all_series, "series_id")
+        if corrected:
+            logger.info(f"{corrected} series use a hand-corrected TMDB id.")
 
         cached_series = {s.series_id: s for s in db.query(SeriesCache).filter(SeriesCache.subscription_id == subscription_id).all()}
 
@@ -674,6 +734,9 @@ async def process_series(db: Session, xc: XtreamClient, fm: FileManager, subscri
             if not cached:
                 to_add_update.append(series)
             elif cached.name != series['name'] or layout_changed:
+                to_add_update.append(series)
+            elif _tmdb_override_moved(series, cached):
+                # The user corrected this show's TMDB id since it was written.
                 to_add_update.append(series)
             elif _needs_episode_refresh(cached, _provider_stamp(series), refresh_after):
                 # An episode list is only ever discovered by asking for it.
@@ -744,7 +807,9 @@ async def process_series(db: Session, xc: XtreamClient, fm: FileManager, subscri
                     if not isinstance(episodes_data, dict):
                         episodes_data = {}
 
-                    if series_info.get('tmdb_id'):
+                    # Same rule as the movie side: a correction the user has
+                    # made is not overwritten by the provider's own answer.
+                    if series_info.get('tmdb_id') and not series.get('_tmdb_override'):
                          tmdb_id = series_info.get('tmdb_id')
                          series['tmdb'] = tmdb_id # For NFO
 
@@ -931,44 +996,71 @@ async def process_series(db: Session, xc: XtreamClient, fm: FileManager, subscri
         db.commit()
         raise
 
+def _record_source_run(db: Session, sub: Subscription) -> None:
+    """Stamp the source itself with the outcome of the run that just ended.
+
+    The per-type rows in `sync_state` stay authoritative — this is the one-line
+    summary the sources screen shows, and, for an M3U source, what tells the
+    parser its playlist was read recently enough.
+    """
+    states = db.query(SyncState).filter(SyncState.subscription_id == sub.id).all()
+    if any(s.status == SyncStatus.FAILED for s in states):
+        sub.sync_status = "error"
+    elif any(s.status == SyncStatus.PARTIAL for s in states):
+        sub.sync_status = "partial"
+    else:
+        sub.sync_status = "success"
+    sub.last_sync = datetime.utcnow()
+    db.commit()
+
+
 @celery_app.task
-def sync_movies_task(subscription_id: int):
+def sync_movies_task(subscription_id: int, force: bool = False):
     db = SessionLocal()
     try:
         sub = db.query(Subscription).filter(Subscription.id == subscription_id).first()
         if not sub:
             logger.error(f"Subscription {subscription_id} not found")
             return "Subscription not found"
-        
+
         if not sub.is_active:
             logger.info(f"Subscription {sub.name} is inactive")
             return "Subscription inactive"
 
-        xc = XtreamClient(sub.xtream_url, sub.username, sub.password)
+        # The only line that knows an M3U source from an Xtream one.
+        xc = get_catalog(db, sub, force_reparse=force)
         fm = FileManager(sub.movies_dir)
-        
+
+        sub.sync_status = "syncing"
+        db.commit()
+
         asyncio.run(process_movies(db, xc, fm, subscription_id))
+        _record_source_run(db, sub)
         return f"Movies synced successfully for {sub.name}"
     finally:
         db.close()
 
 @celery_app.task
-def sync_series_task(subscription_id: int):
+def sync_series_task(subscription_id: int, force: bool = False):
     db = SessionLocal()
     try:
         sub = db.query(Subscription).filter(Subscription.id == subscription_id).first()
         if not sub:
             logger.error(f"Subscription {subscription_id} not found")
             return "Subscription not found"
-        
+
         if not sub.is_active:
             logger.info(f"Subscription {sub.name} is inactive")
             return "Subscription inactive"
 
-        xc = XtreamClient(sub.xtream_url, sub.username, sub.password)
+        xc = get_catalog(db, sub, force_reparse=force)
         fm = FileManager(sub.series_dir)
-        
+
+        sub.sync_status = "syncing"
+        db.commit()
+
         asyncio.run(process_series(db, xc, fm, subscription_id))
+        _record_source_run(db, sub)
         return f"Series synced successfully for {sub.name}"
     finally:
         db.close()

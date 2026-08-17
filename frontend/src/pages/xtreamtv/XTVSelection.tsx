@@ -12,6 +12,9 @@ import { formatDateTime } from '@/lib/utils';
 interface Subscription {
     id: number;
     name: string;
+    /** "xtream" or "m3u". A source's format changes nothing here: an M3U's
+        group titles are read as categories by the same endpoints. */
+    kind?: string;
     is_active: boolean;
 }
 
@@ -405,7 +408,11 @@ export default function XTVSelection() {
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">Bouquet Selection</h2>
-                    <p className="text-muted-foreground">Choose which categories to synchronize.</p>
+                    <p className="text-muted-foreground">
+                        Choose which categories to synchronize, on any source — an M3U
+                        playlist offers its group titles where an Xtream subscription
+                        offers its categories.
+                    </p>
                 </div>
                 {isDirty && (
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium">
@@ -417,7 +424,7 @@ export default function XTVSelection() {
 
             {/* Subscription Selector */}
             <div className="flex gap-2 items-center">
-                <label className="text-sm font-medium">Subscription:</label>
+                <label className="text-sm font-medium">Source:</label>
                 <select
                     value={selectedSubId || ''}
                     onChange={(e) => {
@@ -427,7 +434,9 @@ export default function XTVSelection() {
                     className="border rounded-md px-3 py-2 text-sm min-w-[200px] bg-background"
                 >
                     {subscriptions.map(sub => (
-                        <option key={sub.id} value={sub.id}>{sub.name}</option>
+                        <option key={sub.id} value={sub.id}>
+                            {sub.name} — {sub.kind === 'm3u' ? 'M3U' : 'Xtream'}
+                        </option>
                     ))}
                 </select>
             </div>
@@ -761,7 +770,7 @@ export default function XTVSelection() {
                 <p>
                     No {wipeConfirm === 'series' ? 'series' : 'movie'} category is selected for{' '}
                     <span className="font-medium">
-                        {subscriptions.find(s => s.id === selectedSubId)?.name ?? 'this subscription'}
+                        {subscriptions.find(s => s.id === selectedSubId)?.name ?? 'this source'}
                     </span>
                     , so this sync will keep nothing.
                 </p>

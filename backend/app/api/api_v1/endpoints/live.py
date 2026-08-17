@@ -4,11 +4,11 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.orm import Session
 from app.api import deps
-from app.models.subscription import Subscription
+from app.models.subscription import SourceKind, Subscription
 from app.models.live import LivePlaylist, LivePlaylistBouquet, LivePlaylistChannel, LiveStreamSubscription
 from app.models.epg import EPGSourceGlobal, PlaylistEPGSource
 from app.models import live as models
-from app.services.xtream import XtreamClient
+from app.services.catalog import get_catalog
 from app.services.epg import epg_service
 from app import schemas
 from datetime import datetime
@@ -22,12 +22,13 @@ async def get_live_categories(
     db: Session = Depends(deps.get_db),
     subscription_id: int = Query(...)
 ) -> Any:
-    """Get all live categories from the Xtream provider."""
+    """Get all live categories from the source — Xtream categories, or the
+    group titles of an M3U playlist, which are the same thing to a caller."""
     sub = db.query(Subscription).filter(Subscription.id == subscription_id).first()
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found")
 
-    client = XtreamClient(sub.xtream_url, sub.username, sub.password)
+    client = get_catalog(db, sub)
     try:
         categories = await client.get_live_categories()
         return categories
@@ -46,12 +47,12 @@ async def get_live_streams(
     page_size: int = Query(100, ge=1, le=1000),
     db: Session = Depends(deps.get_db)
 ) -> Any:
-    """Get live streams for a specific category from the Xtream provider with pagination."""
+    """Get live streams for a specific category from the source, with pagination."""
     sub = db.query(Subscription).filter(Subscription.id == subscription_id).first()
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found")
 
-    client = XtreamClient(sub.xtream_url, sub.username, sub.password)
+    client = get_catalog(db, sub)
     try:
         streams = await client.get_live_streams(category_id)
         
@@ -149,7 +150,7 @@ async def get_playlist_channel_names(
         if not sub:
             continue
         try:
-            streams = await XtreamClient(sub.xtream_url, sub.username, sub.password).get_live_streams()
+            streams = await get_catalog(db, sub).get_live_streams()
         except Exception as e:
             # A dead provider must not break the editor; those channels keep
             # falling back to their stream id.
@@ -608,8 +609,8 @@ async def debug_epg_match(
         raise HTTPException(status_code=404, detail="Channel not found")
         
     sub = playlist.subscription
-    client = XtreamClient(sub.xtream_url, sub.username, sub.password)
-    
+    client = get_catalog(db, sub)
+
     target_name = channel.custom_name
     if not target_name:
         # Fetch stream name from Xtream if no custom name
@@ -676,12 +677,12 @@ async def search_live_streams(
     grouped: bool = Query(True),
     db: Session = Depends(deps.get_db)
 ) -> Any:
-    """Search for live streams across all categories in a subscription with pagination."""
+    """Search for live streams across all categories in a source with pagination."""
     sub = db.query(Subscription).filter(Subscription.id == subscription_id).first()
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found")
-    
-    client = XtreamClient(sub.xtream_url, sub.username, sub.password)
+
+    client = get_catalog(db, sub)
     try:
         all_streams = await client.get_live_streams()
         categories = await client.get_live_categories()
@@ -734,6 +735,60 @@ async def search_live_streams(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
+def _as_positive_int(value: Any) -> int:
+    """A count from a provider, which may arrive as "7", 7, "" or None."""
+    try:
+        number = int(float(str(value).strip()))
+    except (TypeError, ValueError):
+        return 0
+    return number if number > 0 else 0
+
+
+def _catchup_of(stream: dict, sub: Optional[Subscription]) -> dict:
+    """What replay this stream offers, or {} when it offers none.
+
+    Catch-up is the one thing a generated playlist cannot reconstruct: the
+    archive lives on the provider's own endpoint, under a URL only the provider
+    defines. So nothing is invented here — an M3U source's tags are passed
+    through exactly as written, and an Xtream source gets the `xc` type, which
+    is precisely "the archive is reachable through this panel's timeshift
+    endpoint" and which the player derives from the stream URL we already
+    publish. A channel whose source says nothing gets no tags at all.
+    """
+    mode = (stream.get("catchup") or "").strip()
+    source = (stream.get("catchup_source") or "").strip()
+    days = _as_positive_int(stream.get("tv_archive_duration"))
+    archived = str(stream.get("tv_archive") or "").strip().lower() not in (
+        "", "0", "none", "null", "false")
+
+    if not (mode or source or days or archived):
+        return {}
+
+    if not mode:
+        mode = "default" if (sub and sub.kind == SourceKind.M3U.value) else "xc"
+
+    return {"catchup": mode, "catchup_days": days, "catchup_source": source}
+
+
+def _catchup_attributes(channel: dict) -> str:
+    """The catch-up part of an #EXTINF line, with a trailing space, or "".
+
+    Quotes inside a source template would close the attribute early and corrupt
+    every tag after it, so they are percent-encoded rather than trusted.
+    """
+    mode = channel.get("catchup")
+    if not mode:
+        return ""
+
+    attributes = [f'catchup="{str(mode).replace(chr(34), "%22")}"']
+    if channel.get("catchup_days"):
+        attributes.append(f'catchup-days="{channel["catchup_days"]}"')
+    if channel.get("catchup_source"):
+        source = str(channel["catchup_source"]).replace(chr(34), "%22")
+        attributes.append(f'catchup-source="{source}"')
+    return " ".join(attributes) + " "
+
+
 def _clean_epg_id(value: Any) -> str:
     """Normalise a tvg-id coming from a provider or from a channel override.
 
@@ -779,11 +834,15 @@ async def resolve_playlist_channels(
         sub = db.query(Subscription).filter(Subscription.id == sid).first()
         if not sub:
             continue
-        client = XtreamClient(sub.xtream_url, sub.username, sub.password)
+        client = get_catalog(db, sub)
         try:
             streams_list = await client.get_live_streams()
             subscription_data[sid] = {
                 "sub": sub,
+                # Kept so the URL can be asked of the same object that listed
+                # the stream: an Xtream URL is rebuilt from credentials, an M3U
+                # one is whatever the playlist wrote.
+                "client": client,
                 "streams_list": streams_list,
                 "streams_map": {str(s.get("stream_id")): s for s in streams_list},
             }
@@ -794,7 +853,20 @@ async def resolve_playlist_channels(
 
     for bouquet in sorted(playlist.bouquets, key=lambda x: x.order):
         b_sub_id = bouquet.subscription_id or playlist.subscription_id
-        if not b_sub_id or b_sub_id not in subscription_data:
+        # A smart group is defined by a provider category, so it cannot be read
+        # without knowing whose category it is. A virtual group is defined by the
+        # channels put in it, and each of those carries its own subscription —
+        # requiring one on the bouquet too silently served an empty playlist for
+        # every multi-provider group built by the organiser.
+        if not bouquet.category_id:
+            resolvable = any(
+                (c.subscription_id or b_sub_id) in subscription_data
+                for c in bouquet.channels
+            )
+        else:
+            resolvable = bool(b_sub_id) and b_sub_id in subscription_data
+
+        if not resolvable:
             if dropped is not None:
                 for c in bouquet.channels:
                     dropped.append({
@@ -805,7 +877,7 @@ async def resolve_playlist_channels(
                     })
             continue
 
-        data = subscription_data[b_sub_id]
+        data = subscription_data.get(b_sub_id) or {"streams_list": [], "streams_map": {}}
         group_title = bouquet.custom_name or (
             f"Category {bouquet.category_id}" if bouquet.category_id else "Custom Group"
         )
@@ -846,9 +918,11 @@ async def resolve_playlist_channels(
         bouquet_streams.sort(key=lambda x: x[1].order if x[1] else 999)
 
         for stream, override, s_sub_id in bouquet_streams:
-            sub = subscription_data[s_sub_id]["sub"]
+            client = subscription_data[s_sub_id]["client"]
             override_id = _clean_epg_id(override.epg_channel_id) if override else ""
             resolved.append({
+                **_catchup_of(stream, subscription_data[s_sub_id].get("sub")),
+                "number": override.order if override else None,
                 "stream_id": str(stream.get("stream_id")),
                 "name": (override.custom_name if (override and override.custom_name)
                          else stream.get("name")) or "",
@@ -860,7 +934,7 @@ async def resolve_playlist_channels(
                 "group_title": group_title,
                 "bouquet": group_title,
                 "subscription_id": s_sub_id,
-                "url": f"{sub.xtream_url}/live/{sub.username}/{sub.password}/{stream.get('stream_id')}.ts",
+                "url": client.get_stream_url("live", str(stream.get("stream_id")), "ts"),
             })
 
     return resolved
@@ -901,8 +975,15 @@ async def generate_m3u_playlist(
 
     for channel in channels:
         name = channel["name"]
+        # tvg-chno only where the playlist says its orders are real channel
+        # numbers. Emitting it everywhere would hand a player the positions
+        # 0, 1, 2… of every existing playlist as if they were the numbering.
+        chno = ""
+        if playlist.use_channel_numbers and channel.get("number"):
+            chno = f'tvg-chno="{channel["number"]}" '
         extinf = (
-            f'#EXTINF:-1 tvg-id="{channel["epg_id"]}" tvg-name="{name}" '
+            f'#EXTINF:-1 {chno}{_catchup_attributes(channel)}'
+            f'tvg-id="{channel["epg_id"]}" tvg-name="{name}" '
             f'tvg-logo="{channel["logo"]}" group-title="{channel["group_title"]}",{name}'
         )
         m3u_content.append(extinf)
@@ -981,6 +1062,10 @@ async def get_playlist_validation(
         "total_channels": len(channels),
         "mapped_channels": len(channels) - len(missing_epg),
         "guided_channels": guided,
+        # How many channels the playlist advertises replay for. Silent before,
+        # and the one number that says whether the catch-up tags survived the
+        # trip from the provider to the player.
+        "catchup_channels": sum(1 for ch in channels if ch.get("catchup")),
         "epg_sources_linked": len(source_ids),
         "missing_count": len(missing_epg),
         "missing_channels": missing_epg[:50],

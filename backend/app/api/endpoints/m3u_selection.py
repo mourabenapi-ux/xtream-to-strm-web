@@ -1,13 +1,30 @@
+"""Group selection for an M3U source.
+
+A `group-title` is an M3U's only notion of a category, so these groups are
+stored as ordinary `selected_categories` rows — the very same table the Xtream
+category selection writes to, with the group title standing in for the category
+id. That is what lets one sync read one selection whatever the source is.
+
+The routes keep their shape so the existing screen still fits them.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Dict
+from typing import List
 from app.db.session import get_db
-from app.models.m3u_source import M3USource
-from app.models.m3u_entry import M3UEntry, EntryType
-from app.models.m3u_selection import M3USelection, SelectionType
+from app.models.selection import SelectedCategory
+from app.models.source_entry import EntryType, SourceEntry
+from app.models.subscription import SourceKind, Subscription
+from app.services.catalog import get_catalog
+from app.tasks.sync import sync_movies_task, sync_series_task
 from pydantic import BaseModel
 
 router = APIRouter()
+
+# The three types a group can hold. "movie" and "series" drive the .strm
+# writing; "live" is what the playlists and the organiser read.
+_TYPES = (EntryType.MOVIE, EntryType.SERIES, EntryType.LIVE)
+
 
 # Schemas
 class GroupInfo(BaseModel):
@@ -26,72 +43,94 @@ class GroupSelectionRequest(BaseModel):
     groups: List[GroupSelectionItem]
 
 
-@router.get("/{source_id}/groups", response_model=List[GroupInfo])
-def get_m3u_groups(source_id: int, db: Session = Depends(get_db)):
-    """Get all groups from M3U source with selection status"""
-    source = db.query(M3USource).filter(M3USource.id == source_id).first()
+def _get_source(db: Session, source_id: int) -> Subscription:
+    source = db.query(Subscription).filter(
+        Subscription.id == source_id,
+        Subscription.kind == SourceKind.M3U.value,
+    ).first()
     if not source:
         raise HTTPException(status_code=404, detail="M3U source not found")
-    
-    # Get all entries for this source
-    entries = db.query(M3UEntry).filter(M3UEntry.m3u_source_id == source_id).all()
-    
-    if not entries:
-        return []
-    
-    # Get selected groups
-    selected_groups = db.query(M3USelection).filter(
-        M3USelection.m3u_source_id == source_id
+    return source
+
+
+def _selected_keys(db: Session, source_id: int):
+    return {
+        (sel.category_id, sel.type)
+        for sel in db.query(SelectedCategory).filter(
+            SelectedCategory.subscription_id == source_id
+        ).all()
+    }
+
+
+@router.get("/{source_id}/groups", response_model=List[GroupInfo])
+def get_m3u_groups(source_id: int, db: Session = Depends(get_db)):
+    """Every group the playlist holds, with what is currently ticked.
+
+    The playlist is parsed on demand if it has never been read: the screen that
+    calls this is the one where the first selection is made, and asking the user
+    to run a sync before they are allowed to choose anything is how the old
+    screen came up empty.
+    """
+    source = _get_source(db, source_id)
+
+    entries = db.query(SourceEntry).filter(
+        SourceEntry.subscription_id == source_id
     ).all()
-    
-    selected_set = {(sel.group_title, sel.selection_type.value) for sel in selected_groups}
-    
-    # Group by group_title and entry_type
+
+    if not entries:
+        try:
+            get_catalog(db, source).ensure_parsed()
+        except Exception as e:
+            raise HTTPException(status_code=502,
+                                detail=f"Could not read the playlist: {e}")
+        entries = db.query(SourceEntry).filter(
+            SourceEntry.subscription_id == source_id
+        ).all()
+
+    selected_set = _selected_keys(db, source_id)
+
     groups_dict = {}
     for entry in entries:
         group = entry.group_title or "Uncategorized"
-        entry_type = entry.entry_type.value
-        key = (group, entry_type)
-        
+        key = (group, entry.entry_type)
+
         if key not in groups_dict:
             groups_dict[key] = {
                 "group_title": group,
-                "entry_type": entry_type,
+                "entry_type": entry.entry_type,
                 "count": 0,
-                "selected": key in selected_set
+                "selected": key in selected_set,
             }
         groups_dict[key]["count"] += 1
-    
-    return list(groups_dict.values())
+
+    return sorted(groups_dict.values(),
+                  key=lambda g: (g["entry_type"], g["group_title"].lower()))
 
 
 @router.get("/{source_id}/selected", response_model=List[GroupInfo])
 def get_selected_groups(source_id: int, db: Session = Depends(get_db)):
     """Get only selected groups for M3U source"""
-    source = db.query(M3USource).filter(M3USource.id == source_id).first()
-    if not source:
-        raise HTTPException(status_code=404, detail="M3U source not found")
-    
-    selected_groups = db.query(M3USelection).filter(
-        M3USelection.m3u_source_id == source_id
+    _get_source(db, source_id)
+
+    selections = db.query(SelectedCategory).filter(
+        SelectedCategory.subscription_id == source_id
     ).all()
-    
+
     result = []
-    for sel in selected_groups:
-        # Get count from entries
-        count = db.query(M3UEntry).filter(
-            M3UEntry.m3u_source_id == source_id,
-            M3UEntry.group_title == sel.group_title,
-            M3UEntry.entry_type == EntryType(sel.selection_type.value)
+    for sel in selections:
+        count = db.query(SourceEntry).filter(
+            SourceEntry.subscription_id == source_id,
+            SourceEntry.group_title == sel.category_id,
+            SourceEntry.entry_type == sel.type,
         ).count()
-        
+
         result.append({
-            "group_title": sel.group_title,
-            "entry_type": sel.selection_type.value,
+            "group_title": sel.category_id,
+            "entry_type": sel.type,
             "count": count,
-            "selected": True
+            "selected": True,
         })
-    
+
     return result
 
 
@@ -99,53 +138,47 @@ def get_selected_groups(source_id: int, db: Session = Depends(get_db)):
 def save_group_selection(
     source_id: int,
     request: GroupSelectionRequest,
-    selection_type: str = None,  # Optional: "movie" or "series" to limit scope
+    selection_type: str = None,  # Optional: "movie", "series" or "live"
     db: Session = Depends(get_db)
 ):
-    """Save selected groups for M3U source"""
-    source = db.query(M3USource).filter(M3USource.id == source_id).first()
-    if not source:
-        raise HTTPException(status_code=404, detail="M3U source not found")
-    
-    # Determine scope of deletion
-    query = db.query(M3USelection).filter(M3USelection.m3u_source_id == source_id)
-    
+    """Save selected groups for M3U source.
+
+    An empty list is a deliberate "I want nothing of this type" — the sync then
+    removes what it had generated — so it is saved as such rather than ignored.
+    """
+    _get_source(db, source_id)
+
+    query = db.query(SelectedCategory).filter(
+        SelectedCategory.subscription_id == source_id
+    )
+
     if selection_type:
-        try:
-            stype = SelectionType(selection_type)
-            query = query.filter(M3USelection.selection_type == stype)
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid selection_type: {selection_type}")
-            
+        if selection_type not in _TYPES:
+            raise HTTPException(status_code=400,
+                                detail=f"Invalid selection_type: {selection_type}")
+        query = query.filter(SelectedCategory.type == selection_type)
+
     # Clear existing selections in scope
     query.delete()
-    
-    # Add new selections
+
+    saved = 0
     for group_data in request.groups:
-        # If selection_type is enforced, validate group type matches
         if selection_type and group_data.entry_type != selection_type:
-            continue # Skip groups that don't match the target type (safety check)
+            continue  # Not in the scope this call is replacing.
+        if group_data.entry_type not in _TYPES:
+            continue
 
-        try:
-            stype = SelectionType(group_data.entry_type)
-        except ValueError:
-             # Skip invalid types or raise error? 
-             # For robustness, let's skip or log. 
-             # But since we validated model, it should be a string.
-             # If it's not "movie" or "series", it will fail.
-             continue
+        db.add(SelectedCategory(
+            subscription_id=source_id,
+            category_id=group_data.group_title,
+            name=group_data.group_title,
+            type=group_data.entry_type,
+        ))
+        saved += 1
 
-        selection = M3USelection(
-            m3u_source_id=source_id,
-            group_title=group_data.group_title,
-            selection_type=stype
-        )
-        db.add(selection)
-    
     db.commit()
-    
-    return {"message": f"Saved {len(request.groups)} group selections"}
 
+    return {"message": f"Saved {saved} group selections"}
 
 
 class SyncRequest(BaseModel):
@@ -153,19 +186,22 @@ class SyncRequest(BaseModel):
 
 @router.post("/{source_id}/sync")
 def sync_m3u_groups(
-    source_id: int, 
+    source_id: int,
     request: SyncRequest = None,
     db: Session = Depends(get_db)
 ):
-    """Sync M3U source to fetch and cache groups (without generating files)"""
-    from app.tasks.m3u_sync import sync_m3u_source_task
-    
-    source = db.query(M3USource).filter(M3USource.id == source_id).first()
-    if not source:
-        raise HTTPException(status_code=404, detail="M3U source not found")
-    
-    # Trigger sync task
-    sync_types = request.sync_types if request else None
-    task = sync_m3u_source_task.delay(source_id, sync_types)
-    
-    return {"message": "Group sync started", "task_id": task.id}
+    """Re-read the playlist and rewrite what the selection asks for."""
+    source = _get_source(db, source_id)
+
+    wanted = set(request.sync_types) if (request and request.sync_types) \
+        else {"movies", "series"}
+
+    task_ids = {}
+    if "movies" in wanted:
+        task_ids["movies"] = sync_movies_task.delay(source.id).id
+    if "series" in wanted:
+        task_ids["series"] = sync_series_task.delay(source.id).id
+
+    return {"message": "Group sync started",
+            "task_id": next(iter(task_ids.values()), None),
+            "task_ids": task_ids}

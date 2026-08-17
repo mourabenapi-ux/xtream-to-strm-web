@@ -8,17 +8,23 @@ from app.models.category import Category
 from app.models.subscription import Subscription
 from app.schemas import CategoryResponse, SelectionUpdate, SyncResponse
 from app.api import deps
-from app.services.xtream import XtreamClient
+from app.services.catalog import get_catalog
 
 router = APIRouter()
 
-def get_xtream_client(db: Session, subscription_id: int) -> XtreamClient:
+def get_source_catalog(db: Session, subscription_id: int):
+    """The catalogue adapter for this source, whichever format it speaks.
+
+    An M3U playlist has no categories of its own — its `group-title` strings
+    stand in for them, and the adapter returns them in the same shape — so the
+    whole selection flow below is unchanged for both kinds of source.
+    """
     sub = db.query(Subscription).filter(Subscription.id == subscription_id).first()
     if not sub:
         raise HTTPException(status_code=404, detail="Subscription not found")
     if not sub.is_active:
         raise HTTPException(status_code=400, detail="Subscription is inactive")
-    return XtreamClient(sub.xtream_url, sub.username, sub.password)
+    return get_catalog(db, sub)
 
 @router.get("/movies/{subscription_id}", response_model=List[CategoryResponse])
 def get_movie_categories(subscription_id: int, db: Session = Depends(get_db)):
@@ -74,8 +80,8 @@ def get_series_categories(subscription_id: int, db: Session = Depends(get_db)):
 
 @router.post("/movies/sync/{subscription_id}", response_model=SyncResponse)
 async def sync_movie_categories(subscription_id: int, db: Session = Depends(get_db)):
-    """Sync movie categories from Xtream to database"""
-    client = get_xtream_client(db, subscription_id)
+    """Read the movie categories from the source into the database"""
+    client = get_source_catalog(db, subscription_id)
     try:
         categories = await client.get_vod_categories()
         # Fetch all streams to calculate counts
@@ -88,7 +94,7 @@ async def sync_movie_categories(subscription_id: int, db: Session = Depends(get_
             counts[cat_id] = counts.get(cat_id, 0) + 1
             
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch from Xtream: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to read the source catalogue: {str(e)}")
 
     # Clear existing movie categories for this subscription
     db.query(Category).filter(
@@ -118,8 +124,8 @@ async def sync_movie_categories(subscription_id: int, db: Session = Depends(get_
 
 @router.post("/series/sync/{subscription_id}", response_model=SyncResponse)
 async def sync_series_categories(subscription_id: int, db: Session = Depends(get_db)):
-    """Sync series categories from Xtream to database"""
-    client = get_xtream_client(db, subscription_id)
+    """Read the series categories from the source into the database"""
+    client = get_source_catalog(db, subscription_id)
     try:
         categories = await client.get_series_categories()
         # Fetch all series to calculate counts
@@ -132,7 +138,7 @@ async def sync_series_categories(subscription_id: int, db: Session = Depends(get
             counts[cat_id] = counts.get(cat_id, 0) + 1
             
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch from Xtream: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to read the source catalogue: {str(e)}")
 
     # Clear existing series categories for this subscription
     db.query(Category).filter(
