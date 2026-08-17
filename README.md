@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.4.0-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.4.1-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -91,10 +91,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.4.0
+  mourabena2ui/xtream-to-strm-web:4.4.1
 ```
 
-Available tags: `4.4.0` (pin this in production), `4.4`, `latest`.
+Available tags: `4.4.1` (pin this in production), `4.4`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -108,7 +108,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.4.0
+    image: mourabena2ui/xtream-to-strm-web:4.4.1
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -219,7 +219,35 @@ output/
 
 ## 📝 Version History
 
-### v4.4.0 (Current)
+### v4.4.1 (Current)
+
+Correctif : deux défauts silencieux du côté M3U, qui faisaient disparaître des chaînes
+sans jamais rien signaler.
+
+- 🆔 **Une chaîne M3U garde son identifiant d'une lecture à l'autre.** Elle était nommée
+  par la clé primaire de sa ligne en base — et chaque relecture du playlist (toutes les
+  heures) supprimait puis réinsérait toutes les lignes, donc renumérotait tout le
+  catalogue. Toute playlist live construite sur une source M3U pointait une heure plus
+  tard vers des lignes qui n'existaient plus : le M3U généré sortait **vide**, et le
+  rapport de validation accusait le fournisseur (`stream_gone_from_provider`). Les
+  identifiants sont maintenant dérivés de la source et de l'URL de la ligne. Effet de
+  bord réparé au passage : chaque série M3U semblait modifiée à chaque sync et était
+  réécrite pour rien.
+- 🩺 **Réparation des playlists existantes** : `backend/migrations/repair_m3u_playlist_ids.py`
+  recale les chaînes orphelines par tvg-id puis par nom, uniquement sur correspondance
+  unique. Simulation par défaut, `--apply` pour écrire.
+- 📺 **Une chaîne suivie d'une directive n'est plus jetée au parsing.** Le parseur lisait
+  la ligne suivant `#EXTINF` comme l'URL et abandonnait l'entrée si elle commençait par
+  `#` — donc toute chaîne accompagnée d'un `#EXTVLCOPT`, `#KODIPROP`, `#EXTGRP` ou
+  `#EXTHTTP`. Sur la playlist française d'iptv-org : 430 entrées lues sur 459 réelles,
+  TF1 parmi les absentes.
+- 🔤 **Le nom d'une chaîne n'est plus coupé par une virgule d'attribut.** Il était pris à
+  la première virgule de la ligne, alors qu'un `http-user-agent` contient toujours
+  `(KHTML, like Gecko)`. Le nom démarre désormais à la première virgule hors guillemets,
+  ce qui préserve aussi les virgules appartenant vraiment au nom.
+- ✅ 159 tests, dont 11 nouveaux qui épinglent ces deux comportements.
+
+### v4.4.0
 
 La plus grosse version depuis la 4.0 : les sources M3U et Xtream ne sont plus deux
 applications qui se ressemblent, et trois fonctions demandées arrivent en même temps.

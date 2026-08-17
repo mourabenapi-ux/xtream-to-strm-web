@@ -148,6 +148,7 @@ class M3UCatalog:
         self._force = force_reparse
         self._loaded = False
         self._entries: List[SourceEntry] = []
+        # Keyed by ``stable_id``, which is what the rest of the app holds.
         self._url_by_id: Dict[int, str] = {}
 
     # -- parsing ---------------------------------------------------------
@@ -255,12 +256,14 @@ class M3UCatalog:
             SourceEntry.subscription_id == self.subscription_id
         ).delete()
 
+        seen_ids: Dict[int, int] = {}
         for raw in raw_entries:
             if not raw.get("url"):
                 continue
             facts = classify(raw)
             self.db.add(SourceEntry(
                 subscription_id=self.subscription_id,
+                stable_id=self._mint_stable_id(raw["url"], seen_ids),
                 title=raw.get("title") or "Unknown",
                 url=raw["url"],
                 group_title=raw.get("group_title"),
@@ -281,12 +284,42 @@ class M3UCatalog:
         self._load_rows()
         return len(self._entries)
 
+    def _mint_stable_id(self, url: str, seen: Dict[int, int]) -> int:
+        """The stable id of a line, made unique within the source.
+
+        A URL identifies a line, but a playlist may repeat one (the same feed
+        listed under two groups). The second occurrence is salted with its rank
+        so the two rows stay distinguishable and the first one — the id already
+        handed out — keeps its value.
+        """
+        candidate = _stable_id(self.subscription_id, url)
+        rank = seen.get(candidate, 0)
+        seen[candidate] = rank + 1
+        if rank:
+            candidate = _stable_id(self.subscription_id, url, rank)
+        return candidate
+
     def _load_rows(self) -> None:
         self._entries = self.db.query(SourceEntry).filter(
             SourceEntry.subscription_id == self.subscription_id
         ).all()
-        self._url_by_id = {e.id: e.url for e in self._entries}
+        self._backfill_stable_ids()
+        self._url_by_id = {e.stable_id: e.url for e in self._entries}
         self._loaded = True
+
+    def _backfill_stable_ids(self) -> None:
+        """Give an id to rows parsed before the column existed.
+
+        Without this they would answer every accessor with ``None`` until the
+        next reparse — an hour of a source with no ids at all.
+        """
+        missing = [e for e in self._entries if e.stable_id is None]
+        if not missing:
+            return
+        seen = {e.stable_id: 1 for e in self._entries if e.stable_id is not None}
+        for entry in missing:
+            entry.stable_id = self._mint_stable_id(entry.url, seen)
+        self.db.commit()
 
     def _of_type(self, entry_type: str) -> List[SourceEntry]:
         self.ensure_parsed()
@@ -334,7 +367,7 @@ class M3UCatalog:
             if category_id and group != category_id:
                 continue
             out.append({
-                "stream_id": entry.id,
+                "stream_id": entry.stable_id,
                 "name": entry.title,
                 "category_id": group,
                 "container_extension": entry.container or "mp4",
@@ -387,7 +420,7 @@ class M3UCatalog:
             # the show gains, loses or renumbers an episode, which is exactly
             # when the sync must rewrite the folder.
             listing["last_modified"] = _stable_id(
-                len(episodes), *sorted(e.id for e in episodes)
+                len(episodes), *sorted(e.stable_id for e in episodes)
             )
             out.append(listing)
         return out
@@ -407,7 +440,7 @@ class M3UCatalog:
         for entry in show["_episodes"]:
             season = entry.season or 1
             seasons.setdefault(str(season), []).append({
-                "id": entry.id,
+                "id": entry.stable_id,
                 "episode_num": entry.episode or 1,
                 "container_extension": entry.container or "mp4",
                 "title": entry.title,
@@ -435,7 +468,7 @@ class M3UCatalog:
             if category_id and group != category_id:
                 continue
             out.append({
-                "stream_id": entry.id,
+                "stream_id": entry.stable_id,
                 "name": entry.title,
                 "category_id": group,
                 "epg_channel_id": entry.tvg_id or "",
@@ -474,7 +507,7 @@ class M3UCatalog:
             return self._url_by_id[entry_id]
 
         entry = self.db.query(SourceEntry).filter(
-            SourceEntry.id == entry_id,
+            SourceEntry.stable_id == entry_id,
             SourceEntry.subscription_id == self.subscription_id,
         ).first()
         return entry.url if entry else ""

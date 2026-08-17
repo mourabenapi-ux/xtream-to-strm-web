@@ -11,7 +11,7 @@ Nothing is migrated from the old table: this is a cache, refilled by the next
 parse of the playlist.
 """
 
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import BigInteger, Column, Integer, String, ForeignKey
 from app.db.base_class import Base
 
 
@@ -27,6 +27,17 @@ class SourceEntry(Base):
     __tablename__ = "source_entries"
 
     id = Column(Integer, primary_key=True, index=True)
+
+    # The id everything *outside* this table uses to name a line: a playlist
+    # channel, a selected movie, an episode. Derived from the source and the
+    # line's URL, so it survives a reparse.
+    #
+    # ``id`` cannot play that role. A reparse deletes every row of the source
+    # and re-inserts it, which mints fresh autoincrement values; anything that
+    # had stored one — a live playlist above all — was left pointing at rows
+    # that no longer existed, and served nothing. Never expose ``id``.
+    stable_id = Column(BigInteger, nullable=True, index=True)
+
     subscription_id = Column(Integer, ForeignKey("subscriptions.id"),
                              nullable=False, index=True)
     title = Column(String, nullable=False)

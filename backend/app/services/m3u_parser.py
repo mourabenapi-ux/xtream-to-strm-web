@@ -51,25 +51,39 @@ class M3UParser:
             if line.startswith('#EXTINF'):
                 # Parse EXTINF metadata
                 entry = self._parse_extinf(line)
-                
-                # Next non-empty line should be the URL
+
+                # The URL is the next line that is not blank and not a
+                # directive. An EXTINF is routinely followed by #EXTVLCOPT,
+                # #KODIPROP, #EXTGRP or #EXTHTTP — this used to read the
+                # directive as the URL, reject it for starting with '#', and
+                # drop the channel without a word. That is what hid TF1, and 28
+                # other channels, from an iptv-org playlist.
                 i += 1
-                while i < len(lines) and not lines[i].strip():
-                    i += 1
-                
-                if i < len(lines):
-                    url = lines[i].strip()
-                    if url and not url.startswith('#'):
-                        entry['url'] = url
-                        
-                        # Refine entry_type based on URL pattern (more reliable for Xtream Codes)
-                        if '/series/' in url:
-                            entry['entry_type'] = 'series'
-                        elif '/movie/' in url:
-                            entry['entry_type'] = 'movie'
-                            
-                        entries.append(entry)
-            
+                while i < len(lines):
+                    candidate = lines[i].strip()
+                    if not candidate:
+                        i += 1
+                        continue
+                    if candidate.startswith('#EXTINF'):
+                        # This entry has no URL of its own. Step back so the
+                        # next iteration reads this EXTINF as an entry.
+                        i -= 1
+                        break
+                    if candidate.startswith('#'):
+                        i += 1
+                        continue
+
+                    entry['url'] = candidate
+
+                    # Refine entry_type based on URL pattern (more reliable for Xtream Codes)
+                    if '/series/' in candidate:
+                        entry['entry_type'] = 'series'
+                    elif '/movie/' in candidate:
+                        entry['entry_type'] = 'movie'
+
+                    entries.append(entry)
+                    break
+
             i += 1
         
         logger.info(f"Parsed {len(entries)} entries from M3U content")
@@ -113,16 +127,39 @@ class M3UParser:
         if group_match:
             entry['group_title'] = group_match.group(1)
         
-        # Extract title (usually after the last comma)
-        title_match = re.search(r',(.+)$', line)
-        if title_match:
-            entry['title'] = title_match.group(1).strip()
-        
+        # Extract title: everything after the last comma that is not inside an
+        # attribute value. Splitting on the first comma instead read the whole
+        # tail of the line as the name whenever an attribute contained one —
+        # a `http-user-agent="… (KHTML, like Gecko) …"` turned TF1 into
+        # `like Gecko) Chrome/149.0.0.0 …" group-title="Entertainment",TF1`.
+        title = self._title_of(line)
+        if title:
+            entry['title'] = title
+
+
         # Determine entry type
         # Default to live, will be refined based on URL in parse_content
         entry['entry_type'] = 'live'
 
         return entry
+
+    @staticmethod
+    def _title_of(line: str) -> str:
+        """The display name of an EXTINF line.
+
+        The name is everything after the first comma that is not inside a
+        quoted attribute value. Both halves of that rule matter: commas do
+        appear inside attributes — several playlists carry a browser
+        User-Agent, and every one of those contains "(KHTML, like Gecko)" —
+        and they also appear inside channel names, which must be kept whole.
+        """
+        in_quotes = False
+        for index, char in enumerate(line):
+            if char == '"':
+                in_quotes = not in_quotes
+            elif char == ',' and not in_quotes:
+                return line[index + 1:].strip()
+        return ""
 
     # Replay is declared by the provider, never guessed. Three spellings are in
     # circulation for the same thing, so all three are read and normalised into

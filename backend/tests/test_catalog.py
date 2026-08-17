@@ -112,6 +112,9 @@ class _Entry:
                  catchup_source=None):
         self.id = _Entry._next_id
         _Entry._next_id += 1
+        # The id the catalogue hands out. Distinct from the primary key on
+        # purpose: the real one survives a reparse, the primary key does not.
+        self.stable_id = _stable_id("test", self.id)
         self.title = title
         self.entry_type = entry_type
         self.group_title = group
@@ -133,7 +136,7 @@ class _Catalog(catalog.M3UCatalog):
     def __init__(self, entries, subscription_id=1):
         self.subscription_id = subscription_id
         self._entries = entries
-        self._url_by_id = {e.id: e.url for e in entries}
+        self._url_by_id = {e.stable_id: e.url for e in entries}
         self._loaded = True
 
     def ensure_parsed(self, force=False):
@@ -239,6 +242,99 @@ class TestCatalogueShape(unittest.TestCase):
     def test_an_unknown_id_resolves_to_nothing_rather_than_a_wrong_url(self):
         self.catalog.db = None  # any DB lookup here would be a bug
         self.assertEqual(self.catalog.get_stream_url("live", "not-an-id", "ts"), "")
+
+
+class TestIdsSurviveAReparse(unittest.TestCase):
+    """The ids the catalogue hands out must not move when the playlist is re-read.
+
+    A reparse deletes every row of the source and re-inserts it. While the id
+    was the autoincrement primary key, that renumbered the whole catalogue once
+    an hour, and everything holding one — a live playlist above all — resolved
+    nothing afterwards and served an empty M3U.
+    """
+
+    def setUp(self):
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        from app.models.source_entry import SourceEntry
+
+        engine = create_engine("sqlite://")
+        SourceEntry.__table__.create(engine)
+        self.db = sessionmaker(bind=engine)()
+        self.SourceEntry = SourceEntry
+
+        self.lines = [
+            line("TF1 HD", "http://p.tv/live/8.ts", "FR | TNT"),
+            line("M6 HD", "http://p.tv/live/9.ts", "FR | TNT"),
+            line("Le Parrain", "http://p.tv/movie/u/p/10.mkv", "FR | FILMS"),
+        ]
+
+        class _Subscription:
+            id = 1
+            name = "test"
+            last_sync = None
+            source_type = "url"
+            url = "http://p.tv/list.m3u"
+
+        self.catalog = catalog.M3UCatalog(self.db, _Subscription())
+        self.catalog._read_playlist = lambda: self.lines
+
+    def tearDown(self):
+        self.db.close()
+
+    def _reparse(self):
+        existing = self.db.query(self.SourceEntry).count()
+        self.catalog._parse_into_rows(existing)
+        return {s["name"]: s["stream_id"]
+                for s in self.catalog.get_live_streams_sync()}
+
+    def test_a_channel_keeps_its_id_across_two_parses(self):
+        before = self._reparse()
+        keys_before = {e.id for e in self.db.query(self.SourceEntry)
+                       if e.subscription_id == 1}
+
+        # Another source holding the high row ids is what made the renumbering
+        # visible in production: the delete frees this source's keys, and the
+        # re-insert takes fresh ones above everyone else's.
+        self.db.add(self.SourceEntry(id=9000, subscription_id=2, title="x",
+                                     url="http://q.tv/1.ts", entry_type="live"))
+        self.db.commit()
+
+        after = self._reparse()
+        keys_after = {e.id for e in self.db.query(self.SourceEntry)
+                      if e.subscription_id == 1}
+
+        self.assertEqual(before, after)
+        # The primary keys really were renumbered — the ids above held anyway.
+        self.assertFalse(keys_before & keys_after)
+
+    def test_a_channel_still_resolves_to_its_url_after_a_reparse(self):
+        before = self._reparse()
+        self._reparse()
+        self.assertEqual(
+            self.catalog.get_stream_url("live", str(before["TF1 HD"]), "ts"),
+            "http://p.tv/live/8.ts")
+
+    def test_two_lines_sharing_a_url_get_two_ids(self):
+        """A feed listed under two groups is two rows, and neither may shadow
+        the other."""
+        self.lines.append(line("TF1 HD", "http://p.tv/live/8.ts", "FR | GENERAL"))
+        streams = self._reparse()
+        ids = [e.stable_id for e in self.db.query(self.SourceEntry)]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual(len(streams), 2)  # keyed by name, the two TF1 collapse
+
+    def test_a_row_parsed_before_the_column_existed_is_given_an_id(self):
+        self._reparse()
+        for entry in self.db.query(self.SourceEntry):
+            entry.stable_id = None
+        self.db.commit()
+
+        self.catalog._load_rows()
+
+        ids = [e.stable_id for e in self.db.query(self.SourceEntry)]
+        self.assertTrue(all(ids))
+        self.assertEqual(len(ids), len(set(ids)))
 
 
 if __name__ == "__main__":

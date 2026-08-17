@@ -163,6 +163,27 @@ def _ensure_schema_up_to_date():
                     except Exception as e:
                         print(f"  ⚠️ Could not add 'subscription_id': {e}")
 
+        # 3e. Check 'source_entries' columns.
+        # 'stable_id' is the id an M3U line is known by outside this table.
+        # Missing it, every accessor answers None and nothing resolves.
+        if "source_entries" in existing_tables:
+            se_cols = [c['name'] for c in inspector.get_columns("source_entries")]
+            if "stable_id" not in se_cols:
+                print("🔧 Missing 'stable_id' in 'source_entries'. Repairing...")
+                with engine.connect() as conn:
+                    try:
+                        conn.execute(text(
+                            "ALTER TABLE source_entries ADD COLUMN stable_id BIGINT"
+                        ))
+                        conn.execute(text(
+                            "CREATE INDEX IF NOT EXISTS ix_source_entries_stable_id "
+                            "ON source_entries (stable_id)"
+                        ))
+                        conn.commit()
+                        print("  ✅ Added 'stable_id' column.")
+                    except Exception as e:
+                        print(f"  ⚠️ Could not add 'stable_id': {e}")
+
         # 4. Check 'live_playlists' nullability and columns
         if "live_playlists" in existing_tables:
             lp_cols = inspector.get_columns("live_playlists")
