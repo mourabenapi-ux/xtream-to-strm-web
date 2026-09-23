@@ -943,10 +943,10 @@ async def resolve_playlist_channels(
 @router.get("/playlist.xml")
 async def get_playlist_epg(
     db: Session = Depends(deps.get_db),
-    playlist_id: int = Query(...)
+    playlist_id: str = Query(...)
 ) -> Any:
     """Serve the custom XMLTV guide for a specific playlist."""
-    playlist = db.query(LivePlaylist).filter(LivePlaylist.id == playlist_id).first()
+    playlist = db.query(LivePlaylist).filter(LivePlaylist.public_id == playlist_id).first()
     if not playlist:
         raise HTTPException(status_code=404, detail="Playlist not found")
 
@@ -959,10 +959,10 @@ async def get_playlist_epg(
 async def generate_m3u_playlist(
     request: Request,
     db: Session = Depends(deps.get_db),
-    playlist_id: int = Query(...)
+    playlist_id: str = Query(...)
 ):
     """Generate M3U playlist based on specific playlist configuration."""
-    playlist = db.query(LivePlaylist).filter(LivePlaylist.id == playlist_id).first()
+    playlist = db.query(LivePlaylist).filter(LivePlaylist.public_id == playlist_id).first()
     if not playlist:
         raise HTTPException(status_code=404, detail="Playlist not found")
 
@@ -970,7 +970,7 @@ async def generate_m3u_playlist(
 
     # Absolute EPG URL: a relative one resolves against the player's own base,
     # so nothing could fetch the guide without the user pasting a second URL.
-    epg_url = str(request.url_for("get_playlist_epg").include_query_params(playlist_id=playlist_id))
+    epg_url = str(request.url_for("get_playlist_epg").include_query_params(playlist_id=playlist.public_id))
     m3u_content = [f'#EXTM3U x-tvg-url="{epg_url}"']
 
     for channel in channels:
@@ -1002,7 +1002,7 @@ async def preview_m3u_playlist(
     if not playlist:
         raise HTTPException(status_code=404, detail="Playlist not found")
 
-    resp = await generate_m3u_playlist(request=request, db=db, playlist_id=playlist_id)
+    resp = await generate_m3u_playlist(request=request, db=db, playlist_id=playlist.public_id)
     return {"content": resp.body.decode()}
 
 @router.get("/playlists/{playlist_id}/validation")

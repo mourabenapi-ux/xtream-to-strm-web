@@ -46,11 +46,18 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 REFERENCE_PATH = DATA_DIR / "fr_channel_reference.json"
 COMPACT_PATH = DATA_DIR / "fr_channel_reference_compact.json"
+ARABIC_PATH = DATA_DIR / "ar_channel_reference.json"
 
-# The reference files the caller may ask for by name. Same 502 channels in both:
-# "detailed" keeps the eleven thematic blocks, "compact" collapses them to eight
-# and adds the family rules, which is what keeps the bouquet count down.
-PROFILES: Dict[str, Path] = {"detailed": REFERENCE_PATH, "compact": COMPACT_PATH}
+# The reference files the caller may ask for by name. "detailed" and "compact"
+# hold the same 502 FR channels: "detailed" keeps the eleven thematic blocks,
+# "compact" collapses them to eight and adds the family rules, which is what
+# keeps the bouquet count down. "arabic" is a different catalogue: there is no
+# ARCOM-style official numbering for pan-Arab channels, so it leans on the
+# `families` mechanism (grouped by the provider's own AR| category, country
+# first) with only the Tunisian flagships curated by hand.
+PROFILES: Dict[str, Path] = {
+    "detailed": REFERENCE_PATH, "compact": COMPACT_PATH, "arabic": ARABIC_PATH,
+}
 DEFAULT_PROFILE = "detailed"
 
 # Where the reference stops and the engine takes over.
@@ -65,12 +72,17 @@ TIMESHIFT_GROUP = "Décalées (+1)"
 QUALITY_ORDER = ["SD", "HD", "FHD", "4K", "8K"]
 DEFAULT_QUALITY_PREFERENCE = ["4K", "FHD", "HD", "SD", "8K"]
 
+# iptv-org's own lists write the interlace flavour too ("1080i", not just
+# "1080p") and use 576/360 for PAL SD and low-bandwidth feeds — "El Watania 1
+# (1080i)" left "1080i" sitting in the canonical text, which then fails the
+# trailing-number guard against the clean reference entry and gets refused
+# outright rather than merged.
 _QUALITY_PATTERNS: List[Tuple[str, str]] = [
     ("8K", r"8\s*k|⁸ᴷ"),
-    ("4K", r"4\s*k|uhd|ᵁᴴᴰ|2160p?"),
-    ("FHD", r"fhd|1080p?"),
-    ("HD", r"\bhd\b|720p?"),
-    ("SD", r"\bsd\b|480p?"),
+    ("4K", r"4\s*k|uhd|ᵁᴴᴰ|2160[pi]?"),
+    ("FHD", r"fhd|1080[pi]?"),
+    ("HD", r"\bhd\b|720[pi]?"),
+    ("SD", r"\bsd\b|480[pi]?|576[pi]?|360p?"),
 ]
 
 # Tags that describe the feed, not the channel: they must not reach the name.
@@ -82,8 +94,14 @@ _FLAG_PATTERN = re.compile(
 # before ``af`` only for the reader: one provider labels its African feeds ``AFR|``
 # and the other ``AF|``, and missing the short form left 263 channels named
 # "Af Canal+ Sport 1", none of which can match anything.
+#
+# ``sa``/``nm``/``ss``/``f`` are not countries: they are the AR| catalogue's own
+# server/route tags ("SA: beIN SPORTS 1", "NM: beIN SPORTS 1", "F: ALWAN AFLAM 1"),
+# the same shape as an unstripped "BE:" once was — missing them left ~15 identical
+# beIN Sports numbers unmerged per quality tier.
 _PREFIX_PATTERN = re.compile(
-    r"^\s*(fr|afr|af|ar|en|be|ch|ca|tn|uk|us|de|es|it|pt|nl|tr|vip|prime|hevc|raw)"
+    r"^\s*(fr|afr|af|ar|en|be|ch|ca|tn|uk|us|de|es|it|pt|nl|tr|sa|nm|ss|f|"
+    r"vip|prime|hevc|raw)"
     r"[\s_:\-|.]+",
     re.IGNORECASE,
 )
@@ -131,9 +149,16 @@ def match_key(value: str) -> str:
     "Canal+ Sport" and "Canal Sport" — two different channels — collapse. The
     trailing space matters: providers write both "Canal+Sport" and "Canal+ Sport",
     and without it the two forms never meet.
+
+    The keep-set is ``\\w`` (any Unicode letter or digit), not ``a-z0-9``: an
+    Arabic-titled channel has no Latin letters left once accents are stripped,
+    and reducing to ASCII only left every one of them keyed on nothing but a
+    trailing digit — 26 unrelated series all became the same "channel" named
+    ``"2"``. Latin text is unaffected because it is already lowercased ASCII by
+    this point.
     """
     text = strip_accents(value).lower().replace("canal+", "canalplus ")
-    text = re.sub(r"[^a-z0-9]+", " ", text)
+    text = re.sub(r"[_\W]+", " ", text)
     return " ".join(text.split())
 
 
@@ -174,7 +199,11 @@ class SourceStream:
                       category_name: str = "") -> "SourceStream":
         epg_id = raw.get("epg_channel_id")
         epg_id = "" if epg_id is None else str(epg_id).strip()
-        if epg_id.lower() in ("none", "null"):
+        # "TS" is a template placeholder, not an id: measured on the AR| Tunisia
+        # categories, eight unrelated channels (Nessma, Attessia, Telvza, Carthage
+        # Plus, Al Janoubia, Zaytoona, Al Insen, Al Mustakila) all carry the exact
+        # same literal "TS". Keeping it would show a guide id that matches nothing.
+        if epg_id.lower() in ("none", "null", "ts"):
             epg_id = ""
         return cls(
             subscription_id=subscription_id,
@@ -232,7 +261,9 @@ def parse_name(raw_name: str) -> ParsedName:
     flags = tuple(sorted({f.upper() for f in _FLAG_PATTERN.findall(text)}))
     text = _FLAG_PATTERN.sub(" ", text)
 
-    canonical = re.sub(r"[^A-Za-z0-9+&]+", " ", text)
+    # `\w` (any Unicode letter/digit), not `A-Za-z0-9`: see match_key for why an
+    # ASCII-only keep-set silently destroys every Arabic-titled channel name.
+    canonical = re.sub(r"[^\w+&]+", " ", text)
     canonical = " ".join(canonical.split()).strip(" +&")
     return ParsedName(canonical=canonical, quality=quality, quality_rank=quality_rank,
                       timeshift=timeshift, flags=flags)

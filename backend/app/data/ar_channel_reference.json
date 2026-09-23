@@ -1,0 +1,124 @@
+{
+  "version": "2026-09-23",
+  "profile": "arabic",
+  "tail_starts_at": 1000,
+  "backup_starts_at": 9000,
+  "timeshift_starts_at": 2000,
+  "blocks": [
+    {"group": "Tunisie"},
+    {"group": "Sport"},
+    {"group": "MBC & Rotana"},
+    {"group": "Info"},
+    {"group": "Documentaire"},
+    {"group": "Divertissement"},
+    {"group": "Musique"},
+    {"group": "Enfants"},
+    {"group": "Religieux"}
+  ],
+  "channels": [
+    {"number": 1, "group": "Tunisie", "name": "El Watania 1", "tvg_id": "Tunisia1.tn",
+     "aliases": ["Tunisia 1", "Tunisia National 1", "Tunisia Nat 1", "Wataniya 1"]},
+    {"number": 2, "group": "Tunisie", "name": "El Watania 2", "tvg_id": "Tunisia2.tn",
+     "aliases": ["Tunisia National 2", "Tunisia Nat 2", "Wataniya 2"]},
+    {"number": 3, "group": "Tunisie", "name": "Nessma", "tvg_id": "",
+     "aliases": ["Nessma Ejdida", "Nessma Tv"]},
+    {"number": 4, "group": "Tunisie", "name": "El Hiwar Ettounsi", "tvg_id": "ElhiwarEttounsi.tn",
+     "aliases": ["Al Hiwar Tunisia", "Al Hiwar Ettounsi", "Elhiwar Ettounsi"]},
+    {"number": 5, "group": "Tunisie", "name": "Attessia", "tvg_id": "",
+     "aliases": ["Atessia", "Attessia Tv"]},
+    {"number": 6, "group": "Tunisie", "name": "Hannibal TV", "tvg_id": "HannibalTV.tn",
+     "aliases": ["Hannibal"]},
+    {"number": 7, "group": "Tunisie", "name": "Tunisna TV", "tvg_id": "TunisnaTV.tn",
+     "aliases": ["Tunisna"]},
+    {"number": 8, "group": "Tunisie", "name": "Carthage+", "tvg_id": "",
+     "aliases": ["Carthage Plus"]},
+    {"number": 9, "group": "Tunisie", "name": "Telvza TV", "tvg_id": "",
+     "aliases": ["Telvza"]},
+    {"number": 10, "group": "Tunisie", "name": "El Janoubia TV", "tvg_id": "",
+     "aliases": ["Al Janoubia Tv", "Al Janoubia"]},
+    {"number": 11, "group": "Tunisie", "name": "Zaytoona TV", "tvg_id": "",
+     "aliases": ["Zaytoona Tunisia", "Zaytoona"]},
+    {"number": 12, "group": "Tunisie", "name": "Al Insen TV", "tvg_id": "",
+     "aliases": ["Al Insen"]},
+    {"number": 13, "group": "Tunisie", "name": "Al Mustakila", "tvg_id": "",
+     "aliases": ["El Mostakella", "Al Mustakila Tv"]},
+    {"number": 14, "group": "Tunisie", "name": "Jawhara TV", "tvg_id": "",
+     "aliases": ["Jawhara Fm Tv"]},
+    {"number": 15, "group": "Tunisie", "name": "Tunisia Sport", "tvg_id": "",
+     "aliases": []}
+  ],
+  "families": [
+    {
+      "id": "tunisie",
+      "group": "Tunisie",
+      "start": 21,
+      "when": {"category_regex": "TUNISIA"}
+    },
+    {
+      "id": "sport",
+      "group": "Sport",
+      "start": 100,
+      "when": {"category_regex": "BEIN\\s*SPORT|TOD\\s*SPORT|STARZPLAY\\s*SPORT|AL-KASS|THMANYAH|DAZN\\s*MENA|ALWAN\\s*SPORT|POST\\s*SPORT|WATER\\s*SPORT|SHASHA\\s*SPORT|ARABIC\\s*SPORT|UEFA\\s*CHAMPIONS|STC\\s*EXCLUSIVE|AL\\s*FAJER|SHAHID\\s*PPV|SHAHID\\s*BUNDESLIGA|\\b1001\\b|\\bSPORT\\b"}
+    },
+    {
+      "id": "sport_by_name",
+      "group": "Sport",
+      "start": 250,
+      "when": {"name_regex": "BEIN\\s*SPORT|TOD\\s*SPORT|STARZPLAY|AL-KASS|THMANYAH|DAZN\\s*MENA"}
+    },
+    {
+      "id": "mbc_rotana",
+      "group": "MBC & Rotana",
+      "start": 500,
+      "when": {"category_regex": "\\bMBC\\b|ROTANA"}
+    },
+    {
+      "id": "mbc_rotana_by_name",
+      "group": "MBC & Rotana",
+      "start": 560,
+      "when": {"name_regex": "\\bMBC\\b|ROTANA"}
+    },
+    {
+      "id": "info",
+      "group": "Info",
+      "start": 600,
+      "when": {"category_regex": "\\bNEWS\\b"}
+    },
+    {
+      "id": "info_by_name",
+      "group": "Info",
+      "start": 650,
+      "when": {"name_regex": "AL\\s*JAZEERA|AL\\s*ARABIYA|SKY\\s*NEWS|\\bLBC\\b|DW\\s*ARABIC|FRANCE\\s*24|CGTN|BBC\\s*ARABIC|AL\\s*HADATH|AL\\s*EKHBARIYA"}
+    },
+    {
+      "id": "documentaire",
+      "group": "Documentaire",
+      "start": 700,
+      "when": {"category_regex": "DOCUMENTAR|DOCUMENTER"}
+    },
+    {
+      "id": "divertissement",
+      "group": "Divertissement",
+      "start": 750,
+      "when": {"category_regex": "BEIN\\s*ENTERTAINMENT|ALWAN\\s*ENTERTAINMENT"}
+    },
+    {
+      "id": "musique",
+      "group": "Musique",
+      "start": 850,
+      "when": {"category_regex": "\\bMUSIC\\b"}
+    },
+    {
+      "id": "enfants",
+      "group": "Enfants",
+      "start": 900,
+      "when": {"category_regex": "\\bKIDS\\b"}
+    },
+    {
+      "id": "religieux",
+      "group": "Religieux",
+      "start": 950,
+      "when": {"category_regex": "ISLAMIC|\\bQURAN\\b|MUSLIM|CHRISTIAN|AL-MAJD"}
+    }
+  ]
+}

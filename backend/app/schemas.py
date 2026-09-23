@@ -318,6 +318,7 @@ class LivePlaylistUpdate(BaseModel):
 
 class LivePlaylist(LivePlaylistBase):
     id: int
+    public_id: Optional[str] = None
     created_at: datetime
     use_channel_numbers: bool = False
     model_config = ConfigDict(from_attributes=True)

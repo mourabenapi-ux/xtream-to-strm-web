@@ -54,6 +54,19 @@ class TestParseName(unittest.TestCase):
         self.assertEqual(parse_name("FR-TF1 SD").quality, "SD")
         self.assertEqual(parse_name("FR: TF1").quality, "")
 
+    def test_interlaced_and_low_res_tags_are_quality_not_name(self):
+        """iptv-org writes '1080i', '576p' and '360p'; only 'p' was recognised.
+
+        'El Watania 1 (1080i)' kept "1080i" in the canonical text, which then
+        never matched the clean reference entry "El Watania 1": the trailing-
+        number guard saw "1080i" has no trailing digit, disagreed with the
+        reference's "1", and refused the merge outright.
+        """
+        self.assertEqual(parse_name("El Watania 1 (1080i)").canonical, "El Watania 1")
+        self.assertEqual(parse_name("El Watania 1 (1080i)").quality, "FHD")
+        self.assertEqual(parse_name("LBC (576p)").canonical, "LBC")
+        self.assertEqual(parse_name("Al Alam (360p)").canonical, "Al Alam")
+
     def test_timeshift(self):
         parsed = parse_name("FR: TF1 +1 HD")
         self.assertEqual(parsed.timeshift, 1)
@@ -101,6 +114,25 @@ class TestParseName(unittest.TestCase):
                          "2s tv senegal")
         self.assertEqual(match_key(parse_name("AFR: Maboke TV HD").canonical),
                          "maboke tv")
+
+    def test_arabic_script_survives_normalisation(self):
+        """An ASCII-only keep-set erases Arabic entirely, not just accents.
+
+        Measured on the live AR| catalogue: 26 unrelated drama series named
+        "AR: <arabic title> 1", "AR: <other arabic title> 1"... all reduced to
+        the single key "1" once the Arabic letters were stripped, merging them
+        into one fake "channel". The keep-set must be Unicode-letter-aware, not
+        just wide enough for French accents.
+        """
+        one = parse_name("AR: العتاولة 1")
+        other = parse_name("AR: جاك العلم 1")
+        self.assertNotEqual(match_key(one.canonical), "1")
+        self.assertNotEqual(match_key(one.canonical), match_key(other.canonical))
+
+    def test_pure_arabic_name_is_not_dropped_as_junk(self):
+        """No trailing digit, no Latin letters — canonical must not go empty."""
+        parsed = parse_name("AR: قناة الجزيرة")
+        self.assertNotEqual(parsed.canonical, "")
 
 
 class TestJunk(unittest.TestCase):

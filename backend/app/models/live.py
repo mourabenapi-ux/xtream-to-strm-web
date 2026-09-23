@@ -1,3 +1,4 @@
+import secrets
 from sqlalchemy import Column, Integer, String, ForeignKey, JSON, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -7,6 +8,13 @@ class LivePlaylist(Base):
     __tablename__ = "live_playlists"
 
     id = Column(Integer, primary_key=True, index=True)
+    # Identifier used in the player-facing M3U/EPG URLs. `id` is a bare SQLite
+    # rowid: deleting the highest-numbered playlist and creating a new one can
+    # hand that new playlist the very id a TiviMate URL still points at, so the
+    # old bookmarked link silently starts serving someone else's channels.
+    # public_id is random, generated once, and never reassigned.
+    public_id = Column(String(8), unique=True, index=True, nullable=True,
+                       default=lambda: secrets.token_hex(4))
     subscription_id = Column(Integer, ForeignKey("subscriptions.id"), nullable=True) # Default sub
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)

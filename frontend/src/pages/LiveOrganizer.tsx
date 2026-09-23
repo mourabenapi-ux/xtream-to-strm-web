@@ -72,6 +72,10 @@ const PROFILE_LABELS: Record<string, { title: string; hint: string }> = {
         title: 'Compact — 8 bouquets',
         hint: 'TNT with the généralistes, Découverte with Jeunesse, +1 feeds in Secours. Family rules place the PPV slots, the African channels and the 24/7 loops in bouquets of their own instead of the tail.',
     },
+    arabic: {
+        title: 'Arabic — Tunisia + pan-Arab core',
+        hint: 'Tunisia first, then Sport / MBC & Rotana / Info / Documentaire / Divertissement / Musique / Enfants / Religieux. No official numbering exists for pan-Arab channels, so bouquets are grouped by the provider\'s own AR| category rather than a curated list.',
+    },
 };
 
 const QUALITY_PRESETS: Record<string, string[]> = {

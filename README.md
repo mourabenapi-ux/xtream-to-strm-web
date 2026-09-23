@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.4.1-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.5.0-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -91,10 +91,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.4.1
+  mourabena2ui/xtream-to-strm-web:4.5.0
 ```
 
-Available tags: `4.4.1` (pin this in production), `4.4`, `latest`.
+Available tags: `4.5.0` (pin this in production), `4.5`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -108,7 +108,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.4.1
+    image: mourabena2ui/xtream-to-strm-web:4.5.0
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -219,7 +219,45 @@ output/
 
 ## 📝 Version History
 
-### v4.4.1 (Current)
+### v4.5.0 (Current)
+
+L'Auto Organizer parle désormais arabe, et une playlist supprimée-puis-recréée ne détourne
+plus l'URL TiviMate d'une autre.
+
+**Organisation automatique : profil arabe (Tunisie + cœur pan-arabe)**
+- 🕌 **Nouveau profil "Arabic".** Tunisie en tête (15 chaînes tunisiennes reconnues
+  nommément : El Watania 1/2, Nessma, El Hiwar Ettounsi, Attessia, Hannibal, Tunisna,
+  Carthage+...), puis Sport / MBC & Rotana / Info / Documentaire / Divertissement /
+  Musique / Enfants / Religieux. Pas d'équivalent ARCOM pour les chaînes pan-arabes, donc
+  le classement s'appuie sur des règles de catégorie **et** de nom plutôt qu'une liste
+  figée — il fonctionne aussi bien sur un abonnement Xtream que sur une source M3U dont les
+  catégories n'ont rien à voir (`AR| MBC 4K` chez l'un, `General`/`Entertainment` chez
+  l'autre).
+- 🐛 **Un bug qui effaçait des chaînes en silence, corrigé avant de construire quoi que ce
+  soit dessus.** Le nettoyage de nom ne gardait que `[A-Za-z0-9]` : un nom 100% arabe sans
+  chiffre (chaînes musicales par artiste) devenait une chaîne vide et disparaissait comme
+  "junk" ; un nom arabe finissant par un chiffre (séries diffusées comme des "chaînes")
+  perdait son texte et 26 séries différentes fusionnaient sous la même fausse chaîne "2".
+  Mesuré sur le catalogue réel : **225 chaînes récupérées** après correction. Même défaut
+  que le reste du projet — succès affiché, données détruites, aucune erreur nulle part.
+- 🔤 **Qualités mal reconnues.** `1080i`, `576p`, `360p` (utilisés par les sources M3U type
+  iptv-org) n'étaient pas reconnus comme qualité, seulement `1080p`/`720p`/`480p` — le
+  texte restait collé au nom et empêchait la fusion avec la chaîne de référence.
+- 🏷️ **Faux identifiant EPG filtré.** Huit chaînes tunisiennes sans lien entre elles
+  partageaient exactement le même id `"TS"`, un gabarit non renseigné par le fournisseur,
+  pas un vrai identifiant.
+
+**Playlists live**
+- 🔗 **Un lien TiviMate ne pointe plus jamais vers la mauvaise playlist.** `playlist.m3u`
+  et `playlist.xml` utilisaient l'id de base SQLite, qui n'est pas un vrai autoincrement :
+  supprimer la playlist la plus récente puis en créer une nouvelle pouvait lui donner le
+  même id, et l'ancienne URL collée dans TiviMate se mettait à servir silencieusement une
+  playlist complètement différente. Les URLs utilisent maintenant un `public_id` aléatoire,
+  généré une fois et jamais réattribué.
+
+- ✅ 161 tests, tous verts.
+
+### v4.4.1
 
 Correctif : deux défauts silencieux du côté M3U, qui faisaient disparaître des chaînes
 sans jamais rien signaler.

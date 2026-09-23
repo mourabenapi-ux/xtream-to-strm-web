@@ -295,8 +295,8 @@ def get_live_playlists_detail(db: Session = Depends(get_db)) -> List[Dict[str, A
             "channel_count": total_channels,
             "epg_coverage": coverage,
             "epg_sources_count": len(pl.epg_source_links),
-            "m3u_url": f"/api/v1/live/playlist.m3u?playlist_id={pl.id}",
-            "epg_url": f"/api/v1/live/playlist.xml?playlist_id={pl.id}"
+            "m3u_url": f"/api/v1/live/playlist.m3u?playlist_id={pl.public_id}",
+            "epg_url": f"/api/v1/live/playlist.xml?playlist_id={pl.public_id}"
         })
     
     return result
