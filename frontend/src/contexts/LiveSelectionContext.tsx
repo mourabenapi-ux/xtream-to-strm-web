@@ -41,6 +41,7 @@ export interface PlaylistBouquet {
 
 export interface Playlist {
     id: number;
+    public_id: string | null;
     subscription_id: number;
     name: string;
     description: string | null;

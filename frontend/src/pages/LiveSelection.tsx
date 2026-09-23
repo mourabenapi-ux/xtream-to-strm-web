@@ -328,7 +328,7 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
                         >
                             <Eye className="h-4 w-4" /> Preview
                         </Button>
-                        <Button variant="outline" size="sm" className="hidden sm:flex gap-2 text-indigo-500 border-indigo-500/30 hover:bg-indigo-500/10" onClick={() => window.open(`/api/v1/live/playlist.m3u?playlist_id=${playlist.id}`, '_blank')}>
+                        <Button variant="outline" size="sm" className="hidden sm:flex gap-2 text-indigo-500 border-indigo-500/30 hover:bg-indigo-500/10" onClick={() => window.open(`/api/v1/live/playlist.m3u?playlist_id=${playlist.public_id}`, '_blank')}>
                             <Download className="h-4 w-4" /> Export M3U
                         </Button>
                         {syncError ? (

@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.5.0-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.5.1-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -91,10 +91,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.5.0
+  mourabena2ui/xtream-to-strm-web:4.5.1
 ```
 
-Available tags: `4.5.0` (pin this in production), `4.5`, `latest`.
+Available tags: `4.5.1` (pin this in production), `4.5`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -108,7 +108,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.5.0
+    image: mourabena2ui/xtream-to-strm-web:4.5.1
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -219,7 +219,39 @@ output/
 
 ## 📝 Version History
 
-### v4.5.0 (Current)
+### v4.5.1 (Current)
+
+Trois défauts trouvés en vérifiant que le `public_id` de la v4.5.0 marchait vraiment —
+le dernier annule une bonne partie de ce que la v4.5.0 était censée corriger.
+
+- 🔢 **Un id de chaîne M3U pouvait s'auto-corrompre au moment même où on l'ajoutait à un
+  groupe.** L'id d'une chaîne issue d'une source M3U est un nombre jusqu'à 19 chiffres ;
+  les écrans de navigation/recherche de chaînes le renvoyaient en JSON comme un *nombre*
+  plutôt qu'une *chaîne*. Au-delà de 2⁵³, un navigateur ne représente plus un entier
+  exactement — il arrondit les derniers chiffres avant de le renvoyer au serveur pour
+  l'enregistrer. La chaîne ajoutée pointait alors vers un id qui n'existait nulle part,
+  et disparaissait du M3U généré avec la même étiquette trompeuse que le bug de la
+  v4.4.1 (`stream_gone_from_provider`), alors que la chaîne était bien présente chez le
+  fournisseur. Tous les ids de chaînes/séries/épisodes M3U sont maintenant renvoyés en
+  chaîne de caractères.
+- 🔗 **Le bouton "Export M3U" de l'écran d'édition, et l'URL EPG affichée dans l'écran de
+  configuration EPG, pointaient encore vers l'ancien id numérique** — cassés par le
+  passage au `public_id` de la v4.5.0 elle-même. L'aperçu intégré fonctionnait (il
+  résout l'id en interne) ce qui rendait le bug difficile à remarquer : tout semblait à
+  jour dans l'appli, mais le fichier réellement servi à l'URL ne l'était pas.
+- 🩹 **`public_id` — et le réglage "numérotation des chaînes" d'une playlist — étaient
+  réinitialisés à *chaque redémarrage du conteneur*, pas seulement à chaque mise à jour.**
+  Une migration de recréation de table, datant d'avant l'existence de ces deux colonnes,
+  se rejouait sans garde à chaque démarrage avec une liste de colonnes figée qui ne les
+  incluait pas — les effaçant à chaque fois, avant que les migrations suivantes ne les
+  rajoutent avec une valeur par défaut (nouvel id aléatoire, numérotation désactivée).
+  Concrètement, une URL TiviMate collée à la main pouvait se casser au redémarrage
+  suivant — exactement ce que le `public_id` de la v4.5.0 devait empêcher. Neutralisée ;
+  vérifié sur deux redémarrages consécutifs que `public_id` ne bouge plus.
+
+- ✅ 162 tests, tous verts.
+
+### v4.5.0
 
 L'Auto Organizer parle désormais arabe, et une playlist supprimée-puis-recréée ne détourne
 plus l'URL TiviMate d'une autre.

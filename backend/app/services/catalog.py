@@ -367,7 +367,12 @@ class M3UCatalog:
             if category_id and group != category_id:
                 continue
             out.append({
-                "stream_id": entry.stable_id,
+                # A JSON number this big overflows a JS double: the browser
+                # would round the last few digits, and whatever the frontend
+                # echoes back (e.g. adding this stream to a bouquet) would
+                # then never match this row's stable_id again. Str it here so
+                # nothing downstream can round-trip it as a number.
+                "stream_id": str(entry.stable_id),
                 "name": entry.title,
                 "category_id": group,
                 "container_extension": entry.container or "mp4",
@@ -399,7 +404,8 @@ class M3UCatalog:
             name = entry.series_key or entry.title
             series_id = _stable_id(self.subscription_id, group, name)
             show = shows.setdefault(series_id, {
-                "series_id": series_id,
+                # Same JS-double overflow risk as the live/VOD stream_id below.
+                "series_id": str(series_id),
                 "name": name,
                 "category_id": group,
                 "cover": entry.logo or "",
@@ -440,7 +446,7 @@ class M3UCatalog:
         for entry in show["_episodes"]:
             season = entry.season or 1
             seasons.setdefault(str(season), []).append({
-                "id": entry.stable_id,
+                "id": str(entry.stable_id),
                 "episode_num": entry.episode or 1,
                 "container_extension": entry.container or "mp4",
                 "title": entry.title,
@@ -468,7 +474,9 @@ class M3UCatalog:
             if category_id and group != category_id:
                 continue
             out.append({
-                "stream_id": entry.stable_id,
+                # See the same cast in _vod_streams: this id is a 60-bit
+                # number, past what a JS double can hold exactly.
+                "stream_id": str(entry.stable_id),
                 "name": entry.title,
                 "category_id": group,
                 "epg_channel_id": entry.tvg_id or "",

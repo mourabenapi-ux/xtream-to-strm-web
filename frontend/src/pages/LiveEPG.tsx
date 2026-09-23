@@ -37,6 +37,7 @@ export default function LiveEPG() {
 
     const [links, setLinks] = useState<PlaylistEPGLink[]>([]);
     const [globalSources, setGlobalSources] = useState<EPGSourceGlobal[]>([]);
+    const [playlistPublicId, setPlaylistPublicId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [isLinkOpen, setIsLinkOpen] = useState(false);
     const [matching, setMatching] = useState(false);
@@ -53,6 +54,7 @@ export default function LiveEPG() {
         } else {
             fetchLinks();
             fetchGlobalSources();
+            fetchPlaylistPublicId();
         }
     }, [playlistId]);
 
@@ -80,6 +82,16 @@ export default function LiveEPG() {
             console.error("Failed to fetch EPG links", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchPlaylistPublicId = async () => {
+        if (!playlistId) return;
+        try {
+            const res = await api.get(`/live/playlists/${playlistId}`);
+            setPlaylistPublicId(res.data.public_id ?? null);
+        } catch (error) {
+            console.error("Failed to fetch playlist", error);
         }
     };
 
@@ -354,10 +366,10 @@ export default function LiveEPG() {
                         <div className="flex items-center gap-2">
                             <span className="font-mono text-xs">XMLTV URL:</span>
                             <span className="text-xs select-all text-foreground">
-                                {window.location.origin}/api/v1/live/playlist.xml?playlist_id={playlistId}
+                                {window.location.origin}/api/v1/live/playlist.xml?playlist_id={playlistPublicId ?? playlistId}
                             </span>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => window.open(`${window.location.origin}/api/v1/live/playlist.xml?playlist_id=${playlistId}`, '_blank')}>
+                        <Button variant="ghost" size="icon" onClick={() => window.open(`${window.location.origin}/api/v1/live/playlist.xml?playlist_id=${playlistPublicId ?? playlistId}`, '_blank')}>
                             <ExternalLink className="h-4 w-4" />
                         </Button>
                     </div>

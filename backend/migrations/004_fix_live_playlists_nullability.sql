@@ -1,23 +1,22 @@
 -- Migration: Fix live_playlists.subscription_id nullability
--- Description: Recreates live_playlists table to remove NOT NULL constraint from subscription_id.
-
--- 1. Create new table
-CREATE TABLE live_playlists_new (
-    id INTEGER NOT NULL, 
-    subscription_id INTEGER, 
-    name VARCHAR NOT NULL, 
-    description VARCHAR, 
-    created_at DATETIME, 
-    PRIMARY KEY (id), 
-    FOREIGN KEY(subscription_id) REFERENCES subscriptions (id)
-);
-
--- 2. Copy data
-INSERT INTO live_playlists_new (id, subscription_id, name, description, created_at)
-SELECT id, subscription_id, name, description, created_at FROM live_playlists;
-
--- 3. Drop old table
-DROP TABLE live_playlists;
-
--- 4. Rename new table
-ALTER TABLE live_playlists_new RENAME TO live_playlists;
+-- Description: Recreated live_playlists table to remove NOT NULL constraint
+-- from subscription_id. Long since applied — subscription_id has been
+-- nullable in every real database for months, and app/main.py's own
+-- create_all() already makes it nullable on a fresh install.
+--
+-- Neutered 2026-09-24: the migration runner re-applies every .sql file on
+-- every single boot with no "already applied" bookkeeping, and this file's
+-- CREATE/INSERT/DROP/RENAME dance has no natural "duplicate column"-style
+-- error to make it a no-op the way a plain ALTER TABLE ADD COLUMN does. Its
+-- hardcoded column list (id, subscription_id, name, description, created_at)
+-- silently dropped every column a *later* migration had added to
+-- live_playlists — use_channel_numbers (006) and public_id (011) — on every
+-- restart, not just every rebuild. That is why a playlist's channel-number
+-- toggle kept reverting and, worse, why public_id (meant to be "generated
+-- once, never reassigned" so a TiviMate-bookmarked M3U/EPG URL survives)
+-- was actually re-randomized on every container restart, breaking those
+-- links far more often than the bug it was written to fix.
+--
+-- Left empty on purpose: an empty statement list is a safe no-op for the
+-- runner (see backend/migrations/apply_migrations.py), and the schema this
+-- file used to fix is already correct in every existing database.
