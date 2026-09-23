@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.5.1-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.5.2-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -91,10 +91,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.5.1
+  mourabena2ui/xtream-to-strm-web:4.5.2
 ```
 
-Available tags: `4.5.1` (pin this in production), `4.5`, `latest`.
+Available tags: `4.5.2` (pin this in production), `4.5`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -108,7 +108,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.5.1
+    image: mourabena2ui/xtream-to-strm-web:4.5.2
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -219,7 +219,26 @@ output/
 
 ## 📝 Version History
 
-### v4.5.1 (Current)
+### v4.5.2 (Current)
+
+Un `git clone` + `docker build` de ce dépôt ne produisait pas l'image publiée sur
+Docker Hub — trouvé en rebuildant v4.5.1 depuis un checkout propre pour vérifier qu'il
+ne contenait pas de code en cours d'édition ailleurs sur la machine.
+
+- 🚨 **`backend/app/db/` (la base SQLAlchemy, la session, la migration légataire v2)
+  n'avait jamais été suivi par git, depuis le tout début du dépôt public.** `.gitignore`
+  excluait `db/` sans l'ancrer à la racine, ce qui a aussi exclu ce dossier de code
+  homonyme sous `backend/app/`. Un build local a toujours fonctionné (Docker copie les
+  fichiers présents sur le disque, peu importe ce que git suit), donc rien ne le
+  laissait deviner : l'image publiée sur Docker Hub le contenait bien, faite depuis une
+  copie de travail qui avait le dossier sur disque — mais quiconque clonait le dépôt
+  GitHub et construisait l'image lui-même obtenait un conteneur qui plantait au
+  démarrage (`ModuleNotFoundError: No module named 'app.db'`). `.gitignore` ancré à la
+  racine (`/db/`, `/output/`) ; les 4 fichiers ajoutés à git.
+
+- ✅ 162 tests, tous verts ; conteneur redémarré et testé depuis un clone propre.
+
+### v4.5.1
 
 Trois défauts trouvés en vérifiant que le `public_id` de la v4.5.0 marchait vraiment —
 le dernier annule une bonne partie de ce que la v4.5.0 était censée corriger.

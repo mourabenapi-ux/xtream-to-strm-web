@@ -1,9 +1,16 @@
 # ---------------------------------------------------------------------------
 # Runtime data — NEVER commit. db/ holds subscriptions with provider
 # credentials in clear text, output/ holds the generated media library.
+# Anchored to the repo root: an unanchored `db/` also matched
+# backend/app/db/, the SQLAlchemy session/base module — silently excluding
+# it from every commit ever pushed. `git clone` + `docker build` from GitHub
+# has been producing an image that crashes on boot with
+# "ModuleNotFoundError: No module named 'app.db'" the whole time; only a
+# local build (which copies the untracked-but-present files straight off
+# disk) ever worked.
 # ---------------------------------------------------------------------------
-db/
-output/
+/db/
+/output/
 app.log
 *.log
 *.db
