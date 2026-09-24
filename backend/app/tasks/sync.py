@@ -195,7 +195,8 @@ def _tmdb_override_moved(item: dict, cached) -> bool:
             and normalise_id(cached.tmdb_id) != normalise_id(item.get("tmdb")))
 
 
-def _record_outcome(sync_state: SyncState, attempted: int, succeeded: int, collisions: int = 0) -> None:
+def _record_outcome(sync_state: SyncState, attempted: int, succeeded: int, collisions: int = 0,
+                     refreshed: int = 0) -> None:
     """Report what the sync actually wrote, not what it set out to write.
 
     `items_added` used to be `len(to_add_update)` — the size of the *to-do*
@@ -203,9 +204,15 @@ def _record_outcome(sync_state: SyncState, attempted: int, succeeded: int, colli
     A run where all 8 series aborted mid-write therefore reported "success,
     8 added" with an empty library. `error_message` was also never cleared, so
     a stale failure stayed attached to later green runs.
+
+    `refreshed` carves out of `succeeded` the series that were rewritten only
+    because their periodic episode-list recheck came due (see
+    SERIES_REFRESH_HOURS), not because they are new. Movies never pass it, so
+    items_added keeps its old meaning there.
     """
     failed = attempted - succeeded
-    sync_state.items_added = succeeded
+    sync_state.items_added = succeeded - refreshed
+    sync_state.items_refreshed = refreshed
 
     notes = []
     if failed > 0:
@@ -726,12 +733,19 @@ async def process_series(db: Session, xc, fm: FileManager, subscription_id: int)
             refresh_hours = _DEFAULT_SERIES_REFRESH_HOURS
         refresh_after = timedelta(hours=max(refresh_hours, 0))
 
+        # Series genuinely new to us, as opposed to ones re-added below only
+        # because their episode list came due for its periodic recheck — kept
+        # apart so the outcome can report "added" without folding in every
+        # routine revalidation of an unchanged library.
+        new_ids = set()
+
         for series in all_series:
             series_id = int(series['series_id'])
             current_ids.add(series_id)
 
             cached = cached_series.get(series_id)
             if not cached:
+                new_ids.add(series_id)
                 to_add_update.append(series)
             elif cached.name != series['name'] or layout_changed:
                 to_add_update.append(series)
@@ -976,7 +990,12 @@ async def process_series(db: Session, xc, fm: FileManager, subscription_id: int)
         )
 
         sync_state.items_deleted = len(to_delete)
-        _record_outcome(sync_state, attempted=len(to_add_update), succeeded=len(reprocessed_ids))
+        _record_outcome(
+            sync_state,
+            attempted=len(to_add_update),
+            succeeded=len(reprocessed_ids),
+            refreshed=len(reprocessed_ids - new_ids),
+        )
         if sync_state.status == SyncStatus.SUCCESS:
             sync_state.layout_signature = signature
         _clear_progress(sync_state)

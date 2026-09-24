@@ -3,7 +3,7 @@ from typing import List, Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Xtream to STRM"
-    VERSION: str = "4.5.2"
+    VERSION: str = "4.5.3"
     API_V1_STR: str = "/api/v1"
     
     # Database

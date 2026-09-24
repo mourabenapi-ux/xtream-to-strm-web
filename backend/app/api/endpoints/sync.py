@@ -20,6 +20,7 @@ def get_sync_status(db: Session = Depends(get_db)):
             last_sync=state.last_sync,
             items_added=state.items_added,
             items_deleted=state.items_deleted,
+            items_refreshed=state.items_refreshed or 0,
             error_message=state.error_message,
             progress_done=state.progress_done or 0,
             progress_total=state.progress_total or 0,

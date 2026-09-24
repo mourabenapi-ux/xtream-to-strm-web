@@ -7,7 +7,6 @@ from app.api import deps
 from app.models.subscription import SourceKind, Subscription
 from app.models.live import LivePlaylist, LivePlaylistBouquet, LivePlaylistChannel, LiveStreamSubscription
 from app.models.epg import EPGSourceGlobal, PlaylistEPGSource
-from app.models import live as models
 from app.services.catalog import get_catalog
 from app.services.epg import epg_service
 from app import schemas

@@ -4,7 +4,6 @@ import logging
 import time
 import asyncio
 import subprocess
-import shlex
 import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
@@ -12,13 +11,12 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.celery_app import celery_app
 from app.core.redis import redis_conn
 from app.db.session import SessionLocal
 from app.models.downloads import (
-    DownloadTask, DownloadStatus, DownloadSettings, 
+    DownloadTask, DownloadStatus,
     MonitoredMedia, DownloadSettingsGlobal, DownloadStatistics
 )
 from app.models.subscription import Subscription

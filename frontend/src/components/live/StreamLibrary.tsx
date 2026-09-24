@@ -309,6 +309,3 @@ export const ChannelLibrary: FC<ChannelLibraryProps> = ({ onCollapse, compactMod
         </Card>
     );
 };
-
-// Keep the default export for backward compatibility
-export const StreamLibrary = SourceExplorer;

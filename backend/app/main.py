@@ -101,6 +101,20 @@ def _ensure_schema_up_to_date():
                     except Exception as e:
                         print(f"  ⚠️ Could not add 'layout_signature': {e}")
 
+        # 3b-ter. items_refreshed on 'sync_state', separating a series' periodic
+        # episode-list recheck from a genuinely new series in the UI.
+        if "sync_state" in existing_tables:
+            sync_cols = [c['name'] for c in inspector.get_columns("sync_state")]
+            if "items_refreshed" not in sync_cols:
+                print("🔧 Missing 'items_refreshed' in 'sync_state'. Repairing...")
+                with engine.connect() as conn:
+                    try:
+                        conn.execute(text("ALTER TABLE sync_state ADD COLUMN items_refreshed INTEGER DEFAULT 0"))
+                        conn.commit()
+                        print("  ✅ Added 'items_refreshed' column.")
+                    except Exception as e:
+                        print(f"  ⚠️ Could not add 'items_refreshed': {e}")
+
         # 3b-bis. Live progress columns on both sync state tables. Without them
         # the UI can only show a spinner for a run that may last minutes.
         for table_name in ("sync_state", "m3u_sync_state"):
@@ -292,12 +306,11 @@ async def health_check():
 if os.path.exists(static_dir):
     from fastapi import Request
     from fastapi.exceptions import HTTPException
-    from starlette.exceptions import HTTPException as StarletteHTTPException
-    
+
     from fastapi.responses import JSONResponse
-    
+
     @app.exception_handler(404)
-    async def custom_404_handler(request: Request, exc):
+    async def custom_404_handler(request: Request, _exc):
         # If it's an API route, return JSON 404
         if request.url.path.startswith(settings.API_V1_STR):
             return JSONResponse(status_code=404, content={"detail": "Not found"})

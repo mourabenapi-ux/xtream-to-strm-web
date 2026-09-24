@@ -33,6 +33,8 @@ interface SyncStatus {
     status: string;
     items_added: number;
     items_deleted: number;
+    /** Series only: rewritten by the periodic episode-list recheck, not new. */
+    items_refreshed?: number;
     error_message?: string;
     // Live counters of the run in flight; cleared by the backend when it ends.
     progress_done?: number;
@@ -542,6 +544,14 @@ export default function XTVSelection() {
                                         <div className="flex justify-between">
                                             <span className="text-muted-foreground">Deleted:</span>
                                             <span className="font-medium text-red-600">{getStatus(selectedSubId, 'series')?.items_deleted || 0}</span>
+                                        </div>
+                                    )}
+                                    {!!getStatus(selectedSubId, 'series')?.items_refreshed && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Refreshed:</span>
+                                            <span className="font-medium text-blue-600" title="Rechecked for new episodes on their periodic schedule — not new series.">
+                                                {getStatus(selectedSubId, 'series')?.items_refreshed}
+                                            </span>
                                         </div>
                                     )}
                                 </div>

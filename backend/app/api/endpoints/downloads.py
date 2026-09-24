@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 from app.api import deps
-from app.models.downloads import DownloadTask, DownloadStatus, DownloadSettings, MonitoredMedia, DownloadSettingsGlobal, DownloadStatistics
+from app.models.downloads import DownloadTask, DownloadStatus, MonitoredMedia, DownloadSettingsGlobal, DownloadStatistics
 from app.models.subscription import Subscription
 from app.services.catalog import get_catalog
 from app.tasks.downloads import download_media_task, process_download_queue, check_auto_downloads

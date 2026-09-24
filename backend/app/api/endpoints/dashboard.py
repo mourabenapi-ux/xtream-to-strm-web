@@ -187,7 +187,7 @@ def get_recent_activity(
             "source_type": source_type,
             "sync_type": sync.type,
             "status": sync.status,
-            "items_processed": (sync.items_added or 0) + (sync.items_deleted or 0),
+            "items_processed": (sync.items_added or 0) + (sync.items_deleted or 0) + (sync.items_refreshed or 0),
             "timestamp": sync.last_sync.isoformat() if sync.last_sync else None,
             "duration": duration,
             # Shown for partial runs too — that is precisely when the message

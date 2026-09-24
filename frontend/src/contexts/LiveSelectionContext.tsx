@@ -4,13 +4,13 @@ import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { arrayMove } from '@dnd-kit/sortable';
 
 // Types
-export interface Category {
+interface Category {
     category_id: string;
     category_name: string;
     parent_id: number;
 }
 
-export interface Stream {
+interface Stream {
     num: number;
     name: string;
     stream_type: string;
@@ -20,7 +20,7 @@ export interface Stream {
     category_id: string;
 }
 
-export interface PlaylistChannel {
+interface PlaylistChannel {
     id: number;
     stream_id: string;
     subscription_id: number | null;
@@ -30,7 +30,7 @@ export interface PlaylistChannel {
     epg_channel_id: string | null;
 }
 
-export interface PlaylistBouquet {
+interface PlaylistBouquet {
     id: number;
     category_id: string | null;
     subscription_id: number | null;
@@ -39,7 +39,7 @@ export interface PlaylistBouquet {
     channels: PlaylistChannel[];
 }
 
-export interface Playlist {
+interface Playlist {
     id: number;
     public_id: string | null;
     subscription_id: number;
@@ -48,7 +48,7 @@ export interface Playlist {
     bouquets: PlaylistBouquet[];
 }
 
-export interface EPGSource {
+interface EPGSource {
     id: number;
     name: string;
     source_type: string;
@@ -56,7 +56,7 @@ export interface EPGSource {
     is_active: boolean;
 }
 
-export interface EPGMatchCandidate {
+interface EPGMatchCandidate {
     epg_id: string;
     display_name: string;
     fuzzy_score: number;
@@ -71,7 +71,7 @@ export interface EPGMatchDebugResponse {
 }
 
 // Context State
-export interface LiveSelectionContextType {
+interface LiveSelectionContextType {
     // Core State
     playlist: Playlist | null;
     setPlaylist: (playlist: Playlist | null) => void;
@@ -1002,5 +1002,3 @@ export function useLiveSelection() {
     }
     return context;
 }
-
-export default LiveSelectionContext;

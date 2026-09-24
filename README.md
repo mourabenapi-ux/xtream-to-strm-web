@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.5.2-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.5.3-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -91,10 +91,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.5.2
+  mourabena2ui/xtream-to-strm-web:4.5.3
 ```
 
-Available tags: `4.5.2` (pin this in production), `4.5`, `latest`.
+Available tags: `4.5.3` (pin this in production), `4.5`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -108,7 +108,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.5.2
+    image: mourabena2ui/xtream-to-strm-web:4.5.3
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -219,7 +219,30 @@ output/
 
 ## 📝 Version History
 
-### v4.5.2 (Current)
+### v4.5.3 (Current)
+
+Un utilisateur qui relançait une synchro Séries la voyait systématiquement repartir sur
+un « import complet » — le même nombre d'éléments « ajoutés » à chaque fois, jamais 0 —
+alors que la synchro Films, elle, retombait bien à 0 quand rien n'avait changé.
+
+- 🔁 **Ce n'était pas un bug, mais un effet de bord trompeur d'un mécanisme volontaire.**
+  Contrairement à un film, un nouvel épisode ajouté à une série déjà connue ne se détecte
+  qu'en redemandant sa liste d'épisodes au fournisseur — rien dans la fiche de la série
+  elle-même ne le signale de façon fiable. L'appli revérifie donc chaque série au bout de
+  `SERIES_REFRESH_HOURS` (12h par défaut), même si rien n'a changé. Le compteur ne
+  distinguait pas une série réellement nouvelle d'une série simplement revérifiée par
+  sécurité — les deux tombaient dans « Added ».
+- 📊 **Un compteur « Refreshed » sépare maintenant les deux** sur l'écran Bouquet
+  Selection : « Added » ne montre plus que les séries réellement nouvelles, « Refreshed »
+  (en bleu, affiché seulement s'il est non nul) montre celles revérifiées sur leur planning
+  habituel. Le flux d'activité du tableau de bord compte toujours le travail réellement
+  effectué (ajoutés + revérifiés + supprimés).
+- 🧹 Passe de nettoyage : imports et exports morts retirés (`live.py`, `downloads.py`,
+  `StreamLibrary.tsx`, `LiveSelectionContext.tsx`, `ToastContext.tsx`), y compris un export
+  de compatibilité ascendante qui ne servait plus à rien.
+- ✅ 162 tests, tous verts.
+
+### v4.5.2
 
 Un `git clone` + `docker build` de ce dépôt ne produisait pas l'image publiée sur
 Docker Hub — trouvé en rebuildant v4.5.1 depuis un checkout propre pour vérifier qu'il

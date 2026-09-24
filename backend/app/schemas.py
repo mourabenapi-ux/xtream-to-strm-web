@@ -44,6 +44,9 @@ class SyncStatusResponse(BaseModel):
     status: str
     items_added: int
     items_deleted: int
+    # Series only: rewritten by the periodic episode-list recheck rather than
+    # because they were new. See SyncState.items_refreshed.
+    items_refreshed: int = 0
     error_message: Optional[str] = None
     # How far the run in flight has got. Only meaningful while status is
     # "running"; progress_total is 0 when the count is not known yet.

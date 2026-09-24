@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, FC, ReactNode } from 'react';
 import { CheckCircle2, AlertCircle, Info, X, AlertTriangle } from 'lucide-react';
 
-export type ToastVariant = 'success' | 'error' | 'info' | 'warning';
+type ToastVariant = 'success' | 'error' | 'info' | 'warning';
 
 interface Toast {
     id: number;
@@ -24,7 +24,7 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 // Pulls a human-readable message out of whatever the backend returned.
 // FastAPI sends `detail` as a string, or as a list of validation objects.
-export function describeApiError(err: any): string | undefined {
+function describeApiError(err: any): string | undefined {
     const detail = err?.response?.data?.detail;
     if (typeof detail === 'string') return detail;
     if (Array.isArray(detail)) {
