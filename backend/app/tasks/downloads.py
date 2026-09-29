@@ -1,4 +1,5 @@
 import os
+import re
 import httpx
 import logging
 import time
@@ -32,7 +33,17 @@ logger = logging.getLogger(__name__)
 CHUNK_SIZE = 64 * 1024  # 64KB for better throttling control
 DB_REFRESH_INTERVAL = 5.0  # Refresh DB once every 5 seconds during download
 HEARTBEAT_TTL = 120  # seconds a worker heartbeat stays valid in Redis
-FFMPEG_MIN_COMPLETENESS = 0.90  # remuxing changes the size slightly, so allow some slack
+FFMPEG_MIN_DURATION_RATIO = 0.995  # a remux keeps the duration; only the last fraction of a second may go
+INTEGRITY_CHECK_TIMEOUT = 3600  # seconds; a demux-only pass over a large film takes a few minutes
+SAMPLE_COUNT = 16  # byte ranges re-read from the provider to prove the file on disk is its file
+SAMPLE_BYTES = 64 * 1024
+MAX_RECONNECT_ATTEMPTS = 40  # 20 minutes: after a drop the provider's DNS was measured failing for 2-4 minutes
+RECONNECT_DELAY = 30  # seconds between them
+PROVIDER_BUSY_CODES = (429, 460, 503)
+BUSY_DELAY = 120  # seconds between attempts while the provider blocks us
+MAX_BUSY_WAITS = 15  # 30 minutes, longer than the ~20-minute block measured on Strong
+MAX_INLINE_RESUMES = 100  # provider drops resumed in place per attempt, as long as each one made progress
+DEFAULT_USER_AGENT = "TiviMate/5.0.4 (Linux; Android 11; Mbox Build/RQ1A.210105.003)"
 
 
 class IncompleteDownloadError(Exception):
@@ -41,6 +52,249 @@ class IncompleteDownloadError(Exception):
     Raised instead of reporting success so the task retries and resumes from the
     partial file, rather than archiving a truncated media file as complete.
     """
+
+
+class CorruptDownloadError(Exception):
+    """The file on disk is not a faithful, playable copy. It has been removed
+    already, so the retry starts over instead of "resuming" at its end."""
+
+
+class ProviderRefusedError(Exception):
+    """The provider answered with something that is not the film (an error page,
+    or a body of another length). Nothing was written; the retry resumes."""
+
+
+def _not_the_film(response: httpx.Response, known_size: Optional[int]) -> Optional[str]:
+    content_type = response.headers.get("content-type", "").lower()
+    if any(t in content_type for t in ("text/", "html", "json", "xml")):
+        return f"provider answered with a {content_type} page instead of the video"
+    if known_size:
+        if response.status_code == 200:
+            length = response.headers.get("content-length", "")
+            if length.isdigit() and int(length) != known_size:
+                return (f"provider answered with {int(length):,} bytes instead of the "
+                        f"{known_size:,}-byte film")
+    return None
+
+
+class SourceDamagedError(Exception):
+    """Two separate downloads produced the same damaged file: the provider's copy
+    is itself broken and no retry can fix it. The file is kept."""
+
+
+class UnverifiableDownloadError(Exception):
+    """The download could not be proven complete. The file is kept, but the task
+    is never shown as completed on a guess."""
+
+
+# --- Verification ---
+# A download is marked completed only when all of this holds:
+#   1. the file has exactly the size the provider announced;
+#   2. byte ranges spread over the whole file, re-read from the provider, are
+#      identical to what is on disk (this catches a resume that joined the wrong
+#      bytes, or a different copy of the film served by another CDN node);
+#   3. FFmpeg reads the container from start to end without an error.
+# Each check was measured on deliberately damaged files: none catches every case
+# on its own, together they catch all of them.
+
+def _download_headers(settings: DownloadSettingsGlobal) -> Dict[str, str]:
+    # "Icy-MetaData: 1" is deliberately not sent: it asks the server to weave
+    # Shoutcast metadata blocks into the body every few KB, which is fine for
+    # radio and fatal for a video file saved byte for byte. "identity" keeps the
+    # body exactly as stored, so the byte count matches the announced length.
+    return {
+        "User-Agent": settings.user_agent or DEFAULT_USER_AGENT,
+        "Accept-Encoding": "identity",
+        "Connection": "close",
+    }
+
+
+def _run_polled(cmd, download_id: int, timeout: float) -> subprocess.CompletedProcess:
+    """Run a long check while keeping the heartbeat alive, so the queue does not
+    think the worker died and start another download on the provider's only
+    connection."""
+    with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as out, \
+            tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as err:
+        process = subprocess.Popen(cmd, stdout=out, stderr=err, text=True)
+        deadline = time.time() + timeout
+        try:
+            while process.poll() is None:
+                if time.time() > deadline:
+                    raise subprocess.TimeoutExpired(cmd, timeout)
+                _beat(download_id)
+                time.sleep(2)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+        out.seek(0)
+        err.seek(0)
+        return subprocess.CompletedProcess(cmd, process.returncode, out.read(), err.read())
+
+
+def _wait_with_heartbeat(download_id: int, seconds: float) -> None:
+    """Sleep without letting the heartbeat lapse (it lives HEARTBEAT_TTL seconds)."""
+    end = time.time() + seconds
+    while time.time() < end:
+        _beat(download_id)
+        time.sleep(min(30, max(end - time.time(), 0)))
+
+
+def _verify_media_integrity(path: Path, download_id: int) -> Optional[str]:
+    """Demux the whole file (no decoding, so it runs at disk speed) and return
+    what FFmpeg complains about, or None if it reads cleanly."""
+    cmd = ["ffmpeg", "-nostdin", "-v", "error", "-xerror", "-i", str(path),
+           "-map", "0", "-c", "copy", "-f", "null", "-"]
+    try:
+        result = _run_polled(cmd, download_id, INTEGRITY_CHECK_TIMEOUT)
+    except FileNotFoundError as e:
+        raise UnverifiableDownloadError("FFmpeg is not installed, the file could not be checked") from e
+    except subprocess.TimeoutExpired as e:
+        raise UnverifiableDownloadError("the integrity check timed out") from e
+    if result.returncode != 0 or result.stderr.strip():
+        lines = [l.strip() for l in result.stderr.splitlines() if l.strip()]
+        return " | ".join(lines[:3]) or f"ffmpeg exit code {result.returncode}"
+    return None
+
+
+def _media_duration(path: Path) -> Optional[float]:
+    try:
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+            capture_output=True, text=True, timeout=300,
+        )
+        return float(result.stdout.strip())
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return None
+
+
+def _sample_offsets(size: int) -> list:
+    last = max(size - SAMPLE_BYTES, 0)
+    offsets = {min(size * i // SAMPLE_COUNT, last) for i in range(SAMPLE_COUNT)}
+    offsets.add(last)  # the tail is where a cut or a bad resume shows first
+    return sorted(offsets)
+
+
+def _compare_with_provider(download: DownloadTask, path: Path, settings: DownloadSettingsGlobal) -> Optional[str]:
+    """Re-read byte ranges from the provider and compare them with the file.
+
+    Returns a description of the first difference, or None when every sample
+    matches. Network trouble raises instead: an unanswered question is not a
+    difference, and the file must not be thrown away over it.
+    """
+    size = path.stat().st_size
+    with httpx.Client(follow_redirects=True, max_redirects=settings.max_redirects or 10,
+                      headers=_download_headers(settings),
+                      timeout=httpx.Timeout(settings.connection_timeout_seconds or 30)) as client, \
+            open(path, "rb") as local:
+        for offset in _sample_offsets(size):
+            _beat(download.id)
+            end = min(offset + SAMPLE_BYTES, size) - 1
+            with client.stream("GET", download.url, headers={"Range": f"bytes={offset}-{end}"}) as response:
+                response.raise_for_status()
+                # An error page is no answer: the file is kept and checked again later.
+                refusal = _not_the_film(response, size)
+                if refusal:
+                    raise ProviderRefusedError(f"verification: {refusal}")
+                if response.status_code != 206:
+                    # No range support: every attempt on such a server restarts from
+                    # zero (see the 200 branch of the download loop), so the file is
+                    # one uninterrupted transfer of exactly the announced length.
+                    logger.info(f"Download {download.id}: provider ignores ranges, byte sampling skipped")
+                    return None
+                content_range = response.headers.get("content-range", "")
+                total = content_range.rsplit("/", 1)[-1]
+                if total.isdigit() and int(total) != size:
+                    return f"the provider's file is {int(total):,} bytes, the one on disk {size:,}"
+                start = content_range.split(" ")[-1].split("-")[0]
+                if start.isdigit() and int(start) != offset:
+                    return f"provider answered byte {start} when asked for byte {offset}"
+                remote = bytearray()
+                for chunk in response.iter_bytes():
+                    remote.extend(chunk)
+                    if len(remote) >= end - offset + 1:
+                        break
+            local.seek(offset)
+            if bytes(remote[: end - offset + 1]) != local.read(end - offset + 1):
+                return f"bytes at offset {offset:,} differ from the provider's"
+            time.sleep(0.5)  # these providers dislike connections in quick succession
+    return None
+
+
+def _sha256(path: Path, download_id: int) -> str:
+    import hashlib
+    digest = hashlib.sha256()
+    last_beat = 0.0
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(8 * 1024 * 1024), b""):
+            digest.update(block)
+            if time.time() - last_beat > 30:
+                _beat(download_id)
+                last_beat = time.time()
+    return digest.hexdigest()
+
+
+def _discard(db: Session, download: DownloadTask, path: Path) -> None:
+    path.unlink(missing_ok=True)
+    download.downloaded_bytes = 0
+    download.progress = 0
+    # A fresh start learns the size again: the discarded file may have come from
+    # a wrong answer, and keeping its size would make the real film look wrong.
+    download.file_size = None
+    db.commit()
+
+
+def _verify_download(db: Session, download: DownloadTask, save_path: Path,
+                     settings: DownloadSettingsGlobal, used_ffmpeg: bool) -> None:
+    """Return only if the file is proven good; otherwise raise (see the classes above)."""
+    download.error_message = "Verifying the file..."
+    db.commit()
+
+    # An FFmpeg remux is not a byte copy, so there is nothing to compare; its
+    # duration was checked against the source's in _perform_download_ffmpeg.
+    if not used_ffmpeg:
+        if not download.file_size:
+            probe_headers = _download_headers(settings)
+            with httpx.Client(follow_redirects=True, headers=probe_headers,
+                              timeout=httpx.Timeout(settings.connection_timeout_seconds or 30)) as client:
+                download.file_size = _probe_total_size(client, download.url)
+            db.commit()
+        if not download.file_size:
+            raise UnverifiableDownloadError(
+                "the provider does not say how large the file is, so it cannot be proven complete"
+            )
+        on_disk = save_path.stat().st_size
+        if on_disk != download.file_size:
+            _discard(db, download, save_path)
+            raise CorruptDownloadError(
+                f"file is {on_disk:,} bytes, the provider announced {download.file_size:,}; "
+                f"discarded, next attempt starts over"
+            )
+        difference = _compare_with_provider(download, save_path, settings)
+        if difference:
+            _discard(db, download, save_path)
+            raise CorruptDownloadError(f"{difference}; discarded, next attempt starts over")
+
+    problem = _verify_media_integrity(save_path, download.id)
+    marker = save_path.with_name(save_path.name + ".damaged")
+    if not problem:
+        marker.unlink(missing_ok=True)
+        return
+
+    # The bytes match the provider's yet the video is broken. Either a flaw the
+    # samples missed, or the provider's own copy is damaged. Only a second full
+    # download can tell: if it comes out identical, the damage is at the source.
+    digest = _sha256(save_path, download.id)
+    previous = marker.read_text(encoding="utf-8").split(" ", 1)[0] if marker.is_file() else None
+    if previous == digest:
+        marker.unlink(missing_ok=True)
+        raise SourceDamagedError(
+            f"the provider's file is itself damaged (two downloads came out identical); "
+            f"the copy is kept but will not play cleanly: {problem}"
+        )
+    marker.write_text(f"{digest} {problem}", encoding="utf-8")
+    _discard(db, download, save_path)
+    raise CorruptDownloadError(f"damaged video ({problem}); discarded, downloading it again to compare")
 
 
 class WrongContainerExtension(Exception):
@@ -598,24 +852,34 @@ def _perform_download_stream(db: Session, download: DownloadTask, save_path: Pat
     client_timeout = settings.connection_timeout_seconds or 30
     max_redirects = settings.max_redirects or 10
     limits = httpx.Limits(max_connections=10, max_keepalive_connections=5)
-    
-    # User-Agent from settings
-    ua = "TiviMate/5.0.4 (Linux; Android 11; Mbox Build/RQ1A.210105.003)"
-    if settings.user_agent:
-        ua = settings.user_agent
 
-    with httpx.Client(limits=limits, follow_redirects=True, max_redirects=max_redirects, 
-                      headers={"User-Agent": ua, "Icy-MetaData": "1", "Connection": "close"},
+    with httpx.Client(limits=limits, follow_redirects=True, max_redirects=max_redirects,
+                      headers=_download_headers(settings),
                       timeout=httpx.Timeout(client_timeout, read=None)) as client:
-        
         container_probed = False
+        inline_resumes = 0
+        connect_failures = 0
+        busy_waits = 0
 
         while True:
             headers = {'Range': f'bytes={existing_size}-'} if existing_size > 0 else {}
             try:
                 with client.stream("GET", download.url, headers=headers) as response:
                     response.raise_for_status()
-                    
+
+                    # Measured on this provider: after it cuts a transfer, a resume is
+                    # sometimes answered "200 OK" with a 9,699-byte page instead of the
+                    # film. Taken as "range ignored, restart", that page overwrote the
+                    # partial file and, matching its own Content-Length, was archived as
+                    # complete. Nothing is written until the answer is the film.
+                    refusal = _not_the_film(response, download.file_size)
+                    if refusal:
+                        raise ProviderRefusedError(refusal)
+                    connect_failures = 0
+                    busy_waits = 0
+                    if (download.error_message or "").startswith("Provider busy"):
+                        download.error_message = None
+
                     # Handle 200 vs 206
                     if response.status_code == 200 and existing_size > 0:
                         logger.warning(f"Server ignored Range for {download.id}. Restarting.")
@@ -624,6 +888,28 @@ def _perform_download_stream(db: Session, download: DownloadTask, save_path: Pat
                         mode = 'wb'
                     else:
                         mode = 'ab' if existing_size > 0 else 'wb'
+
+                    # A 206 must start exactly where the file on disk stops. A server
+                    # that answers with another offset would have its bytes appended
+                    # at the wrong place: right size, broken video.
+                    if response.status_code == 206 and existing_size > 0:
+                        content_range = response.headers.get('content-range', '')
+                        start = content_range.split(' ')[-1].split('-')[0] if content_range else ''
+                        if start.isdigit() and int(start) != existing_size:
+                            _discard(db, download, save_path)
+                            raise CorruptDownloadError(
+                                f"resume answered from byte {start}, expected {existing_size}; "
+                                f"partial file discarded, next attempt starts over"
+                            )
+                        # The partial belongs to the file the download started on. If the
+                        # provider now serves a file of another size, the two cannot be joined.
+                        total = content_range.rsplit('/', 1)[-1]
+                        if download.file_size and total.isdigit() and int(total) != download.file_size:
+                            _discard(db, download, save_path)
+                            raise CorruptDownloadError(
+                                f"provider now serves a {int(total):,}-byte file, the partial came "
+                                f"from a {download.file_size:,}-byte one; next attempt starts over"
+                            )
 
                     # Extract file size
                     if 'content-length' in response.headers:
@@ -734,6 +1020,21 @@ def _perform_download_stream(db: Session, download: DownloadTask, save_path: Pat
                         f"or connection limit reached"
                     ) from e
 
+                # 460 is this provider's temporary block after sustained traffic
+                # (measured: ~20 minutes); 429 and 503 mean the same elsewhere. The
+                # three task retries are spent in three minutes, so wait it out here.
+                if e.response.status_code in PROVIDER_BUSY_CODES and existing_size > 0:
+                    busy_waits += 1
+                    if busy_waits <= MAX_BUSY_WAITS:
+                        logger.info(f"Download {download.id}: provider busy (HTTP "
+                                    f"{e.response.status_code}), waiting {BUSY_DELAY}s "
+                                    f"({busy_waits}/{MAX_BUSY_WAITS})")
+                        download.error_message = (f"Provider busy (HTTP {e.response.status_code}), "
+                                                  f"waiting to resume")
+                        db.commit()
+                        _wait_with_heartbeat(download.id, BUSY_DELAY)
+                        continue
+
                 if e.response.status_code == 416:
                     # Range not satisfiable: either the file is already whole, or the
                     # provider changed it under us. Never assume the second - throwing
@@ -750,6 +1051,38 @@ def _perform_download_stream(db: Session, download: DownloadTask, save_path: Pat
                         f"Delete the partial file to start over."
                     ) from e
                 raise e
+            except (httpx.RemoteProtocolError, httpx.ReadError, httpx.ReadTimeout) as e:
+                # Measured: this provider drops a transfer every 35-360 MB. Each drop
+                # used to cost one of the task's three retries, so a long film could
+                # run out of them. As long as the transfer moves forward, resume
+                # here; the final verification proves the pieces joined correctly.
+                on_disk = save_path.stat().st_size if save_path.exists() else 0
+                if on_disk > existing_size and inline_resumes < MAX_INLINE_RESUMES:
+                    inline_resumes += 1
+                    logger.info(f"Download {download.id}: provider dropped the transfer at "
+                                f"{on_disk:,} bytes, resuming")
+                    existing_size = on_disk
+                    download.downloaded_bytes = on_disk
+                    db.commit()
+                    _beat(download.id)
+                    time.sleep(5)
+                    continue
+                logger.error(f"Network error for {download.id}: {e}")
+                raise e
+            except (httpx.ConnectError, httpx.ConnectTimeout) as e:
+                # Measured the same evening: the provider's hostname sometimes fails
+                # to resolve for a minute. Reconnecting after a drop must not spend a
+                # retry on that; a few patient attempts, then give up to the retry.
+                connect_failures += 1
+                if existing_size > 0 and connect_failures <= MAX_RECONNECT_ATTEMPTS:
+                    logger.info(f"Download {download.id}: cannot reach the provider ({e}), "
+                                f"reconnecting in {RECONNECT_DELAY}s "
+                                f"({connect_failures}/{MAX_RECONNECT_ATTEMPTS})")
+                    _beat(download.id)
+                    time.sleep(RECONNECT_DELAY)
+                    continue
+                logger.error(f"Network error for {download.id}: {e}")
+                raise e
             except (httpx.NetworkError, httpx.TimeoutException) as e:
                 logger.error(f"Network error for {download.id}: {e}")
                 raise e
@@ -762,14 +1095,12 @@ def _perform_download_ffmpeg(db: Session, download: DownloadTask, save_path: Pat
     download.error_message = "Using FFmpeg Engine..."
     db.commit()
 
-    ua = "TiviMate/5.0.4 (Linux; Android 11; Mbox Build/RQ1A.210105.003)"
-    
-    # Build command
-    # -headers option allows setting custom HTTP headers
+    ua = settings.user_agent or DEFAULT_USER_AGENT
+
     cmd = [
         "ffmpeg",
+        "-nostdin",
         "-user_agent", ua,
-        "-headers", "Icy-MetaData: 1\r\n",
         "-i", download.url,
         "-c", "copy",
         "-y", # Overwrite
@@ -798,6 +1129,11 @@ def _perform_download_ffmpeg(db: Session, download: DownloadTask, save_path: Pat
                     db.refresh(download)
                     if download.status in [DownloadStatus.PAUSED, DownloadStatus.CANCELLED]:
                         logger.info(f"Download {download.id} {download.status} during FFmpeg")
+                        # A remux cannot be resumed with a Range request: its bytes
+                        # are not the provider's, so appending to it corrupts it.
+                        process.kill()
+                        process.wait()
+                        _discard(db, download, save_path)
                         return False
                     if save_path.exists():
                         download.downloaded_bytes = save_path.stat().st_size
@@ -810,26 +1146,34 @@ def _perform_download_ffmpeg(db: Session, download: DownloadTask, save_path: Pat
                 process.kill()
                 process.wait()
 
+        err_out.seek(0)
+        ffmpeg_log = err_out.read()
         if returncode != 0:
-            err_out.seek(0)
-            stderr_tail = err_out.read()[-800:]
-            logger.error(f"FFmpeg failed (code {returncode}): {stderr_tail}")
+            logger.error(f"FFmpeg failed (code {returncode}): {ffmpeg_log[-800:]}")
+            _discard(db, download, save_path)
             raise Exception(f"FFmpeg process returned {returncode}")
 
-    # A file_size announced by the provider is never overwritten: it is the only
-    # reference we can check the result against.
-    if save_path.exists():
-        produced = save_path.stat().st_size
-        download.downloaded_bytes = produced
-
-        expected_total = download.file_size
-        if expected_total:
-            if produced < expected_total * FFMPEG_MIN_COMPLETENESS:
-                raise IncompleteDownloadError(
-                    f"FFmpeg produced {produced:,} bytes, expected about {expected_total:,}"
-                )
-        else:
-            download.file_size = produced
+    # FFmpeg exits 0 when the provider cuts the stream: it just closes the file.
+    # A remux keeps the duration, so the output must last as long as the source
+    # FFmpeg itself reported when it opened it. Size is no guide here.
+    if not save_path.exists():
+        raise IncompleteDownloadError("FFmpeg produced no file")
+    download.downloaded_bytes = save_path.stat().st_size
+    match = re.search(r"Duration: (\d+):(\d{2}):(\d{2}(?:\.\d+)?)", ffmpeg_log)
+    if not match:
+        raise UnverifiableDownloadError(
+            "the provider did not report the film's duration, so the FFmpeg copy cannot be proven complete"
+        )
+    h, m, s = match.groups()
+    source = int(h) * 3600 + int(m) * 60 + float(s)
+    produced = _media_duration(save_path) or 0.0
+    if produced < source * FFMPEG_MIN_DURATION_RATIO:
+        _discard(db, download, save_path)
+        raise IncompleteDownloadError(
+            f"FFmpeg copy lasts {produced:.0f}s, the source {source:.0f}s"
+        )
+    if not download.file_size:
+        download.file_size = download.downloaded_bytes
 
     return True
 
@@ -1006,6 +1350,10 @@ def download_media_task(self, download_id: int):
                 db.commit()
                 logger.info(f"Retrying download {download_id} as .{ext_error.extension}")
                 success = _perform_download_stream(db, download, save_path, settings)
+        except CorruptDownloadError:
+            # Already discarded; the generic retry below starts it over. It must not
+            # fall through to the FFmpeg fallback, the weaker path.
+            raise
         except Exception as e:
             partial_bytes = save_path.stat().st_size if save_path.exists() else 0
             if partial_bytes > 0:
@@ -1024,13 +1372,17 @@ def download_media_task(self, download_id: int):
         if success:
             # Final guard: never archive a short file as complete. FFmpeg is exempt
             # because remuxing legitimately changes the size; it ran its own
-            # tolerance check already.
+            # duration check already.
             actual_bytes = save_path.stat().st_size if save_path.exists() else 0
             download.downloaded_bytes = actual_bytes
             if not used_ffmpeg and download.file_size and actual_bytes < download.file_size:
                 raise IncompleteDownloadError(
                     f"file is truncated: {actual_bytes:,}/{download.file_size:,} bytes"
                 )
+
+            # Right size is not enough: nothing below this line runs unless the
+            # file is proven to be the provider's file and to read end to end.
+            _verify_download(db, download, save_path, settings, used_ffmpeg)
 
             # Written only once the media file is known-complete, so a failed
             # or truncated download never leaves an NFO describing nothing.
@@ -1046,6 +1398,18 @@ def download_media_task(self, download_id: int):
             update_daily_stats(db, success=True, bytes_downloaded=float(download.downloaded_bytes))
             logger.info(f"Download {download_id} finished: {download.title}")
 
+    except (SourceDamagedError, UnverifiableDownloadError) as e:
+        # Final: retrying cannot change the answer. The file stays on disk, the
+        # task is never shown as completed.
+        logger.error(f"Task {download_id} not completed: {e}")
+        try:
+            db.refresh(download)
+            download.status = DownloadStatus.FAILED
+            download.error_message = str(e)
+            db.commit()
+            update_daily_stats(db, success=False)
+        except Exception as status_err:
+            logger.error(f"Error recording failure: {status_err}")
     except Exception as e:
         logger.error(f"Task {download_id} failed: {e}")
         try:

@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.5.3-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.5.4-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -91,10 +91,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.5.3
+  mourabena2ui/xtream-to-strm-web:4.5.4
 ```
 
-Available tags: `4.5.3` (pin this in production), `4.5`, `latest`.
+Available tags: `4.5.4` (pin this in production), `4.5`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -108,7 +108,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.5.3
+    image: mourabena2ui/xtream-to-strm-web:4.5.4
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -219,7 +219,29 @@ output/
 
 ## 📝 Version History
 
-### v4.5.3 (Current)
+### v4.5.4 (Current)
+
+Des téléchargements affichés à 100 % et « OK » se lisaient avec des fragments abîmés dans
+VLC. L'ancien contrôle ne comparait que le nombre d'octets, et le fournisseur, mesuré en
+conditions réelles, coupe la connexion toutes les 1 à 2 minutes, répond parfois à une
+reprise par une page de 9 Ko au lieu du film, ou annonce à la reprise un fichier d'une autre
+taille. Un film pouvait ainsi être recollé à partir de deux fichiers différents et passer
+le contrôle.
+
+- ✅ **« Terminé » seulement si c'est prouvé** : taille exacte, 16 extraits relus chez le
+  fournisseur identiques octet par octet, et lecture complète par FFmpeg sans erreur.
+- 🧹 **Un fichier mal raccordé est jeté et retéléchargé depuis zéro**, jamais « repris » à
+  sa fin. Si deux téléchargements donnent le même fichier défectueux, c'est la copie du
+  fournisseur qui est abîmée : la tâche l'indique et le fichier est conservé.
+- 🛡️ **Une réponse qui n'est pas le film n'est jamais écrite** (page d'erreur, mauvaise
+  longueur, autre fichier).
+- 🔌 **Coupures, pannes DNS et blocage HTTP 460 du fournisseur sont attendus sur place**
+  sans épuiser les 3 tentatives. Vérifié sur un vrai film de 2,7 Go : terminé et vérifié
+  à travers une dizaine de coupures, là où l'ancienne version échouait à 758 Mo.
+- L'en-tête `Icy-MetaData` n'est plus envoyé ; la copie FFmpeg de secours est jugée sur sa
+  durée, plus sur une tolérance de taille de 10 %.
+
+### v4.5.3
 
 Un utilisateur qui relançait une synchro Séries la voyait systématiquement repartir sur
 un « import complet » — le même nombre d'éléments « ajoutés » à chaque fois, jamais 0 —
