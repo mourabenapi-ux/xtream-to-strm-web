@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.5.4-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.5.5-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -91,10 +91,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.5.4
+  mourabena2ui/xtream-to-strm-web:4.5.5
 ```
 
-Available tags: `4.5.4` (pin this in production), `4.5`, `latest`.
+Available tags: `4.5.5` (pin this in production), `4.5`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -108,7 +108,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.5.4
+    image: mourabena2ui/xtream-to-strm-web:4.5.5
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -219,7 +219,17 @@ output/
 
 ## 📝 Version History
 
-### v4.5.4 (Current)
+### v4.5.5 (Current)
+
+Supprimer une source EPG encore liée à des playlists était refusé, avec un message demandant
+de la délier à la main, playlist par playlist.
+
+- 🔗 **La suppression détache maintenant la source elle-même** : la fenêtre de confirmation
+  indique combien de playlists sont concernées et que celles-ci perdent ce guide. L'API
+  continue de refuser la suppression d'une source liée tant que `unlink=true` n'est pas
+  passé explicitement.
+
+### v4.5.4
 
 Des téléchargements affichés à 100 % et « OK » se lisaient avec des fragments abîmés dans
 VLC. L'ancien contrôle ne comparait que le nombre d'octets, et le fournisseur, mesuré en

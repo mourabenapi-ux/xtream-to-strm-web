@@ -133,7 +133,7 @@ export default function EPGAdmin() {
     const confirmDelete = async () => {
         if (!sourceToDelete) return;
         try {
-            await api.delete(`/epg-sources/${sourceToDelete.id}`);
+            await api.delete(`/epg-sources/${sourceToDelete.id}`, { params: { unlink: true } });
             toast.success('EPG source deleted', sourceToDelete.name);
             fetchSources();
         } catch (error) {
@@ -313,7 +313,7 @@ export default function EPGAdmin() {
                 </p>
                 <p className="text-muted-foreground">
                     {sourceToDelete && sourceToDelete.used_by_playlists_count > 0
-                        ? `This source is still linked to ${sourceToDelete.used_by_playlists_count} playlist(s); unlink it there first or the delete will be refused.`
+                        ? `This source is linked to ${sourceToDelete.used_by_playlists_count} playlist(s). Deleting it also unlinks it from them; those playlists lose this guide.`
                         : 'It is not linked to any playlist, so it can be removed safely.'}
                 </p>
             </ConfirmDialog>

@@ -8,7 +8,7 @@
 
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.2.0
+    image: mourabena2ui/xtream-to-strm-web:4.5.5
     container_name: xtream_app
     ports:
       # Host port 80 -> app. Keep this on your LAN: there is no authentication.

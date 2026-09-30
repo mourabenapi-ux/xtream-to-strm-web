@@ -145,26 +145,29 @@ def delete_epg_source(
     *,
     db: Session = Depends(deps.get_db),
     source_id: int,
+    unlink: bool = False,
 ) -> Any:
-    """Delete global EPG source if not used by any playlist."""
+    """Delete a global EPG source. A source still linked to playlists is
+    refused unless unlink=true, which removes those links with it."""
     source = db.query(EPGSourceGlobal).filter(EPGSourceGlobal.id == source_id).first()
     if not source:
         raise HTTPException(status_code=404, detail="EPG Source not found")
-    
+
     # Check usage
     usage_count = db.query(PlaylistEPGSource).filter(
         PlaylistEPGSource.epg_source_id == source_id
     ).count()
-    
-    if usage_count > 0:
+
+    if usage_count > 0 and not unlink:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=f"Cannot delete source: Used by {usage_count} playlists. Unlink them first."
         )
-    
+
+    # The playlist_links relationship cascades, so the links go with the source.
     db.delete(source)
     db.commit()
-    return {"status": "success"}
+    return {"status": "success", "unlinked_playlists": usage_count}
 
 @router.post("/{source_id}/refresh")
 def refresh_source(

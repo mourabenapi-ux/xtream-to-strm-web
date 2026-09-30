@@ -1,4 +1,4 @@
-# Xtream to STRM v4.2.0
+# Xtream to STRM v4.5.5
 - Jellyfin Media Management
 
 Transform your Xtream Codes subscriptions and M3U playlists into Jellyfin-compatible media files with this modern, production-ready web application.
@@ -7,16 +7,16 @@ Transform your Xtream Codes subscriptions and M3U playlists into Jellyfin-compat
 
 Automatically generates `.strm` stream files and `.nfo` metadata files following Jellyfin's naming conventions, enabling seamless integration with your Jellyfin media server.
 
-## 🆕 What's new in v4.2.0
+## 🆕 What's new in v4.5.x
 
-A hardening release, verified against a live provider and a 3 700-item library.
+- **4.5.5**: deleting an EPG source still linked to playlists now unlinks it for you (after a confirmation that says how many playlists are affected) instead of refusing.
+- **4.5.4**: a download is marked completed only when proven good: exact size, 16 byte samples re-read from the provider, and a full FFmpeg read without error. A badly stitched file is discarded and re-downloaded from scratch.
+- **4.5.3**: a separate "Refreshed" counter distinguishes a series' periodic recheck from a real addition.
+- **4.5.1 / 4.5.2**: stable playlist links that survive a restart; a fresh `git clone` + `docker build` now produces the published image.
+- **4.5.0**: Arabic organizer profile and stable playlist links.
+- **4.2.0**: hardening release (sync selection, EPG, downloads, stability).
 
-- **Sync**: an empty bouquet selection no longer syncs the whole catalogue; an empty provider response no longer wipes the library; deletion is disk-driven so renamed titles stop leaving orphans; duplicate titles get `(2)`/`(3)` instead of overwriting each other; ongoing series finally gain their new episodes.
-- **EPG**: the provider's native XMLTV guide (`xmltv.php`) is implemented; timezone handling fixed; the now-playing slot works; auto-match rewritten (12/15 → 15/15 on a real 785-channel guide).
-- **Downloads**: real container extension instead of a hardcoded `.mp4`; resumable on a mid-stream cut; frozen-queue recovery; NFOs written for downloads.
-- **Stability**: EPG worker memory 1.5 GB → 93 MB (container 3.67 GB → 876 MB); all six dashboard endpoints were returning 500 and now work.
-
-### ⚠️ Upgrading from v4.0.0
+### ⚠️ Upgrading from v4.0.0 or earlier
 
 1. **Back up your `db/` volume first** — the container adds columns on start.
 2. **An empty bouquet selection now means "delete", not "sync everything".** Tick what you want before the first sync.
@@ -43,10 +43,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.2.0
+  mourabena2ui/xtream-to-strm-web:4.5.5
 ```
 
-Tags: `4.2.0` (pin this), `4.2`, `latest`.
+Tags: `4.5.5` (pin this), `4.5`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -55,7 +55,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.2.0
+    image: mourabena2ui/xtream-to-strm-web:4.5.5
     container_name: xtream_app
     ports:
       - "8000:8000"
@@ -107,4 +107,4 @@ MIT License - Free for personal and commercial use
 
 **Made with ❤️ for the Jellyfin community**
 
-v4.2.0 | [GitHub](https://github.com/mourabenapi-ux/xtream-to-strm-web) | [Docker Hub](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
+v4.5.5 | [GitHub](https://github.com/mourabenapi-ux/xtream-to-strm-web) | [Docker Hub](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)

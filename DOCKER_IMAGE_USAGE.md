@@ -3,10 +3,10 @@
 ## Pull from Docker Hub
 
 ```bash
-docker pull mourabena2ui/xtream-to-strm-web:4.2.0
+docker pull mourabena2ui/xtream-to-strm-web:4.5.5
 ```
 
-Tags: `4.2.0` (pin this), `4.2`, `latest`.
+Tags: `4.5.5` (pin this), `4.5`, `latest`.
 
 ## Run
 
@@ -19,7 +19,7 @@ docker run -d \
   -e TZ=Europe/Paris \
   -e TIMEZONE=Europe/Paris \
   --restart unless-stopped \
-  mourabena2ui/xtream-to-strm-web:4.2.0
+  mourabena2ui/xtream-to-strm-web:4.5.5
 ```
 
 Then open `http://<host>`.
@@ -62,13 +62,13 @@ incremental again.
 Then upgrade:
 
 ```bash
-docker pull mourabena2ui/xtream-to-strm-web:4.2.0
+docker pull mourabena2ui/xtream-to-strm-web:4.5.5
 docker rm xtream_app
 # re-run the `docker run` command above with the new tag
 docker logs -f xtream_app
 ```
 
-With Docker Compose, change the `image:` tag to `4.2.0` and run:
+With Docker Compose, change the `image:` tag to `4.5.5` and run:
 
 ```bash
 docker compose pull && docker compose up -d
