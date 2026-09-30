@@ -299,6 +299,12 @@ def add_channel_to_bouquet(
     if not bouquet:
         raise HTTPException(status_code=404, detail="Bouquet not found")
     
+    # The same provider stream twice in one group only produces a duplicated
+    # line in the player, so adding it again returns the row already there.
+    duplicate = _find_channel(db, bouquet_id, channel_in.stream_id, channel_in.subscription_id)
+    if duplicate:
+        return duplicate
+
     channel = LivePlaylistChannel(
         bouquet_id=bouquet_id,
         **channel_in.model_dump()
@@ -307,6 +313,174 @@ def add_channel_to_bouquet(
     db.commit()
     db.refresh(channel)
     return channel
+
+def _find_channel(db: Session, bouquet_id: int, stream_id: str,
+                  subscription_id: Optional[int]) -> Optional[LivePlaylistChannel]:
+    """A channel is identified by provider *and* stream id.
+
+    Stream ids are small integers handed out per provider, so two subscriptions
+    routinely share the same number for different channels; matching on the
+    stream id alone let one overwrite the other.
+    """
+    rows = db.query(LivePlaylistChannel).filter_by(
+        bouquet_id=bouquet_id, stream_id=stream_id).all()
+    for row in rows:
+        if row.subscription_id == subscription_id:
+            return row
+    # A row with no provider recorded predates the column: adopt it only when
+    # one side did not name a provider at all.
+    for row in rows:
+        if row.subscription_id is None or subscription_id is None:
+            return row
+    return None
+
+@router.patch("/playlists/{playlist_id}/bouquets/{bouquet_id}/channels/reorder")
+def reorder_bouquet_channels(
+    playlist_id: int,
+    bouquet_id: int,
+    updates: List[schemas.LiveChannelOrder],
+    db: Session = Depends(deps.get_db)
+) -> Any:
+    """Set the order of a group's channels by row id: [{id, order}, ...]."""
+    bouquet = db.query(LivePlaylistBouquet).filter_by(id=bouquet_id, playlist_id=playlist_id).first()
+    if not bouquet:
+        raise HTTPException(status_code=404, detail="Bouquet not found")
+    wanted = {u.id: u.order for u in updates}
+    if wanted:
+        for channel in db.query(LivePlaylistChannel).filter(
+                LivePlaylistChannel.bouquet_id == bouquet_id,
+                LivePlaylistChannel.id.in_(list(wanted))).all():
+            channel.order = wanted[channel.id]
+    db.commit()
+    return {"status": "success", "updated": len(wanted)}
+
+@router.post("/playlists/{playlist_id}/channels/move")
+def move_channels_to_bouquet(
+    playlist_id: int,
+    move_in: schemas.LiveChannelsMove,
+    db: Session = Depends(deps.get_db)
+) -> Any:
+    """Move channels to the end of another group of the same playlist.
+
+    The rows are re-parented rather than deleted and recreated, so a channel
+    keeps its id, its provider, its rename and its guide mapping, and the whole
+    move is one transaction: it either happens completely or not at all.
+    """
+    playlist = db.query(LivePlaylist).filter(LivePlaylist.id == playlist_id).first()
+    target = db.query(LivePlaylistBouquet).filter_by(
+        id=move_in.target_bouquet_id, playlist_id=playlist_id).first()
+    if not playlist or not target:
+        raise HTTPException(status_code=404, detail="Target group not found")
+    # On a numbered playlist `order` is the channel number the player shows, so
+    # a move must keep it; otherwise it is a position and goes to the end.
+    keeps_number = bool(playlist.use_channel_numbers)
+
+    bouquet_ids = [b.id for b in db.query(LivePlaylistBouquet.id).filter_by(playlist_id=playlist_id)]
+    by_id = {c.id: c for c in db.query(LivePlaylistChannel).filter(
+        LivePlaylistChannel.id.in_(move_in.channel_ids),
+        LivePlaylistChannel.bouquet_id.in_(bouquet_ids)).all()}
+
+    next_order = max(
+        [c.order or 0 for c in db.query(LivePlaylistChannel).filter_by(bouquet_id=target.id)] + [-1]
+    ) + 1
+    moved = 0
+    for channel_id in move_in.channel_ids:
+        channel = by_id.get(channel_id)
+        if channel is None or channel.bouquet_id == target.id:
+            continue
+        clash = _find_channel(db, target.id, channel.stream_id, channel.subscription_id)
+        if clash is not None:
+            # Already in the target: drop the copy instead of duplicating it.
+            db.delete(channel)
+        else:
+            channel.bouquet_id = target.id
+            if not keeps_number:
+                channel.order = next_order
+                next_order += 1
+        moved += 1
+    db.commit()
+    return {"status": "success", "moved": moved}
+
+@router.put("/playlists/{playlist_id}/snapshot")
+def restore_playlist_snapshot(
+    playlist_id: int,
+    snapshot: schemas.LivePlaylistSnapshot,
+    db: Session = Depends(deps.get_db)
+) -> Any:
+    """Make a playlist's groups and channels exactly match a snapshot.
+
+    This is what undo and redo call: the editor keeps the previous states in
+    memory, and replaying one has to change the server too, otherwise the screen
+    shows a playlist that the player never receives. Rows are matched by id, and
+    a row that a later action deleted is re-created under its old id so that
+    older and newer snapshots keep referring to the same rows. One transaction.
+    """
+    playlist = db.query(LivePlaylist).filter(LivePlaylist.id == playlist_id).first()
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+
+    wanted_bouquets = {b.id: b for b in snapshot.bouquets}
+    wanted_channels = {c.id: (b.id, c) for b in snapshot.bouquets for c in b.channels}
+
+    # Ids are global. Re-using one that now belongs to another playlist would
+    # steal its rows, so refuse before touching anything.
+    if wanted_bouquets and db.query(LivePlaylistBouquet.id).filter(
+            LivePlaylistBouquet.id.in_(list(wanted_bouquets)),
+            LivePlaylistBouquet.playlist_id != playlist_id).first():
+        raise HTTPException(status_code=409, detail="Snapshot refers to another playlist's group")
+    own_bouquet_ids = [b.id for b in db.query(LivePlaylistBouquet.id).filter_by(playlist_id=playlist_id)]
+    if wanted_channels and db.query(LivePlaylistChannel.id).join(
+            LivePlaylistBouquet, LivePlaylistChannel.bouquet_id == LivePlaylistBouquet.id).filter(
+            LivePlaylistChannel.id.in_(list(wanted_channels)),
+            LivePlaylistBouquet.playlist_id != playlist_id).first():
+        raise HTTPException(status_code=409, detail="Snapshot refers to another playlist's channel")
+
+    # 1. Groups: update or re-create.
+    existing_bouquets = {b.id: b for b in db.query(LivePlaylistBouquet).filter_by(playlist_id=playlist_id)}
+    for bid, sb in wanted_bouquets.items():
+        bouquet = existing_bouquets.get(bid)
+        if bouquet is None:
+            bouquet = LivePlaylistBouquet(id=bid, playlist_id=playlist_id)
+            db.add(bouquet)
+        bouquet.subscription_id = sb.subscription_id
+        bouquet.category_id = sb.category_id
+        bouquet.custom_name = sb.custom_name
+        bouquet.order = sb.order
+    db.flush()
+
+    # 2. Channels: update (possibly into another group) or re-create.
+    existing_channels = {}
+    if own_bouquet_ids:
+        existing_channels = {c.id: c for c in db.query(LivePlaylistChannel).filter(
+            LivePlaylistChannel.bouquet_id.in_(own_bouquet_ids)).all()}
+    for cid, (bid, sc) in wanted_channels.items():
+        channel = existing_channels.get(cid)
+        if channel is None:
+            channel = LivePlaylistChannel(id=cid)
+            db.add(channel)
+        channel.bouquet_id = bid
+        channel.stream_id = sc.stream_id
+        channel.subscription_id = sc.subscription_id
+        channel.custom_name = sc.custom_name
+        channel.order = sc.order
+        channel.is_excluded = sc.is_excluded
+        channel.epg_channel_id = sc.epg_channel_id
+    db.flush()
+
+    # 3. Whatever the snapshot no longer has.
+    stale_channels = [cid for cid in existing_channels if cid not in wanted_channels]
+    if stale_channels:
+        db.query(LivePlaylistChannel).filter(
+            LivePlaylistChannel.id.in_(stale_channels)).delete(synchronize_session=False)
+    stale_bouquets = [bid for bid in existing_bouquets if bid not in wanted_bouquets]
+    if stale_bouquets:
+        db.query(LivePlaylistChannel).filter(
+            LivePlaylistChannel.bouquet_id.in_(stale_bouquets)).delete(synchronize_session=False)
+        db.query(LivePlaylistBouquet).filter(
+            LivePlaylistBouquet.id.in_(stale_bouquets)).delete(synchronize_session=False)
+
+    db.commit()
+    return {"status": "success", "bouquets": len(wanted_bouquets), "channels": len(wanted_channels)}
 
 @router.post("/playlists/{playlist_id}/bouquets/{bouquet_id}/channels", response_model=List[schemas.LivePlaylistChannel])
 def update_bouquet_channels(
@@ -323,10 +497,7 @@ def update_bouquet_channels(
     results = []
     for c_in in channels_in:
         # Check if override already exists
-        existing = db.query(LivePlaylistChannel).filter_by(
-            bouquet_id=bouquet_id,
-            stream_id=c_in.stream_id
-        ).first()
+        existing = _find_channel(db, bouquet_id, c_in.stream_id, c_in.subscription_id)
         
         if existing:
             update_data = c_in.model_dump(exclude_unset=True)

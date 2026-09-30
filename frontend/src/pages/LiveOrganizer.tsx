@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
     Loader2, Wand2, ChevronRight, ChevronDown, AlertTriangle, CheckCircle2,
-    Tv, ListOrdered, HelpCircle, Layers,
+    Tv, ListOrdered, HelpCircle, Layers, Search,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/contexts/ToastContext';
@@ -63,19 +63,31 @@ interface Profile {
 }
 
 /** What each profile is for, in the terms that decide the choice. */
-const PROFILE_LABELS: Record<string, { title: string; hint: string }> = {
+const PROFILE_LABELS: Record<string, { title: string; hint: string; playlist: string; categories: string }> = {
     detailed: {
         title: 'Detailed — 11 themed blocks',
         hint: 'One bouquet per theme. Everything the reference does not know lands in a single tail bouquet, which on a full French catalogue means about 1 600 channels.',
+        playlist: 'FR — organised',
+        categories: 'french',
     },
     compact: {
         title: 'Compact — 8 bouquets',
         hint: 'TNT with the généralistes, Découverte with Jeunesse, +1 feeds in Secours. Family rules place the PPV slots, the African channels and the 24/7 loops in bouquets of their own instead of the tail.',
+        playlist: 'FR — organised',
+        categories: 'french',
     },
     arabic: {
         title: 'Arabic — Tunisia + pan-Arab core',
         hint: 'Tunisia first, then Sport / MBC & Rotana / Info / Documentaire / Divertissement / Musique / Enfants / Religieux. No official numbering exists for pan-Arab channels, so bouquets are grouped by the provider\'s own AR| category rather than a curated list.',
+        playlist: 'AR — organised',
+        categories: 'arabic',
     },
+};
+
+/** Category-name patterns that mark a provider's French / Arabic sections. */
+const CATEGORY_PATTERNS: Record<string, RegExp> = {
+    french: /^\s*fr\s*[|\-_:]/i,
+    arabic: /^\s*(ar|tn)\s*[|\-_:]/i,
 };
 
 const QUALITY_PRESETS: Record<string, string[]> = {
@@ -89,10 +101,10 @@ const QUALITY_PRESETS: Record<string, string[]> = {
  * playlist once validated.
  *
  * The screen is deliberately two-phase: nothing is written until the plan has
- * been seen. The fuzzy matches sit in their own section because they are the
- * only ones that can be wrong in a way that looks right, and they start
- * unchecked — a channel is easier to add afterwards than to notice on the wrong
- * number weeks later.
+ * been seen. The fuzzy matches start unticked — they are the only ones that can
+ * be wrong in a way that looks right, and a channel is easier to add afterwards
+ * than to notice on the wrong number weeks later. Any other channel can also be
+ * left out here with its checkbox.
  */
 export default function LiveOrganizer() {
     const toast = useToast();
@@ -100,6 +112,7 @@ export default function LiveOrganizer() {
 
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [categories, setCategories] = useState<Record<number, Category[]>>({});
+    const [categoryFilter, setCategoryFilter] = useState<Record<number, string>>({});
     const [selected, setSelected] = useState<Record<number, Set<string>>>({});
     const [loadingCategories, setLoadingCategories] = useState(false);
 
@@ -115,14 +128,21 @@ export default function LiveOrganizer() {
     const [applying, setApplying] = useState(false);
     const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
     const [confirmed, setConfirmed] = useState<Set<number>>(new Set());
+    const [dropped, setDropped] = useState<Set<number>>(new Set());
+    const [existingNames, setExistingNames] = useState<string[]>([]);
     const [playlistName, setPlaylistName] = useState('FR — organised');
+    const [nameTouched, setNameTouched] = useState(false);
     const [showApplyDialog, setShowApplyDialog] = useState(false);
 
+    // Subscriptions, profiles and the names already taken, then every
+    // subscription's categories in parallel so the screen opens ready to use.
     useEffect(() => {
         (async () => {
+            let subs: Subscription[] = [];
             try {
                 const res = await api.get<Subscription[]>('/subscriptions');
-                setSubscriptions(res.data);
+                subs = res.data;
+                setSubscriptions(subs);
             } catch (error) {
                 toast.apiError('Could not load subscriptions', error);
             }
@@ -136,47 +156,63 @@ export default function LiveOrganizer() {
             } catch (error) {
                 toast.apiError('Could not load the reference profiles', error);
             }
+            try {
+                const res = await api.get<{ name: string }[]>('/live/playlists');
+                setExistingNames(res.data.map(p => p.name.trim().toLowerCase()));
+            } catch { /* only used for a warning */ }
+
+            setLoadingCategories(true);
+            await Promise.all(subs.map(async subscription => {
+                try {
+                    const res = await api.get<Category[]>(`/live/categories?subscription_id=${subscription.id}`);
+                    setCategories(prev => ({ ...prev, [subscription.id]: res.data }));
+                } catch (error) {
+                    toast.apiError(`Could not load the categories of ${subscription.name}`, error);
+                }
+            }));
+            setLoadingCategories(false);
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const loadCategories = async (subscriptionId: number) => {
-        if (categories[subscriptionId]) return;
-        setLoadingCategories(true);
-        try {
-            const res = await api.get<Category[]>(
-                `/live/categories?subscription_id=${subscriptionId}`);
-            setCategories(prev => ({ ...prev, [subscriptionId]: res.data }));
-        } catch (error) {
-            toast.apiError('Could not load categories', error);
-        } finally {
-            setLoadingCategories(false);
-        }
-    };
+    // The suggested name follows the profile until the user types their own.
+    useEffect(() => {
+        if (!nameTouched) setPlaylistName(PROFILE_LABELS[profile]?.playlist ?? 'Organised playlist');
+    }, [profile, nameTouched]);
 
-    const toggleCategory = (subscriptionId: number, categoryId: string) => {
+    const setSelection = (subscriptionId: number, ids: string[], mode: 'replace' | 'add' | 'remove') => {
         setSelected(prev => {
-            const next = { ...prev };
-            const set = new Set(next[subscriptionId] ?? []);
-            if (set.has(categoryId)) set.delete(categoryId); else set.add(categoryId);
-            next[subscriptionId] = set;
-            return next;
+            const set = new Set(mode === 'replace' ? [] : prev[subscriptionId] ?? []);
+            ids.forEach(id => (mode === 'remove' ? set.delete(id) : set.add(id)));
+            return { ...prev, [subscriptionId]: set };
         });
     };
 
-    /** Selects the categories whose name marks them as French. */
-    const selectFrench = (subscriptionId: number) => {
+    const toggleCategory = (subscriptionId: number, categoryId: string) => {
+        const has = selected[subscriptionId]?.has(categoryId) ?? false;
+        setSelection(subscriptionId, [categoryId], has ? 'remove' : 'add');
+    };
+
+    const visibleCategories = (subscriptionId: number) => {
+        const needle = (categoryFilter[subscriptionId] ?? '').trim().toLowerCase();
         const list = categories[subscriptionId] ?? [];
-        const french = list.filter(c => /^\s*fr\s*[|\-_:]/i.test(c.category_name));
-        setSelected(prev => ({
-            ...prev,
-            [subscriptionId]: new Set(french.map(c => c.category_id)),
-        }));
+        return needle ? list.filter(c => c.category_name.toLowerCase().includes(needle)) : list;
+    };
+
+    /** Replaces the selection with the categories that look like `kind`. */
+    const selectByPattern = (subscriptionId: number, kind: string) => {
+        const pattern = CATEGORY_PATTERNS[kind];
+        const ids = (categories[subscriptionId] ?? [])
+            .filter(c => pattern.test(c.category_name)).map(c => c.category_id);
+        setSelection(subscriptionId, ids, 'replace');
+        if (ids.length === 0) toast.info('No match', `No category of this provider looks ${kind}.`);
     };
 
     const selectedCount = useMemo(
         () => Object.values(selected).reduce((total, set) => total + set.size, 0),
         [selected]);
+
+    const suggestedKind = PROFILE_LABELS[profile]?.categories ?? 'french';
 
     const computePlan = async () => {
         const scopes = Object.entries(selected)
@@ -204,6 +240,7 @@ export default function LiveOrganizer() {
             });
             setPlan(res.data);
             setConfirmed(new Set());
+            setDropped(new Set());
             setOpenGroups(new Set(res.data.groups.slice(0, 1).map(g => g.name)));
             toast.success('Proposal ready',
                 `${res.data.stats.channels} channels in ${res.data.stats.groups} groups.`);
@@ -214,21 +251,37 @@ export default function LiveOrganizer() {
         }
     };
 
-    /** Everything except the fuzzy matches the user has not ticked. */
+    /** A channel goes into the playlist unless it was unticked, or is an unconfirmed fuzzy match. */
+    const isIncluded = (channel: PlanChannel) =>
+        channel.needs_confirmation ? confirmed.has(channel.number) : !dropped.has(channel.number);
+
+    const toggleIncluded = (channel: PlanChannel) => {
+        const flip = (set: Set<number>) => {
+            const next = new Set(set);
+            if (next.has(channel.number)) next.delete(channel.number); else next.add(channel.number);
+            return next;
+        };
+        if (channel.needs_confirmation) setConfirmed(flip);
+        else setDropped(flip);
+    };
+
     const channelsToApply = useMemo(() => {
         if (!plan) return [];
-        return plan.groups.flatMap(group => group.channels).filter(
-            channel => !channel.needs_confirmation || confirmed.has(channel.number));
-    }, [plan, confirmed]);
+        return plan.groups.flatMap(group => group.channels).filter(isIncluded);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [plan, confirmed, dropped]);
+
+    const nameTaken = existingNames.includes(playlistName.trim().toLowerCase());
 
     const applyPlan = async () => {
         if (!plan) return;
         setApplying(true);
         try {
+            const keptGroups = new Set(channelsToApply.map(channel => channel.group));
             const res = await api.post('/organizer/apply', {
                 playlist_name: playlistName.trim(),
                 description: `Automatic organisation — reference ${plan.reference_version}`,
-                group_order: plan.groups.map(g => g.name),
+                group_order: plan.groups.map(g => g.name).filter(name => keptGroups.has(name)),
                 channels: channelsToApply.map(channel => ({
                     number: channel.number,
                     name: channel.name,
@@ -239,8 +292,8 @@ export default function LiveOrganizer() {
                 })),
             });
             toast.success('Playlist created',
-                `${res.data.channels} channels in ${res.data.groups} groups.`);
-            navigate('/live-playlists');
+                `${res.data.channels} channels in ${res.data.groups} groups. Opening it in the editor.`);
+            navigate(`/live-selection?playlist_id=${res.data.playlist_id}`);
         } catch (error) {
             toast.apiError('Could not create the playlist', error);
         } finally {
@@ -265,18 +318,21 @@ export default function LiveOrganizer() {
             none: 'bg-muted text-muted-foreground',
         };
         const labels: Record<string, string> = {
-            tvg_id: 'guide id', alias: 'name', fuzzy: `fuzzy ${channel.match_score}`,
-            none: 'unmatched',
+            tvg_id: 'guide id', alias: 'name', fuzzy: `similar ${channel.match_score}`,
+            none: 'by rule',
         };
         return (
-            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${styles[channel.match_method]}`}>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${styles[channel.match_method]}`}>
                 {labels[channel.match_method]}
             </span>
         );
     };
 
+    const backupTitle = (channel: PlanChannel) =>
+        channel.backups.map(b => `${b.provider_name}${b.quality ? ` (${b.quality})` : ''}`).join('\n');
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-28">
             <div>
                 <h1 className="text-3xl font-bold flex items-center gap-2">
                     <Wand2 className="text-primary" /> Auto Organizer
@@ -284,104 +340,151 @@ export default function LiveOrganizer() {
                 <p className="text-muted-foreground mt-1">
                     Matches your catalogue against a reference channel list, merges the
                     quality variants, and proposes a numbered, grouped playlist. Nothing
-                    is written until you apply.
+                    is written until you create it, and it is always a new playlist.
                 </p>
             </div>
 
             <Card>
                 <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                        <Layers size={18} /> 1. What to organise
+                        <Layers size={18} /> 1. Reference profile
                     </CardTitle>
                     <CardDescription>
-                        Pick the categories to read. {selectedCount} selected.
+                        The profile decides how many bouquets you get and how the catalogue is numbered.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    {subscriptions.map(subscription => (
-                        <div key={subscription.id} className="border rounded-md p-3">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium flex items-center gap-2">
-                                    {subscription.name}
-                                    <span className="text-xs font-normal px-1.5 py-0.5 rounded border text-muted-foreground">
-                                        {subscription.kind === 'm3u' ? 'M3U' : 'Xtream'}
-                                    </span>
-                                </span>
-                                <div className="flex gap-2">
-                                    <Button size="sm" variant="outline"
-                                        onClick={() => loadCategories(subscription.id)}
-                                        disabled={loadingCategories}>
-                                        {categories[subscription.id] ? 'Reload' : 'Load categories'}
-                                    </Button>
-                                    {categories[subscription.id] && (
-                                        <Button size="sm" variant="outline"
-                                            onClick={() => selectFrench(subscription.id)}>
-                                            Select French
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                            {categories[subscription.id] && (
-                                <div className="max-h-56 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-1">
-                                    {categories[subscription.id].map(category => (
-                                        <label key={category.category_id}
-                                            className="flex items-center gap-2 text-sm px-2 py-1 rounded hover:bg-accent cursor-pointer">
-                                            <Checkbox
-                                                checked={selected[subscription.id]?.has(category.category_id) ?? false}
-                                                onCheckedChange={() => toggleCategory(subscription.id, category.category_id)}
-                                            />
-                                            <span className="truncate">{category.category_name}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                <CardContent className="space-y-2">
+                    <div className="grid gap-2 md:grid-cols-3">
+                        {profiles.map(p => {
+                            const meta = PROFILE_LABELS[p.name];
+                            return (
+                                <button key={p.name} type="button"
+                                    onClick={() => setProfile(p.name)}
+                                    aria-pressed={profile === p.name}
+                                    className={`text-left border rounded-md p-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                                        profile === p.name
+                                            ? 'border-primary bg-primary/5'
+                                            : 'hover:bg-muted/50'}`}>
+                                    <div className="font-medium text-sm">
+                                        {meta?.title ?? p.name}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {meta?.hint ?? `${p.block_count} blocks`}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground mt-1">
+                                        {p.channels} reference channels · {p.block_count} blocks
+                                        {p.family_count > 0 && ` · ${p.family_count} family rules`}
+                                    </p>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </CardContent>
             </Card>
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-lg">2. How to merge</CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        <Layers size={18} /> 2. What to organise
+                    </CardTitle>
+                    <CardDescription>
+                        Tick the categories to read. <strong>{selectedCount}</strong> selected.
+                        {loadingCategories && <> Loading the catalogues…</>}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {profiles.length > 1 && (
-                        <div className="space-y-2">
-                            <Label>Reference profile</Label>
-                            <div className="grid gap-2 md:grid-cols-2">
-                                {profiles.map(p => {
-                                    const meta = PROFILE_LABELS[p.name];
-                                    return (
-                                        <button key={p.name} type="button"
-                                            onClick={() => setProfile(p.name)}
-                                            className={`text-left border rounded-md p-3 transition-colors ${
-                                                profile === p.name
-                                                    ? 'border-primary bg-primary/5'
-                                                    : 'hover:bg-muted/50'}`}>
-                                            <div className="font-medium text-sm">
-                                                {meta?.title ?? p.name}
-                                            </div>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {meta?.hint ?? `${p.block_count} blocks`}
-                                            </p>
-                                            <p className="text-[10px] text-muted-foreground mt-1">
-                                                {p.channels} reference channels · {p.block_count} blocks
-                                                {p.family_count > 0 && ` · ${p.family_count} family rules`}
-                                            </p>
-                                        </button>
-                                    );
-                                })}
+                    {subscriptions.map(subscription => {
+                        const list = categories[subscription.id];
+                        const shown = visibleCategories(subscription.id);
+                        const count = selected[subscription.id]?.size ?? 0;
+                        return (
+                            <div key={subscription.id} className="border rounded-md p-3 space-y-2">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="font-medium flex items-center gap-2">
+                                        {subscription.name}
+                                        <span className="text-xs font-normal px-1.5 py-0.5 rounded border text-muted-foreground">
+                                            {subscription.kind === 'm3u' ? 'M3U' : 'Xtream'}
+                                        </span>
+                                        <span className="text-xs font-normal text-muted-foreground">
+                                            {list ? `${count} of ${list.length} selected` : 'loading…'}
+                                        </span>
+                                    </span>
+                                    {list && (
+                                        <div className="flex flex-wrap gap-2">
+                                            <Button size="sm"
+                                                variant={suggestedKind === 'french' ? 'default' : 'outline'}
+                                                onClick={() => selectByPattern(subscription.id, 'french')}
+                                                title="Categories named FR| FR- FR_ FR:">
+                                                Select French
+                                            </Button>
+                                            <Button size="sm"
+                                                variant={suggestedKind === 'arabic' ? 'default' : 'outline'}
+                                                onClick={() => selectByPattern(subscription.id, 'arabic')}
+                                                title="Categories named AR| or TN|">
+                                                Select Arabic
+                                            </Button>
+                                            <Button size="sm" variant="outline"
+                                                onClick={() => setSelection(subscription.id, shown.map(c => c.category_id), 'add')}>
+                                                Tick shown
+                                            </Button>
+                                            <Button size="sm" variant="outline"
+                                                disabled={count === 0}
+                                                onClick={() => setSelection(subscription.id, [], 'replace')}>
+                                                Clear
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                                {list && (
+                                    <>
+                                        <div className="relative">
+                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                            <Input
+                                                className="pl-9 h-9"
+                                                placeholder={`Filter the ${list.length} categories…`}
+                                                value={categoryFilter[subscription.id] ?? ''}
+                                                onChange={e => setCategoryFilter(prev => ({ ...prev, [subscription.id]: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="max-h-64 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-1">
+                                            {shown.map(category => (
+                                                <label key={category.category_id}
+                                                    className="flex items-center gap-2 text-sm px-2 py-1 rounded hover:bg-accent cursor-pointer">
+                                                    <Checkbox
+                                                        checked={selected[subscription.id]?.has(category.category_id) ?? false}
+                                                        onCheckedChange={() => toggleCategory(subscription.id, category.category_id)}
+                                                    />
+                                                    <span className="truncate" title={category.category_name}>{category.category_name}</span>
+                                                </label>
+                                            ))}
+                                            {shown.length === 0 && (
+                                                <p className="text-sm text-muted-foreground italic px-2 py-1">No category matches.</p>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
                             </div>
+                        );
+                    })}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg">3. How to merge</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-1">
+                        <Label>Which variant to keep when a channel comes in several qualities</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {Object.keys(QUALITY_PRESETS).map(preset => (
+                                <Button key={preset} size="sm"
+                                    variant={qualityPreset === preset ? 'default' : 'outline'}
+                                    onClick={() => setQualityPreset(preset)}>
+                                    {preset}
+                                </Button>
+                            ))}
                         </div>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                        {Object.keys(QUALITY_PRESETS).map(preset => (
-                            <Button key={preset} size="sm"
-                                variant={qualityPreset === preset ? 'default' : 'outline'}
-                                onClick={() => setQualityPreset(preset)}>
-                                {preset}
-                            </Button>
-                        ))}
                     </div>
                     <div className="flex items-center justify-between">
                         <div>
@@ -416,6 +519,9 @@ export default function LiveOrganizer() {
                             ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Reading providers…</>
                             : <><Wand2 className="mr-2 h-4 w-4" /> Build the proposal</>}
                     </Button>
+                    {selectedCount === 0 && (
+                        <p className="text-xs text-muted-foreground">Tick at least one category in step 2 first.</p>
+                    )}
                 </CardContent>
             </Card>
 
@@ -424,7 +530,7 @@ export default function LiveOrganizer() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center gap-2">
-                                <ListOrdered size={18} /> 3. The proposal
+                                <ListOrdered size={18} /> 4. The proposal
                             </CardTitle>
                             <CardDescription>
                                 {plan.source_stream_count} provider streams read · reference {plan.reference_version}
@@ -436,13 +542,13 @@ export default function LiveOrganizer() {
                                 {[
                                     ['Channels', plan.stats.channels, Tv],
                                     ['Groups', plan.stats.groups, Layers],
-                                    ['With guide', plan.stats.with_guide, CheckCircle2],
+                                    ['With a guide', plan.stats.with_guide, CheckCircle2],
                                     ['Backups kept', plan.stats.backups, Layers],
-                                    ['Matched by guide id', plan.stats.matched_by_tvg_id, CheckCircle2],
-                                    ['Matched by name', plan.stats.matched_by_alias, CheckCircle2],
-                                    ['To confirm', plan.stats.to_confirm, AlertTriangle],
-                                    ['Grouped by rule', plan.stats.placed_by_family ?? 0, Layers],
-                                    ['Left in the tail', plan.stats.in_tail ?? plan.stats.unmatched, HelpCircle],
+                                    ['Identified by guide id', plan.stats.matched_by_tvg_id, CheckCircle2],
+                                    ['Identified by name', plan.stats.matched_by_alias, CheckCircle2],
+                                    ['Similar names to confirm', plan.stats.to_confirm, AlertTriangle],
+                                    ['Placed by a group rule', plan.stats.placed_by_family ?? 0, Layers],
+                                    ['Not recognised', plan.stats.in_tail ?? plan.stats.unmatched, HelpCircle],
                                 ].map(([label, value, Icon]: any) => (
                                     <div key={label} className="border rounded-md p-3">
                                         <div className="flex items-center gap-2 text-muted-foreground text-xs">
@@ -471,6 +577,14 @@ export default function LiveOrganizer() {
                                 <CardDescription>
                                     These were matched by similarity, not by identity. They are
                                     left out unless you tick them.
+                                    <Button size="sm" variant="outline" className="ml-2 h-6 text-xs"
+                                        onClick={() => setConfirmed(new Set(plan.to_confirm.map(c => c.number)))}>
+                                        Tick all
+                                    </Button>
+                                    <Button size="sm" variant="outline" className="ml-1 h-6 text-xs"
+                                        onClick={() => setConfirmed(new Set())}>
+                                        Untick all
+                                    </Button>
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-1">
@@ -479,12 +593,7 @@ export default function LiveOrganizer() {
                                         className="flex items-center gap-3 text-sm px-2 py-1.5 rounded hover:bg-accent cursor-pointer">
                                         <Checkbox
                                             checked={confirmed.has(channel.number)}
-                                            onCheckedChange={() => setConfirmed(prev => {
-                                                const next = new Set(prev);
-                                                if (next.has(channel.number)) next.delete(channel.number);
-                                                else next.add(channel.number);
-                                                return next;
-                                            })}
+                                            onCheckedChange={() => toggleIncluded(channel)}
                                         />
                                         <span className="font-mono text-xs text-muted-foreground w-12">
                                             {channel.number}
@@ -506,64 +615,85 @@ export default function LiveOrganizer() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-lg">The channel list</CardTitle>
+                            <CardDescription>
+                                Untick a channel to leave it out. You can still edit everything afterwards
+                                in the playlist editor.
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                            {plan.groups.map(group => (
-                                <div key={group.name} className="border rounded-md">
-                                    <button
-                                        onClick={() => toggleGroup(group.name)}
-                                        className="w-full flex items-center justify-between px-3 py-2 hover:bg-accent rounded-md">
-                                        <span className="flex items-center gap-2 font-medium">
-                                            {openGroups.has(group.name)
-                                                ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                                            {group.name}
-                                        </span>
-                                        <span className="text-sm text-muted-foreground">
-                                            {group.channels.length}
-                                        </span>
-                                    </button>
-                                    {openGroups.has(group.name) && (
-                                        <div className="border-t divide-y">
-                                            {group.channels.map(channel => (
-                                                <div key={`${channel.number}-${channel.stream.stream_id}`}
-                                                    className="flex items-center gap-3 px-3 py-1.5 text-sm">
-                                                    <span className="font-mono text-xs text-muted-foreground w-12">
-                                                        {channel.number}
-                                                    </span>
-                                                    <span className="flex-1 truncate">{channel.name}</span>
-                                                    {!channel.has_guide && (
-                                                        <span className="text-[10px] text-muted-foreground">no guide</span>
-                                                    )}
-                                                    {channel.backups.length > 0 && (
-                                                        <span className="text-[10px] text-muted-foreground">
-                                                            +{channel.backups.length} alt
-                                                        </span>
-                                                    )}
-                                                    <span className="text-xs text-muted-foreground truncate max-w-[16rem]">
-                                                        {channel.stream.provider_name}
-                                                    </span>
-                                                    {methodBadge(channel)}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                            {plan.groups.map(group => {
+                                const included = group.channels.filter(isIncluded).length;
+                                const open = openGroups.has(group.name);
+                                return (
+                                    <div key={group.name} className="border rounded-md">
+                                        <button
+                                            onClick={() => toggleGroup(group.name)}
+                                            aria-expanded={open}
+                                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-accent rounded-md">
+                                            <span className="flex items-center gap-2 font-medium">
+                                                {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                                {group.name}
+                                            </span>
+                                            <span className="text-sm text-muted-foreground">
+                                                {included === group.channels.length
+                                                    ? group.channels.length
+                                                    : `${included} of ${group.channels.length}`}
+                                            </span>
+                                        </button>
+                                        {open && (
+                                            <div className="border-t divide-y">
+                                                {group.channels.map(channel => {
+                                                    const inPlaylist = isIncluded(channel);
+                                                    return (
+                                                        <label key={`${channel.number}-${channel.stream.stream_id}`}
+                                                            className={`flex items-center gap-3 px-3 py-1.5 text-sm cursor-pointer hover:bg-accent/50 ${inPlaylist ? '' : 'opacity-50'}`}>
+                                                            <Checkbox
+                                                                checked={inPlaylist}
+                                                                onCheckedChange={() => toggleIncluded(channel)}
+                                                            />
+                                                            <span className="font-mono text-xs text-muted-foreground w-12">
+                                                                {channel.number}
+                                                            </span>
+                                                            <span className={`flex-1 truncate ${inPlaylist ? '' : 'line-through'}`}>{channel.name}</span>
+                                                            {channel.needs_confirmation && (
+                                                                <span className="text-[10px] text-amber-600 whitespace-nowrap">to confirm</span>
+                                                            )}
+                                                            {!channel.has_guide && (
+                                                                <span className="text-[10px] text-muted-foreground whitespace-nowrap">no guide</span>
+                                                            )}
+                                                            {channel.backups.length > 0 && (
+                                                                <span className="text-[10px] text-muted-foreground whitespace-nowrap"
+                                                                    title={backupTitle(channel)}>
+                                                                    +{channel.backups.length} alt
+                                                                </span>
+                                                            )}
+                                                            <span className="text-xs text-muted-foreground truncate max-w-[16rem]">
+                                                                {channel.stream.provider_name}
+                                                            </span>
+                                                            {methodBadge(channel)}
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">4. Apply</CardTitle>
-                            <CardDescription>
-                                Creates a new playlist. Your existing playlists are never touched.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div>
-                                <Label htmlFor="playlist-name">Playlist name</Label>
+                    {/* Always in reach: the list above can be hundreds of rows long. */}
+                    <div className="fixed bottom-0 left-0 right-0 lg:left-64 z-30 border-t bg-card/95 backdrop-blur shadow-lg">
+                        <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-end gap-3">
+                            <div className="flex-1 min-w-[14rem]">
+                                <Label htmlFor="playlist-name" className="text-xs">New playlist name</Label>
                                 <Input id="playlist-name" value={playlistName}
-                                    onChange={e => setPlaylistName(e.target.value)} />
+                                    onChange={e => { setPlaylistName(e.target.value); setNameTouched(true); }} />
+                                {nameTaken && (
+                                    <p className="text-[11px] text-amber-600 mt-0.5">
+                                        A playlist with this name already exists; pick another to tell them apart.
+                                    </p>
+                                )}
                             </div>
                             <Button onClick={() => setShowApplyDialog(true)}
                                 disabled={applying || !playlistName.trim() || channelsToApply.length === 0}>
@@ -571,8 +701,8 @@ export default function LiveOrganizer() {
                                     ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating…</>
                                     : <>Create playlist with {channelsToApply.length} channels</>}
                             </Button>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </>
             )}
 
@@ -585,7 +715,7 @@ export default function LiveOrganizer() {
             >
                 <p>
                     <strong>{channelsToApply.length}</strong> channels will be written into a
-                    new playlist named <strong>{playlistName}</strong>.
+                    new playlist named <strong>{playlistName}</strong>, then opened in the editor.
                 </p>
                 <p className="text-muted-foreground">
                     Your existing playlists are not modified. Delete this one if the result

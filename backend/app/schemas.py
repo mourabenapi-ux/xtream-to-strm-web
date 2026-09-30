@@ -282,6 +282,35 @@ class LivePlaylistChannel(LivePlaylistChannelBase):
     bouquet_id: int
     model_config = ConfigDict(from_attributes=True)
 
+class LiveChannelOrder(BaseModel):
+    id: int
+    order: int
+
+class LiveChannelsMove(BaseModel):
+    channel_ids: List[int]
+    target_bouquet_id: int
+
+class LiveSnapshotChannel(BaseModel):
+    id: int
+    stream_id: str
+    subscription_id: Optional[int] = None
+    custom_name: Optional[str] = None
+    order: int = 0
+    is_excluded: bool = False
+    epg_channel_id: Optional[str] = None
+
+class LiveSnapshotBouquet(BaseModel):
+    id: int
+    subscription_id: Optional[int] = None
+    category_id: Optional[str] = None
+    custom_name: Optional[str] = None
+    order: int = 0
+    channels: List[LiveSnapshotChannel] = []
+
+class LivePlaylistSnapshot(BaseModel):
+    """The full content of a playlist, as the editor saw it at one moment."""
+    bouquets: List[LiveSnapshotBouquet] = []
+
 class LivePlaylistBouquetBase(BaseModel):
     id: Optional[int] = None
     subscription_id: Optional[int] = None

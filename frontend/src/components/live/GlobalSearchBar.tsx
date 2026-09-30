@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 interface GlobalSearchBarProps {
     onSearch: (query: string) => void;
     isLoading: boolean;
+    placeholder?: string;
 }
 
-const GlobalSearchBar: FC<GlobalSearchBarProps> = ({ onSearch, isLoading }) => {
+const GlobalSearchBar: FC<GlobalSearchBarProps> = ({ onSearch, isLoading, placeholder }) => {
     const [query, setQuery] = useState("");
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -20,10 +21,10 @@ const GlobalSearchBar: FC<GlobalSearchBarProps> = ({ onSearch, isLoading }) => {
 
     return (
         <form onSubmit={handleSubmit} className="relative w-full max-w-sm group">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors" />
             <Input
                 type="text"
-                placeholder="Global search (min. 3 chars)..."
+                placeholder={placeholder ?? "Search channels (3+ letters, Enter)…"}
                 className="pl-9 pr-12 h-9 text-xs bg-muted/20 border-indigo-500/10 focus-visible:ring-indigo-500/30"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}

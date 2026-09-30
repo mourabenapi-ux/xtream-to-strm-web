@@ -2,14 +2,15 @@ import { FC } from 'react';
 import { useLiveSelection } from '@/contexts/LiveSelectionContext';
 import { Hash, Layers, Tv, CheckCircle2, AlertCircle, Settings } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { useNavigate } from 'react-router-dom';
 
 export const PlaylistStatistics: FC = () => {
-    const { stats, playlist } = useLiveSelection();
+    const { stats, playlist, useChannelNumbers, setUseChannelNumbers } = useLiveSelection();
     const navigate = useNavigate();
 
     return (
-        <div className="flex items-center gap-6 px-6 py-2 bg-card border-b text-xs overflow-x-auto whitespace-nowrap scrollbar-hide">
+        <div className="flex items-center gap-4 px-6 py-2 bg-card border-b text-xs overflow-x-auto whitespace-nowrap scrollbar-hide">
             <div className="flex items-center gap-2 px-3 py-1 bg-primary/5 rounded-full border border-primary/10">
                 <Hash className="h-3.5 w-3.5 text-primary" />
                 <span className="font-semibold">{stats.totalChannels}</span>
@@ -25,12 +26,20 @@ export const PlaylistStatistics: FC = () => {
             <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/5 rounded-full border border-emerald-500/10">
                 <Tv className="h-3.5 w-3.5 text-emerald-500" />
                 <span className="font-semibold">{stats.epgMappedCount}</span>
-                <span className="text-muted-foreground">Mapped</span>
+                <span className="text-muted-foreground">with a guide</span>
             </div>
+
+            <label
+                className="flex items-center gap-2 px-3 py-1 rounded-full border cursor-pointer"
+                title="Publish each channel's number in the M3U (tvg-chno) so the player shows this numbering instead of its own"
+            >
+                <Switch checked={useChannelNumbers} onCheckedChange={setUseChannelNumbers} />
+                <span className="text-muted-foreground">Publish channel numbers</span>
+            </label>
 
             <div className="flex items-center gap-3 ml-auto">
                 <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">EPG Coverage:</span>
+                    <span className="text-muted-foreground">Guide coverage:</span>
                     <span className={`font-bold ${stats.epgPercentage >= 90 ? 'text-emerald-500' : stats.epgPercentage >= 50 ? 'text-amber-500' : 'text-destructive'}`}>
                         {stats.epgPercentage}%
                     </span>
@@ -51,9 +60,10 @@ export const PlaylistStatistics: FC = () => {
                     size="sm"
                     className="h-7 px-2 text-primary hover:bg-primary/10 ml-2"
                     onClick={() => navigate(`/live-epg?playlist_id=${playlist?.id}`)}
+                    title="Choose the guide sources and map channels to them"
                 >
                     <Settings className="h-3.5 w-3.5 mr-1" />
-                    Manage Sources
+                    Guide sources &amp; mapping
                 </Button>
             </div>
         </div>
