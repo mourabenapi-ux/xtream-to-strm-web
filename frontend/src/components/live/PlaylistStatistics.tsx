@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
  * channels with a schedule — and no longer "channels with an id": the old
  * figure read 100 % on a playlist where 22 % of the channels had a guide.
  */
-export const PlaylistStatistics: FC<{ onOpenHealth: (tab: 'issues' | 'new') => void }> = ({ onOpenHealth }) => {
+export const PlaylistStatistics: FC<{ onOpenHealth: (tab: 'issues' | 'new' | 'missing') => void }> = ({ onOpenHealth }) => {
     const { stats, playlist, useChannelNumbers, setUseChannelNumbers, health, healthLoading, changes, loadChanges } = useLiveSelection();
     const navigate = useNavigate();
 

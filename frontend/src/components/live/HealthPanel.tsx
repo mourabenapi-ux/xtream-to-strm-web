@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { AlertTriangle, AlertCircle, Info, Loader2, CheckCircle2, Wand2, Eye, Sparkles } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 import { useLiveSelection, HealthIssue, streamKey, BasketItem, ServerTool } from '@/contexts/LiveSelectionContext';
+import { MissingChannels } from './MissingChannels';
 
 const ICON = {
     error: <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />,
@@ -23,13 +24,13 @@ const FIX_LABEL: Record<string, string> = {
  * its one-click fix, and what the providers added or dropped since the last
  * review. Every fix is undoable with Ctrl+Z.
  */
-export const HealthPanel: FC<{ isOpen: boolean; onClose: () => void; initialTab?: 'issues' | 'new' }> = ({ isOpen, onClose, initialTab = 'issues' }) => {
+export const HealthPanel: FC<{ isOpen: boolean; onClose: () => void; initialTab?: 'issues' | 'new' | 'missing' }> = ({ isOpen, onClose, initialTab = 'issues' }) => {
     const toast = useToast();
     const {
         health, healthLoading, refreshHealth, runTool, setFocus, setGuideMode, useChannelNumbers,
         changes, changesLoading, loadChanges, markReviewed, playlist, bouquetLabel, addStreams, setInBasket,
     } = useLiveSelection();
-    const [tab, setTab] = useState<'issues' | 'new'>(initialTab);
+    const [tab, setTab] = useState<'issues' | 'new' | 'missing'>(initialTab);
     const [busy, setBusy] = useState<string | null>(null);
     const [picked, setPicked] = useState<Set<string>>(new Set());
     const [target, setTarget] = useState<number | ''>('');
@@ -67,6 +68,13 @@ export const HealthPanel: FC<{ isOpen: boolean; onClose: () => void; initialTab?
         }
     };
 
+    // Every hidden channel, across the groups, in one list.
+    const showHidden = () => {
+        const ids = (playlist?.bouquets ?? []).flatMap(b => b.channels.filter(c => c.is_excluded).map(c => c.id));
+        setFocus({ label: `${ids.length} hidden channel(s)`, ids });
+        onClose();
+    };
+
     const show = (issue: HealthIssue) => {
         if (!issue.channel_ids?.length) return;
         setFocus({ label: issue.title, ids: issue.channel_ids });
@@ -94,16 +102,21 @@ export const HealthPanel: FC<{ isOpen: boolean; onClose: () => void; initialTab?
         <Dialog isOpen={isOpen} onClose={onClose} title="Playlist health" size="xl">
             <div className="space-y-3">
                 <div className="flex items-center gap-1 border-b">
-                    {(['issues', 'new'] as const).map(t => (
+                    {(['issues', 'new', 'missing'] as const).map(t => (
                         <button key={t} type="button" onClick={() => setTab(t)}
                             className={`px-3 py-1.5 text-sm border-b-2 -mb-px ${tab === t ? 'border-primary font-semibold' : 'border-transparent text-muted-foreground'}`}>
                             {t === 'issues'
                                 ? <>Problems {counts.error + counts.warning > 0 && <span className="ml-1 text-xs text-destructive">{counts.error + counts.warning}</span>}</>
-                                : <>New at the providers {changes && changes.new_count > 0 && <span className="ml-1 text-xs text-primary">{changes.new_count}</span>}</>}
+                                : t === 'new'
+                                    ? <>New at the providers {changes && changes.new_count > 0 && <span className="ml-1 text-xs text-primary">{changes.new_count}</span>}</>
+                                    : <>Missing reference channels</>}
                         </button>
                     ))}
                     <span className="ml-auto text-[11px] text-muted-foreground pb-1">
-                        {health && `${health.stats.served} served · ${health.stats.with_schedule} with a schedule · ${health.stats.dead} dead · ${health.stats.excluded} hidden`}
+                        {health && `${health.stats.served} served · ${health.stats.with_schedule} with a schedule · ${health.stats.dead} dead · `}
+                        {health && (health.stats.excluded > 0 ? (
+                            <button type="button" className="underline hover:text-foreground" onClick={showHidden}>{health.stats.excluded} hidden</button>
+                        ) : '0 hidden')}
                     </span>
                 </div>
 
@@ -160,6 +173,8 @@ export const HealthPanel: FC<{ isOpen: boolean; onClose: () => void; initialTab?
                         </div>
                     </div>
                 )}
+
+                {tab === 'missing' && <MissingChannels />}
 
                 {tab === 'new' && (
                     <div className="space-y-3">

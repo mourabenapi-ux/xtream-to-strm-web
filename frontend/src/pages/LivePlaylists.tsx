@@ -7,6 +7,7 @@ import { Plus, Trash2, Edit3, Loader2, Radio, Tv, Globe, Activity, Copy, Check }
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/contexts/ToastContext';
 import api from '@/lib/api';
+import { playerUrls } from '@/components/live/PlaylistSettingsDialog';
 
 interface LivePlaylist {
     id: number;
@@ -14,6 +15,8 @@ interface LivePlaylist {
     name: string;
     description: string;
     created_at: string;
+    public_id: string | null;
+    short_name?: string | null;
 }
 
 // Same shape the dashboard already consumes: channel counts and EPG coverage
@@ -98,8 +101,9 @@ export default function LivePlaylists() {
         }
     };
 
-    const copyUrl = (path: string, id: string) => {
-        navigator.clipboard.writeText(`${window.location.origin}${path}`);
+    // Short URLs (/p/<alias>.m3u): they are typed with a TV remote.
+    const copyUrl = (url: string, id: string) => {
+        navigator.clipboard.writeText(url);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
     };
@@ -174,7 +178,8 @@ export default function LivePlaylists() {
                                                     variant="ghost"
                                                     size="sm"
                                                     className="flex-1 h-7 text-[11px] justify-start gap-1.5"
-                                                    onClick={() => copyUrl(stat.m3u_url, `${playlist.id}-m3u`)}
+                                                    onClick={() => copyUrl(playerUrls(playlist).m3u, `${playlist.id}-m3u`)}
+                                                    title={playerUrls(playlist).m3u}
                                                 >
                                                     {copiedId === `${playlist.id}-m3u`
                                                         ? <Check className="h-3 w-3 text-emerald-500" />
@@ -185,7 +190,8 @@ export default function LivePlaylists() {
                                                     variant="ghost"
                                                     size="sm"
                                                     className="flex-1 h-7 text-[11px] justify-start gap-1.5"
-                                                    onClick={() => copyUrl(stat.epg_url, `${playlist.id}-epg`)}
+                                                    onClick={() => copyUrl(playerUrls(playlist).xml, `${playlist.id}-epg`)}
+                                                    title={playerUrls(playlist).xml}
                                                 >
                                                     {copiedId === `${playlist.id}-epg`
                                                         ? <Check className="h-3 w-3 text-emerald-500" />

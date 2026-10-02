@@ -230,6 +230,9 @@ class ParsedName:
 def parse_name(raw_name: str) -> ParsedName:
     """Split a provider channel name into identity, quality and feed tags."""
     text = strip_accents(raw_name or "")
+    # Strong writes "beIN SP⚽RTS": the ball stands for an O. Dropped as a
+    # decoration, it left channels named "Bein Sp Rts 1" in the playlists.
+    text = re.sub("(?<=\\w)⚽(?=\\w)", "O", text)
     text = _DECORATION_PATTERN.sub(" ", text)
     text = text.replace("_", " ")
 

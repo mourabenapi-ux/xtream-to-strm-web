@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
     Loader2, RefreshCw, ArrowLeft, Undo2, Redo2, Search, AlertTriangle, Check, Minimize2, Maximize2, Eye,
     ChevronRight, Wrench, Library, Copy, ExternalLink, Wand2, ListOrdered, Hash, CopyX, HeartPulse, Tv, Repeat,
+    Type, History, MonitorPlay, ListPlus, Settings2,
 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -17,6 +18,10 @@ import { HealthPanel } from '@/components/live/HealthPanel';
 import { CommandPalette } from '@/components/live/CommandPalette';
 import M3UPreviewModal from '@/components/live/M3UPreviewModal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { BulkRenameDialog } from '@/components/live/BulkRenameDialog';
+import { VersionsDialog } from '@/components/live/VersionsDialog';
+import { TvPreview } from '@/components/live/TvPreview';
+import { PlaylistSettingsDialog, playerUrls } from '@/components/live/PlaylistSettingsDialog';
 
 import {
     DndContext, closestCenter, pointerWithin, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -76,7 +81,11 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [isResetOpen, setIsResetOpen] = useState(false);
     const [paletteOpen, setPaletteOpen] = useState(false);
-    const [healthTab, setHealthTab] = useState<'issues' | 'new' | null>(null);
+    const [healthTab, setHealthTab] = useState<'issues' | 'new' | 'missing' | null>(null);
+    const [renameOpen, setRenameOpen] = useState(false);
+    const [versionsOpen, setVersionsOpen] = useState(false);
+    const [tvOpen, setTvOpen] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
     const [toolsOpen, setToolsOpen] = useState(false);
     const [confirmTool, setConfirmTool] = useState<ToolKey | null>(null);
     const [busyTool, setBusyTool] = useState<ToolKey | null>(null);
@@ -188,10 +197,9 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
         toast.success('Done', `${message[tool]()} Ctrl+Z undoes it.`);
     };
 
-    const copy = (path: string, what: string) => {
-        if (!playlist?.public_id) return;
-        navigator.clipboard.writeText(`${window.location.origin}${path}${playlist.public_id}`);
-        toast.success(`${what} URL copied`, 'Paste it into TiviMate.');
+    const copy = (url: string, what: string) => {
+        navigator.clipboard.writeText(url);
+        toast.success(`${what} URL copied`, url);
         setToolsOpen(false);
     };
 
@@ -234,6 +242,17 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
 
     if (!playlist) return null;
 
+    const menu = (icon: ReactNode, label: string, hint: string, onClick: () => void) => (
+        <button type="button" key={label} onClick={() => { setToolsOpen(false); onClick(); }}
+            className="w-full flex items-start gap-2 px-3 py-2 text-left hover:bg-muted">
+            <span className="mt-0.5 text-primary">{icon}</span>
+            <span>
+                <span className="block text-sm font-medium">{label}</span>
+                <span className="block text-[11px] text-muted-foreground leading-snug">{hint}</span>
+            </span>
+        </button>
+    );
+
     const tool = (key: ToolKey, icon: ReactNode, label: string, hint: string, confirm = false) => (
         <button type="button" key={key} disabled={!!busyTool}
             onClick={() => (confirm ? (setToolsOpen(false), setConfirmTool(key)) : runServerTool(key))}
@@ -253,10 +272,14 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
                     <Button variant="ghost" size="icon" onClick={() => navigate('/live-playlists')} title="Back to the playlists" aria-label="Back to the playlists">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <div className="min-w-0 flex-shrink">
-                        <h1 className="text-lg font-bold tracking-tight truncate">{playlist.name}</h1>
+                    <button type="button" className="min-w-0 flex-shrink text-left group" onClick={() => setSettingsOpen(true)}
+                        title="Name, description, short URLs">
+                        <h1 className="text-lg font-bold tracking-tight truncate flex items-center gap-1.5">
+                            {playlist.name}
+                            <Settings2 className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                        </h1>
                         <p className="text-[11px] text-muted-foreground truncate">{playlist.description || 'Playlist editor'}</p>
-                    </div>
+                    </button>
 
                     <button type="button" onClick={() => setPaletteOpen(true)}
                         className="mx-auto flex items-center gap-2 w-full max-w-sm h-9 px-3 rounded-md border bg-muted/30 text-xs text-muted-foreground hover:bg-muted/60">
@@ -280,7 +303,7 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
                                 <Wrench className="h-4 w-4" /> <span className="hidden lg:inline">Tools</span>
                             </Button>
                             {toolsOpen && (
-                                <div className="absolute right-0 mt-1 w-80 bg-popover bg-card border rounded-md shadow-xl z-40 py-1">
+                                <div className="absolute right-0 mt-1 w-80 bg-card border rounded-md shadow-xl z-40 py-1 max-h-[80vh] overflow-y-auto">
                                     {tool('fix_numbering', <ListOrdered className="h-4 w-4" />, 'Fix the numbering',
                                         useChannelNumbers ? 'Every group gets a range; duplicates, 0 and overlapping groups are renumbered. Valid numbers are kept.' : 'Rewrites the positions 1, 2, 3… in every group.', true)}
                                     {useChannelNumbers && tool('reference_numbering', <Hash className="h-4 w-4" />, 'Number from the reference',
@@ -290,16 +313,21 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
                                     {tool('auto_match', <Tv className="h-4 w-4" />, 'Match guides automatically', 'Proposes a guide id for channels that have none.')}
                                     {tool('refresh_rules', <Repeat className="h-4 w-4" />, 'Refresh rule groups now', 'Adds the provider\'s new matching channels (runs every hour anyway).')}
                                     <div className="border-t my-1" />
+                                    {menu(<ListPlus className="h-4 w-4" />, 'Missing reference channels', 'France 2 and others the providers carry but this playlist lacks.', () => setHealthTab('missing'))}
+                                    {menu(<Type className="h-4 w-4" />, 'Rename channels by rules…', 'Remove "FR|", "HD", "(1080p)"… with a preview.', () => setRenameOpen(true))}
+                                    {menu(<MonitorPlay className="h-4 w-4" />, 'Preview as on the TV', 'Groups, numbers, logos, now and next.', () => setTvOpen(true))}
+                                    {menu(<History className="h-4 w-4" />, 'Versions…', 'Save the playlist under a name, restore an earlier state.', () => setVersionsOpen(true))}
+                                    <div className="border-t my-1" />
                                     <button type="button" className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
                                         onClick={() => navigate(`/live-organizer?playlist_id=${playlist.id}`)}>
                                         <Wand2 className="h-4 w-4 text-primary" /> Re-run the Auto Organizer on this playlist
                                     </button>
                                     <button type="button" className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
-                                        onClick={() => copy('/api/v1/live/playlist.m3u?playlist_id=', 'Playlist')}>
+                                        onClick={() => copy(playerUrls(playlist).m3u, 'Playlist')}>
                                         <Copy className="h-4 w-4 text-primary" /> Copy the playlist URL (M3U)
                                     </button>
                                     <button type="button" className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
-                                        onClick={() => copy('/api/v1/live/playlist.xml?playlist_id=', 'Guide')}>
+                                        onClick={() => copy(playerUrls(playlist).xml, 'Guide')}>
                                         <Copy className="h-4 w-4 text-primary" /> Copy the guide URL (XMLTV)
                                     </button>
                                     <button type="button" className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
@@ -340,7 +368,7 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
                         <BouquetList onCollapse={() => setGroupsHidden(true)} />
                     </Rail>
                     <div className="flex-1 min-w-0 min-h-[24rem] lg:min-h-0 flex flex-col">
-                        <ErrorBoundary label="The channel list"><CompositeList compactMode={compactMode} /></ErrorBoundary>
+                        <ErrorBoundary label="The channel list"><CompositeList compactMode={compactMode} onBulkRename={() => setRenameOpen(true)} /></ErrorBoundary>
                     </div>
                 </div>
 
@@ -356,6 +384,10 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
                 <M3UPreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} playlistId={playlist.id} />
                 <CommandPalette isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} />
                 <HealthPanel isOpen={healthTab !== null} initialTab={healthTab ?? 'issues'} onClose={() => setHealthTab(null)} />
+                <BulkRenameDialog isOpen={renameOpen} onClose={() => setRenameOpen(false)} />
+                <VersionsDialog isOpen={versionsOpen} onClose={() => setVersionsOpen(false)} />
+                <TvPreview isOpen={tvOpen} onClose={() => setTvOpen(false)} />
+                <PlaylistSettingsDialog isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
                 <ConfirmDialog
                     isOpen={confirmTool !== null}
                     onClose={() => setConfirmTool(null)}

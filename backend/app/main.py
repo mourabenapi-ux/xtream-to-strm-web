@@ -298,6 +298,10 @@ if os.path.exists(static_dir):
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
+# Short player URLs (/p/<alias>.m3u, /p/<alias>.xml), typed with a TV remote.
+from app.api.api_v1.endpoints import short_urls  # noqa: E402
+app.include_router(short_urls.router, tags=["live"])
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
@@ -312,7 +316,9 @@ if os.path.exists(static_dir):
     @app.exception_handler(404)
     async def custom_404_handler(request: Request, _exc):
         # If it's an API route, return JSON 404
-        if request.url.path.startswith(settings.API_V1_STR):
+        # A player asking for /p/<unknown>.m3u must get a real 404, not the
+        # web page with a 200 it would then try to parse as a playlist.
+        if request.url.path.startswith(settings.API_V1_STR) or request.url.path.startswith("/p/"):
             return JSONResponse(status_code=404, content={"detail": "Not found"})
         
         # Otherwise serve the SPA. no-cache: the page names the hashed bundle,

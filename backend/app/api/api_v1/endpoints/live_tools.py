@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.api.api_v1.endpoints.live import NO_GUIDE, resolve_playlist_channels
 from app.models.live import (
-    LiveCatalogSeen, LivePlaylist, LivePlaylistBouquet, LivePlaylistChannel,
+    LiveCatalogSeen, LivePlaylist, LivePlaylistBouquet, LivePlaylistChannel, LivePlaylistVersion,
 )
 from app.models.subscription import Subscription
 from app.services.catalog import get_catalog
@@ -149,6 +149,8 @@ async def playlist_health(playlist_id: int, db: Session = Depends(deps.get_db)) 
             "served": True, "number": ch.get("number"), "name": ch["name"],
             "logo": ch["logo"], "epg_id": ch["epg_id"], "epg_source": ch["epg_id_source"],
             "guide": guide["state"], "now": guide["now"],
+            "now_start": guide.get("now_start"), "now_stop": guide.get("now_stop"),
+            "next": guide.get("next"), "next_start": guide.get("next_start"),
             "category_id": ch.get("category_id"), "subscription_id": ch["subscription_id"],
         }
     for d in dropped:
@@ -309,6 +311,7 @@ def fix_numbering(playlist_id: int, payload: NumberingFixIn = NumberingFixIn(),
     order is a position and is simply rewritten 0..n-1.
     """
     playlist = _playlist(db, playlist_id)
+    save_version(db, playlist, "Before “Fix the numbering”", automatic=True)
     groups = _numbers(playlist)
     if not playlist.use_channel_numbers:
         changed = _apply_orders(db, playlist, positions(groups))
@@ -358,6 +361,7 @@ async def reference_numbering(playlist_id: int, payload: ReferenceNumberingIn = 
         for channel in bouquet.channels:
             names.setdefault(channel.id, (channel.custom_name or "", ""))
 
+    save_version(db, playlist, "Before “Number from the reference”", automatic=True)
     references = {name: load_profile(name) for name in PROFILES}
     group_of = {c.id: (b.custom_name or "") for b in playlist.bouquets for c in b.channels}
     profile = payload.profile or best_profile(
@@ -506,6 +510,7 @@ def set_excluded(playlist_id: int, payload: ExcludeIn, db: Session = Depends(dep
 def dedupe_channels(playlist_id: int, db: Session = Depends(deps.get_db)) -> Any:
     """Remove every second copy of the same provider stream, keeping the first."""
     playlist = _playlist(db, playlist_id)
+    save_version(db, playlist, "Before “Remove duplicates”", automatic=True)
     seen = set()
     removed = 0
     for bouquet in _groups(playlist):
@@ -587,6 +592,7 @@ async def repair_dead_channels(playlist_id: int, db: Session = Depends(deps.get_
     dead = [d for d in dropped if d.get("channel_id") and d["reason"] == "stream_gone_from_provider"]
     if not dead:
         return {"repaired": [], "unresolved": []}
+    save_version(db, playlist, "Before “Repair dead channels”", automatic=True)
     catalogues = await _catalogues(db, [s.id for s in db.query(Subscription.id).all()])
     present = {(c.subscription_id or 0, str(c.stream_id)) for b in playlist.bouquets for c in b.channels}
     rows = {c.id: c for c in _own_channels(db, playlist_id, [d["channel_id"] for d in dead])}
@@ -842,3 +848,359 @@ async def search_everywhere(q: str = Query(..., min_length=2), limit: int = Quer
         results.append({"subscription_id": sub.id, "subscription_name": sub.name,
                         "total": len(ranked), "items": hits})
     return results
+
+
+
+# ---------------------------------------------------------------------------
+# Named versions
+# ---------------------------------------------------------------------------
+
+AUTOMATIC_VERSIONS_KEPT = 20
+
+
+def _snapshot(playlist: LivePlaylist) -> Dict[str, Any]:
+    return {"use_channel_numbers": bool(playlist.use_channel_numbers), "bouquets": [
+        {"custom_name": b.custom_name, "category_id": b.category_id, "subscription_id": b.subscription_id,
+         "order": b.order, "number_start": b.number_start, "number_end": b.number_end, "rule": b.rule,
+         "channels": [{"stream_id": str(c.stream_id), "subscription_id": c.subscription_id,
+                       "custom_name": c.custom_name, "order": c.order, "is_excluded": bool(c.is_excluded),
+                       "epg_channel_id": c.epg_channel_id} for c in _channels(b)]}
+        for b in _groups(playlist)]}
+
+
+def save_version(db: Session, playlist: LivePlaylist, name: str, automatic: bool = False) -> LivePlaylistVersion:
+    """Store the playlist as it is now. Automatic versions are pruned to the
+    last 20; the ones the user names are never deleted by the app."""
+    snap = _snapshot(playlist)
+    version = LivePlaylistVersion(
+        playlist_id=playlist.id, name=name[:120], automatic=automatic, created_at=datetime.utcnow(),
+        channel_count=sum(len(b["channels"]) for b in snap["bouquets"]), snapshot=json.dumps(snap))
+    db.add(version)
+    db.flush()
+    if automatic:
+        old = db.query(LivePlaylistVersion).filter_by(playlist_id=playlist.id, automatic=True) \
+            .order_by(LivePlaylistVersion.created_at.desc()).offset(AUTOMATIC_VERSIONS_KEPT).all()
+        for row in old:
+            db.delete(row)
+    return version
+
+
+def _version_out(v: LivePlaylistVersion) -> Dict[str, Any]:
+    return {"id": v.id, "name": v.name, "automatic": bool(v.automatic),
+            "created_at": v.created_at.isoformat(), "channel_count": v.channel_count}
+
+
+@router.get("/playlists/{playlist_id}/versions")
+def list_versions(playlist_id: int, db: Session = Depends(deps.get_db)) -> Any:
+    _playlist(db, playlist_id)
+    rows = db.query(LivePlaylistVersion).filter_by(playlist_id=playlist_id) \
+        .order_by(LivePlaylistVersion.created_at.desc()).all()
+    return [_version_out(v) for v in rows]
+
+
+class VersionIn(BaseModel):
+    name: str
+
+
+@router.post("/playlists/{playlist_id}/versions")
+def create_version(playlist_id: int, payload: VersionIn, db: Session = Depends(deps.get_db)) -> Any:
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Give the version a name.")
+    version = save_version(db, _playlist(db, playlist_id), name)
+    db.commit()
+    return _version_out(version)
+
+
+@router.post("/playlists/{playlist_id}/versions/{version_id}/restore")
+def restore_version(playlist_id: int, version_id: int, db: Session = Depends(deps.get_db)) -> Any:
+    """Put the playlist back as it was in a version.
+
+    The current state is saved first (as an automatic version), so a restore
+    can itself be undone. Groups and channels are re-created: ids change,
+    the player URLs do not.
+    """
+    playlist = _playlist(db, playlist_id)
+    version = db.query(LivePlaylistVersion).filter_by(id=version_id, playlist_id=playlist_id).first()
+    if not version:
+        raise HTTPException(status_code=404, detail="Version not found")
+    snap = json.loads(version.snapshot)
+    save_version(db, playlist, f"Before restoring “{version.name}”", automatic=True)
+    for bouquet in list(playlist.bouquets):
+        db.delete(bouquet)
+    db.flush()
+    for b in snap.get("bouquets", []):
+        bouquet = LivePlaylistBouquet(
+            playlist_id=playlist.id, custom_name=b.get("custom_name"), category_id=b.get("category_id"),
+            subscription_id=b.get("subscription_id"), order=b.get("order", 0),
+            number_start=b.get("number_start"), number_end=b.get("number_end"), rule=b.get("rule"))
+        db.add(bouquet)
+        db.flush()
+        for c in b.get("channels", []):
+            db.add(LivePlaylistChannel(
+                bouquet_id=bouquet.id, stream_id=c["stream_id"], subscription_id=c.get("subscription_id"),
+                custom_name=c.get("custom_name"), order=c.get("order", 0),
+                is_excluded=c.get("is_excluded", False), epg_channel_id=c.get("epg_channel_id")))
+    if "use_channel_numbers" in snap:
+        playlist.use_channel_numbers = snap["use_channel_numbers"]
+    db.commit()
+    return {"restored": version.name, "channels": version.channel_count}
+
+
+@router.delete("/playlists/{playlist_id}/versions/{version_id}")
+def delete_version(playlist_id: int, version_id: int, db: Session = Depends(deps.get_db)) -> Any:
+    version = db.query(LivePlaylistVersion).filter_by(id=version_id, playlist_id=playlist_id).first()
+    if not version:
+        raise HTTPException(status_code=404, detail="Version not found")
+    db.delete(version)
+    db.commit()
+    return {"deleted": version_id}
+
+
+# ---------------------------------------------------------------------------
+# Reference channels the playlist does not carry yet
+# ---------------------------------------------------------------------------
+
+_INDEX_CACHE: Dict[Tuple[int, int], Dict[str, Any]] = {}
+
+# Provider prefixes that mean "this country's feed", per reference profile.
+PROFILE_REGIONS = {"detailed": ("FR",), "compact": ("FR",), "arabic": ("TN", "AR")}
+
+
+def _region(name: str) -> str:
+    """'FR| TF1' -> 'FR', 'BE: FRANCE 2' -> 'BE', 'France 2' -> ''."""
+    found = re.match(r"\s*([A-Za-z]{2,3})\s*[|:_-]", name or "")
+    return found.group(1).upper() if found else ""
+
+
+def _catalogue_index(sub_id: int, streams: List[dict]) -> Dict[str, Any]:
+    """Streams of a provider by channel identity and by guide id.
+
+    Parsing 57 000 names takes seconds, so the index is kept until the
+    catalogue changes size.
+    """
+    key = (sub_id, len(streams))
+    if key not in _INDEX_CACHE:
+        for stale in [k for k in _INDEX_CACHE if k[0] == sub_id]:
+            del _INDEX_CACHE[stale]
+        by_key: Dict[Tuple[str, int], List[dict]] = defaultdict(list)
+        by_tvg: Dict[str, List[dict]] = defaultdict(list)
+        for stream in streams:
+            name = str(stream.get("name") or "")
+            if not name:
+                continue
+            by_key[channel_key(name)].append(stream)
+            tvg = str(stream.get("epg_channel_id") or "").strip()
+            if tvg:
+                by_tvg[tvg].append(stream)
+        _INDEX_CACHE[key] = {"key": by_key, "tvg": by_tvg}
+    return _INDEX_CACHE[key]
+
+
+@router.get("/playlists/{playlist_id}/reference-missing")
+async def reference_missing(playlist_id: int, profile: Optional[str] = None,
+                            db: Session = Depends(deps.get_db)) -> Any:
+    """Reference channels absent from the playlist that a provider carries.
+
+    Found by the organiser's own identity (decoded name and aliases) or by
+    guide id, so "France 2" is found as "FR| FRANCE 2 FHD" at Strong. Each
+    comes with its official number, its group and its guide id.
+    """
+    from app.services.playlist_tools import parse_name
+    playlist = _playlist(db, playlist_id)
+    served = await resolve_playlist_channels(db, playlist)
+    references = {name: load_profile(name) for name in PROFILES}
+    chosen = profile or best_profile(
+        references, [b.custom_name for b in playlist.bouquets],
+        [(c["name"], c["epg_id"], c.get("bouquet", "")) for c in served])
+    if not chosen or chosen not in references:
+        return {"profile": None, "missing": [], "without_source": 0}
+    reference = references[chosen]
+
+    present = set()
+    for ch in served:
+        found = reference_lookup(reference, ch["name"], ch["epg_id"])
+        if found:
+            present.add((found.number, found.name))
+    for b in playlist.bouquets:
+        for c in b.channels:
+            found = reference_lookup(reference, c.custom_name or "", "")
+            if found:
+                present.add((found.number, found.name))
+
+    sub_names = {s.id: s.name for s in db.query(Subscription).all()}
+    catalogues = await _catalogues(db, list(sub_names))
+    indexes = {sid: _catalogue_index(sid, streams) for sid, streams in catalogues.items()}
+    preference = {"FHD": 0, "HD": 1, "4K": 2, "SD": 3, "": 4, "8K": 5}
+    # The feed of the profile's country first: "BE: FRANCE 2" is France 2 as
+    # relayed in Belgium, "FR: FRANCE 2" is the one a French playlist wants.
+    home = PROFILE_REGIONS.get(chosen, ())
+    tally: Dict[int, int] = defaultdict(int)
+    for b in playlist.bouquets:
+        for c in b.channels:
+            if c.subscription_id:
+                tally[c.subscription_id] += 1
+    dominant = max(tally, key=tally.get) if tally else None
+
+    missing, without_source = [], 0
+    for rc in reference.channels:
+        if (rc.number, rc.name) in present:
+            continue
+        keys = {channel_key(rc.name)} | {channel_key(a) for a in rc.aliases}
+        seen, candidates = set(), []
+        for sid, index in indexes.items():
+            hits = [s for k in keys for s in index["key"].get(k, [])]
+            if rc.tvg_id:
+                hits += index["tvg"].get(rc.tvg_id, [])
+            for stream in hits:
+                ident = (sid, str(stream.get("stream_id")))
+                if ident in seen:
+                    continue
+                seen.add(ident)
+                name = str(stream.get("name") or "")
+                quality = parse_name(name).quality
+                candidates.append({"subscription_id": sid, "subscription_name": sub_names.get(sid, ""),
+                                   "stream_id": ident[1], "name": name, "quality": quality,
+                                   "stream_icon": stream.get("stream_icon"),
+                                   "category_id": str(stream.get("category_id") or "")})
+        if not candidates:
+            without_source += 1
+            continue
+        candidates.sort(key=lambda c: (_region(c["name"]) not in home if home else False,
+                                       c["subscription_id"] != dominant,
+                                       preference.get(c["quality"], 4), len(c["name"])))
+        missing.append({"number": rc.number, "name": rc.name, "group": rc.group, "tvg_id": rc.tvg_id,
+                        "has_guide": rc.has_guide, "candidates": candidates[:6],
+                        "candidate_count": len(candidates)})
+    return {"profile": chosen, "missing": missing, "without_source": without_source}
+
+
+# ---------------------------------------------------------------------------
+# Bulk rename
+# ---------------------------------------------------------------------------
+
+class RenameItem(BaseModel):
+    id: int
+    custom_name: Optional[str] = None
+
+
+class BulkRenameIn(BaseModel):
+    renames: List[RenameItem]
+
+
+@router.post("/playlists/{playlist_id}/channels/rename-bulk")
+def rename_bulk(playlist_id: int, payload: BulkRenameIn, db: Session = Depends(deps.get_db)) -> Any:
+    """Apply many renames in one transaction (the editor computes them)."""
+    wanted = {r.id: (r.custom_name or "").strip() or None for r in payload.renames}
+    rows = _own_channels(db, playlist_id, list(wanted))
+    for row in rows:
+        row.custom_name = wanted[row.id]
+    db.commit()
+    return {"renamed": len(rows)}
+
+
+# ---------------------------------------------------------------------------
+# Guide: what is on now and next, for any ids
+# ---------------------------------------------------------------------------
+
+class IdsIn(BaseModel):
+    ids: List[str]
+
+
+@router.post("/playlists/{playlist_id}/epg/now")
+def epg_now(playlist_id: int, payload: IdsIn, db: Session = Depends(deps.get_db)) -> Any:
+    """Programme on air and next for guide ids, from this playlist's sources.
+
+    Lets the mapping dialog show *what each candidate is broadcasting*: the
+    quickest way to tell the right "France 3" from a regional one.
+    """
+    playlist = _playlist(db, playlist_id)
+    return epg_service.guide_states(epg_service.active_source_ids(playlist), payload.ids[:200])
+
+
+# ---------------------------------------------------------------------------
+# Stream test
+# ---------------------------------------------------------------------------
+
+async def _run(args: List[str], timeout: float) -> Tuple[int, bytes, bytes]:
+    import asyncio
+    proc = await asyncio.create_subprocess_exec(*args, stdout=asyncio.subprocess.PIPE,
+                                                stderr=asyncio.subprocess.PIPE)
+    try:
+        out, err = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.wait()
+        return -1, b"", b"timed out"
+    return proc.returncode, out, err
+
+
+@router.post("/playlists/{playlist_id}/channels/{channel_id}/probe")
+async def probe_channel(playlist_id: int, channel_id: int, db: Session = Depends(deps.get_db)) -> Any:
+    """Open the stream like a player would: does it play, in what quality,
+    how long until the first image, and what does that image show.
+
+    One connection at a time: providers often allow a single stream per
+    account, so a test can interrupt a television watching the same account.
+    """
+    import base64
+    import time
+    rows = _own_channels(db, playlist_id, [channel_id])
+    if not rows:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    row = rows[0]
+    sub_id = row.subscription_id or row.bouquet.subscription_id or _playlist(db, playlist_id).subscription_id
+    sub = db.query(Subscription).filter(Subscription.id == sub_id).first()
+    if not sub:
+        raise HTTPException(status_code=422, detail="This channel's provider no longer exists.")
+    url = get_catalog(db, sub).get_stream_url("live", str(row.stream_id), "ts")
+    agent: List[str] = []
+    try:
+        from app.models.downloads import DownloadSettingsGlobal
+        settings_row = db.query(DownloadSettingsGlobal).first()
+        if settings_row and getattr(settings_row, "user_agent", None):
+            agent = ["-user_agent", settings_row.user_agent]
+    except Exception:
+        pass
+
+    started = time.monotonic()
+    code, out, err = await _run(
+        ["ffprobe", "-v", "error", *agent, "-rw_timeout", "10000000",
+         "-analyzeduration", "4000000", "-probesize", "4000000",
+         "-show_entries", "stream=codec_type,codec_name,width,height,avg_frame_rate,channels:format=bit_rate",
+         "-of", "json", url], timeout=20)
+    seconds = round(time.monotonic() - started, 1)
+    if code != 0:
+        message = (err.decode(errors="ignore").strip().splitlines() or ["no answer"])[-1]
+        # The URL holds the account credentials: never echo it back.
+        message = message.replace(url, "<stream>")
+        return {"ok": False, "seconds": seconds, "error": message[:300]}
+    info = json.loads(out or b"{}")
+    # An HLS stream lists one video per variant (240p … 1080p): the player
+    # picks the best one, so the report does too.
+    videos = [s for s in info.get("streams", []) if s.get("codec_type") == "video"]
+    video = max(videos, key=lambda s: s.get("height") or 0) if videos else None
+    audio = next((s for s in info.get("streams", []) if s.get("codec_type") == "audio"), None)
+
+    def fps(value: Optional[str]) -> Optional[float]:
+        try:
+            num, den = (value or "0/1").split("/")
+            return round(int(num) / int(den), 2) if int(den) else None
+        except ValueError:
+            return None
+
+    image = None
+    code, out, _ = await _run(
+        ["ffmpeg", "-v", "error", *agent, "-rw_timeout", "10000000", "-i", url,
+         "-frames:v", "1", "-vf", "scale=480:-2", "-f", "image2", "-c:v", "mjpeg", "pipe:1"], timeout=25)
+    if code == 0 and out:
+        image = "data:image/jpeg;base64," + base64.b64encode(out).decode()
+    bitrate = info.get("format", {}).get("bit_rate")
+    return {
+        "ok": True, "seconds": seconds,
+        "video": video and {"codec": video.get("codec_name"), "width": video.get("width"),
+                            "height": video.get("height"), "fps": fps(video.get("avg_frame_rate"))},
+        "audio": audio and {"codec": audio.get("codec_name"), "channels": audio.get("channels")},
+        "bitrate_kbps": int(bitrate) // 1000 if bitrate and str(bitrate).isdigit() else None,
+        "image": image,
+    }

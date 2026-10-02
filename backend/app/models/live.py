@@ -30,6 +30,8 @@ class LivePlaylist(Base):
     organizer_config = Column(Text, nullable=True)
     # When the user last acknowledged the "what changed since" report.
     reviewed_at = Column(DateTime, nullable=True)
+    # Optional alias for the player URLs: /p/<short_name>.m3u and .xml.
+    short_name = Column(String, nullable=True, unique=True)
     
     # Relations
     subscription = relationship("Subscription")
@@ -77,6 +79,20 @@ class LivePlaylistChannel(Base):
     
     # Relations
     bouquet = relationship("LivePlaylistBouquet", back_populates="channels")
+
+class LivePlaylistVersion(Base):
+    """A named, restorable copy of a playlist's groups and channels."""
+    __tablename__ = "live_playlist_versions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    playlist_id = Column(Integer, nullable=False, index=True)
+    name = Column(String, nullable=False)
+    # Saved by the editor itself before a tool rewrote many channels.
+    automatic = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    channel_count = Column(Integer, nullable=False, default=0)
+    snapshot = Column(Text, nullable=False)
+
 
 class LiveCatalogSeen(Base):
     """When a provider stream was first noticed — the yardstick for "new"."""

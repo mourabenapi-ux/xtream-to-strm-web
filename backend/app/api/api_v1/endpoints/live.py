@@ -30,6 +30,14 @@ async def get_live_categories(
     client = get_catalog(db, sub)
     try:
         categories = await client.get_live_categories()
+        # How many channels each category holds, so a 900-category list can
+        # be judged before opening every entry. Read from the cached catalogue.
+        try:
+            from collections import Counter
+            counts = Counter(str(s.get("category_id")) for s in await client.get_live_streams())
+            categories = [{**c, "count": counts.get(str(c.get("category_id")), 0)} for c in categories]
+        except Exception as e:  # counts are a convenience, never a failure
+            logger.warning("Category counts unavailable for %s: %s", subscription_id, e)
         return categories
     except (httpx.ConnectTimeout, httpx.ReadTimeout):
         raise HTTPException(status_code=504, detail="Provider connection timed out")
@@ -247,12 +255,34 @@ def update_playlist(
         raise HTTPException(status_code=404, detail="Playlist not found")
     
     update_data = playlist_in.model_dump(exclude_unset=True)
+    if "short_name" in update_data:
+        update_data["short_name"] = _clean_short_name(db, playlist.id, update_data["short_name"])
     for field, value in update_data.items():
         setattr(playlist, field, value)
     
     db.commit()
     db.refresh(playlist)
     return playlist
+
+def _clean_short_name(db: Session, playlist_id: int, value: Optional[str]) -> Optional[str]:
+    """A short alias for the player URLs: lowercase letters, digits, - and _.
+
+    It is typed with a TV remote, so it stays short, and two playlists can
+    never share one (the second would silently serve the first's channels).
+    """
+    import re as _re
+    text = (value or "").strip().lower()
+    if not text:
+        return None
+    if not _re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,19}", text):
+        raise HTTPException(status_code=422,
+                            detail="Use 1 to 20 lowercase letters, digits, - or _ (starting with a letter or digit).")
+    clash = db.query(LivePlaylist).filter(LivePlaylist.short_name == text,
+                                          LivePlaylist.id != playlist_id).first()
+    if clash:
+        raise HTTPException(status_code=409, detail=f"\"{text}\" is already used by {clash.name}.")
+    return text
+
 
 @router.delete("/playlists/{playlist_id}")
 def delete_playlist(
@@ -263,6 +293,8 @@ def delete_playlist(
     playlist = db.query(LivePlaylist).filter(LivePlaylist.id == playlist_id).first()
     if not playlist:
         raise HTTPException(status_code=404, detail="Playlist not found")
+    from app.models.live import LivePlaylistVersion
+    db.query(LivePlaylistVersion).filter(LivePlaylistVersion.playlist_id == playlist_id).delete()
     db.delete(playlist)
     db.commit()
     return {"status": "success"}
@@ -1193,6 +1225,11 @@ async def generate_m3u_playlist(
     # Absolute EPG URL: a relative one resolves against the player's own base,
     # so nothing could fetch the guide without the user pasting a second URL.
     epg_url = str(request.url_for("get_playlist_epg").include_query_params(playlist_id=playlist.public_id))
+    return Response(content=m3u_text(playlist, channels, epg_url), media_type="text/plain")
+
+
+def m3u_text(playlist: LivePlaylist, channels: List[dict], epg_url: str) -> str:
+    """The M3U a player receives, for an already-resolved channel list."""
     m3u_content = [f'#EXTM3U x-tvg-url="{epg_url}"']
 
     for channel in channels:
@@ -1211,7 +1248,7 @@ async def generate_m3u_playlist(
         m3u_content.append(extinf)
         m3u_content.append(channel["url"])
 
-    return Response(content="\n".join(m3u_content), media_type="text/plain")
+    return "\n".join(m3u_content)
 
 @router.get("/playlists/{playlist_id}/m3u/preview")
 async def preview_m3u_playlist(

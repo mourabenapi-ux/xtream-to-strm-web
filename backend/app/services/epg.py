@@ -324,27 +324,35 @@ class EPGService:
                 pipe.sismember(f"epg:src:{sid}:channels", epg_id)
                 pipe.zcount(f"epg:src:{sid}:prog:{epg_id}", window, "+inf")
                 pipe.zrevrangebyscore(f"epg:src:{sid}:prog:{epg_id}", now, window, start=0, num=1)
+                pipe.zrangebyscore(f"epg:src:{sid}:prog:{epg_id}", "(" + str(now), "+inf", start=0, num=1)
         answers = pipe.execute()
         out: Dict[str, Dict[str, Any]] = {}
-        step = 3 * len(source_ids)
+        step = 4 * len(source_ids)
+
+        def load(raw):
+            try:
+                return _json.loads(raw[0]) if raw else None
+            except (ValueError, TypeError):
+                return None
+
         for index, epg_id in enumerate(ids):
             chunk = answers[index * step:(index + 1) * step]
-            state, title = "unknown", None
+            entry: Dict[str, Any] = {"state": "unknown", "now": None}
             for k in range(len(source_ids)):
-                listed, count, current = chunk[3 * k], chunk[3 * k + 1], chunk[3 * k + 2]
+                listed, count, current, upcoming = chunk[4 * k:4 * k + 4]
                 if count:
-                    state = "live"
-                    if current:
-                        try:
-                            programme = _json.loads(current[0])
-                            if programme.get("stop", 0) > now:
-                                title = programme.get("title")
-                        except (ValueError, TypeError):
-                            pass
+                    entry["state"] = "live"
+                    on_air = load(current)
+                    if on_air and on_air.get("stop", 0) > now:
+                        entry.update(now=on_air.get("title"), now_start=on_air.get("start"),
+                                     now_stop=on_air.get("stop"))
+                    following = load(upcoming)
+                    if following:
+                        entry.update(next=following.get("title"), next_start=following.get("start"))
                     break
                 if listed:
-                    state = "listed"
-            out[epg_id] = {"state": state, "now": title}
+                    entry["state"] = "listed"
+            out[epg_id] = entry
         return out
 
     def generate_playlist_xmltv(

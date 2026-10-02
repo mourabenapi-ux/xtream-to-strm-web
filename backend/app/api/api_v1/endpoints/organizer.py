@@ -452,6 +452,8 @@ def update_organization(payload: UpdateIn, db: Session = Depends(deps.get_db)) -
     playlist = db.query(LivePlaylist).filter(LivePlaylist.id == payload.playlist_id).first()
     if not playlist:
         raise HTTPException(status_code=404, detail="Playlist not found")
+    from app.api.api_v1.endpoints.live_tools import save_version
+    save_version(db, playlist, "Before the Auto Organizer update", automatic=True)
     by_name = {b.custom_name: b for b in playlist.bouquets}
 
     def group(name: str) -> LivePlaylistBouquet:

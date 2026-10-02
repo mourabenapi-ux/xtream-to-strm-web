@@ -9,6 +9,8 @@ export interface Category {
     category_id: string;
     category_name: string;
     parent_id?: number;
+    /** Channels in the category, from the cached catalogue. */
+    count?: number;
 }
 
 export interface Stream {
@@ -59,6 +61,7 @@ interface Playlist {
     description: string | null;
     use_channel_numbers?: boolean;
     reviewed_at?: string | null;
+    short_name?: string | null;
     bouquets: PlaylistBouquet[];
 }
 
@@ -96,6 +99,10 @@ export interface Effective {
     /** live: a schedule · listed: named by a guide, no schedule · unknown: no guide knows the id. */
     guide?: 'live' | 'listed' | 'unknown' | 'none' | 'detached';
     now?: string | null;
+    now_start?: number | null;
+    now_stop?: number | null;
+    next?: string | null;
+    next_start?: number | null;
     category_id?: string;
     subscription_id?: number;
 }
@@ -151,6 +158,15 @@ export interface GroupSettingsPatch {
     number_start?: number | null;
     number_end?: number | null;
     rule?: GroupRule | null;
+}
+
+/** A channel to add with everything already decided (number, name, guide). */
+export interface ExactChannel {
+    stream_id: string;
+    subscription_id: number;
+    custom_name: string;
+    order?: number;
+    epg_channel_id?: string | null;
 }
 
 export type ServerTool =
@@ -288,6 +304,11 @@ interface LiveSelectionContextType {
 
     // Server-side tools (undoable)
     runTool: (tool: ServerTool, args?: Record<string, unknown>) => Promise<any>;
+    addExact: (groupId: number, rows: ExactChannel[]) => Promise<number>;
+    bulkRename: (names: Map<number, string | null>) => Promise<void>;
+    updatePlaylistMeta: (patch: { name?: string; description?: string | null; short_name?: string | null }) => Promise<boolean>;
+    /** Reload after a change made outside the editor's history (a version restore). */
+    reloadPlaylist: () => Promise<void>;
 
     // EPG
     selectEPG: (epgId: string) => void;
@@ -1144,6 +1165,76 @@ export const LiveSelectionProvider: FC<{ children: ReactNode }> = ({ children })
         }
     };
 
+    /**
+     * Adds channels whose number, name and guide id are already decided (a
+     * reference channel: France 2 is 2 and TV guide "France2.fr"). A number
+     * already taken falls back to the next free one inside the group's range.
+     */
+    const addExact = async (groupId: number, rows: ExactChannel[]): Promise<number> => {
+        const current = playlistRef.current;
+        if (!current || rows.length === 0) return 0;
+        let added = 0;
+        await enqueue('Adding the channels', async () => {
+            const live = playlistRef.current!;
+            const group = live.bouquets.find(b => b.id === groupId);
+            if (!group) return;
+            const taken = usedNumbers(live);
+            const tail = group.channels.length ? Math.max(...group.channels.map(c => c.order)) : (group.number_start ?? 1) - 1;
+            let cursor = Math.max(tail + 1, group.number_start ?? 1, 1);
+            const payload = rows.map((row, i) => {
+                let order: number;
+                if (!useChannelNumbers) order = group.channels.length + i;
+                else if (row.order && !taken.has(row.order)
+                    && (group.number_start == null || row.order >= group.number_start)
+                    && (group.number_end == null || row.order <= group.number_end)) order = row.order;
+                else {
+                    while (taken.has(cursor)) cursor++;
+                    order = cursor++;
+                }
+                taken.add(order);
+                return { ...row, order, is_excluded: false };
+            });
+            const res = await api.post(`/live/playlists/${live.id}/bouquets/${groupId}/channels`, payload);
+            const returned: PlaylistChannel[] = res.data;
+            const ids = new Set(returned.map(c => c.id));
+            added = returned.length;
+            commit(replaceBouquet(playlistRef.current!, groupId, b => ({
+                ...b,
+                channels: [...b.channels.filter(c => !ids.has(c.id)), ...returned].sort((x, y) => x.order - y.order),
+            })));
+        });
+        return added;
+    };
+
+    const bulkRename = async (names: Map<number, string | null>) => {
+        const current = playlistRef.current;
+        if (!current || names.size === 0) return;
+        const ids = new Set(names.keys());
+        await mutate('Renaming the channels',
+            p => mapChannels(p, ids, c => ({ ...c, custom_name: names.get(c.id) ?? null })),
+            () => api.post(`/live/playlists/${current.id}/channels/rename-bulk`, {
+                renames: [...names.entries()].map(([id, custom_name]) => ({ id, custom_name })),
+            }));
+    };
+
+    const updatePlaylistMeta = async (patch: { name?: string; description?: string | null; short_name?: string | null }) => {
+        const current = playlistRef.current;
+        if (!current) return false;
+        try {
+            const res = await api.put(`/live/playlists/${current.id}`, patch);
+            show({ ...playlistRef.current!, name: res.data.name, description: res.data.description, short_name: res.data.short_name });
+            return true;
+        } catch (error) {
+            toast.apiError('Could not save the playlist settings', error);
+            return false;
+        }
+    };
+
+    const reloadPlaylist = async () => {
+        const current = playlistRef.current;
+        if (current) await loadPlaylist(current.id, true);
+    };
+
     // ---- renaming -----------------------------------------------------------
     const startEditing = (id: string, value: string) => {
         editingRef.current = { id, value };
@@ -1335,7 +1426,7 @@ export const LiveSelectionProvider: FC<{ children: ReactNode }> = ({ children })
         addStreams, addStreamToBouquet, bulkAddStreamsToBouquet, removeStreamFromBouquet,
         reorderChannels, jumpToChannelPosition, moveChannelToBouquet,
         excludeChannels, setGuideMode, replaceChannel,
-        runTool,
+        runTool, addExact, bulkRename, updatePlaylistMeta, reloadPlaylist,
         selectEPG, getEPGDebugInfo,
         undo, redo,
         canUndo: historySize.past > 0,

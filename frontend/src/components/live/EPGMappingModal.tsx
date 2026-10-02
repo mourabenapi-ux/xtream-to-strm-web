@@ -35,6 +35,27 @@ export const EPGMappingModal: FC = () => {
     const [results, setResults] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [suggestions, setSuggestions] = useState<EPGMatchDebugResponse | null>(null);
+    const [onAir, setOnAir] = useState<Record<string, { state: string; now?: string | null; next?: string | null }>>({});
+
+    // What each candidate is broadcasting right now: the quickest way to tell
+    // the national "France 3" from a regional one, or a dead id from a live one.
+    useEffect(() => {
+        if (!channel || !playlist) return;
+        const ids = [...(suggestions?.candidates ?? []).slice(0, 5).map(c => c.epg_id), ...results.map((r: any) => r.epg_id)]
+            .filter((id, i, all) => id && all.indexOf(id) === i && !(id in onAir));
+        if (ids.length === 0) return;
+        api.post(`/live/playlists/${playlist.id}/epg/now`, { ids })
+            .then(res => setOnAir(prev => ({ ...prev, ...res.data })))
+            .catch(() => { /* informative only */ });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [suggestions, results]);
+
+    const airing = (id: string) => {
+        const info = onAir[id];
+        if (!info) return null;
+        if (info.state !== 'live') return <span className="block text-[11px] text-amber-600">{info.state === 'listed' ? 'no programme published' : 'not in this playlist\'s guide sources'}</span>;
+        return <span className="block text-[11px] text-emerald-600 dark:text-emerald-400 truncate">▶ {info.now ?? '—'}{info.next ? ` · then ${info.next}` : ''}</span>;
+    };
 
     useEffect(() => {
         if (!channel) return;
@@ -105,6 +126,7 @@ export const EPGMappingModal: FC = () => {
                                     <span className="flex-1 min-w-0">
                                         <span className="block font-medium truncate">{c.display_name}</span>
                                         <span className="block text-[11px] text-muted-foreground font-mono truncate">{c.epg_id} · {c.source_name}</span>
+                                        {airing(c.epg_id)}
                                     </span>
                                     <span className="text-xs text-muted-foreground">{Math.round(c.composite_score)}</span>
                                 </button>
@@ -134,6 +156,7 @@ export const EPGMappingModal: FC = () => {
                                 <span className="min-w-0">
                                     <span className="block font-medium truncate">{r.name}</span>
                                     <span className="block text-[11px] text-muted-foreground font-mono truncate">{r.epg_id} · {r.source_name}</span>
+                                    {airing(r.epg_id)}
                                 </span>
                             </button>
                         ))

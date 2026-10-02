@@ -77,7 +77,10 @@ const CategoryList: FC<{ height?: string }> = () => {
                 onClick={() => setSelectedCategory(cat.category_id)}
                 title={cat.category_name}
             >
-                <span className="truncate">{cat.category_name}</span>
+                <span className="truncate flex-1">{cat.category_name}</span>
+                {cat.count !== undefined && (
+                    <span className="flex-shrink-0 text-[10px] text-muted-foreground" title={`${cat.count} channel(s) in this category`}>{cat.count}</span>
+                )}
                 {count ? (
                     <span className="flex-shrink-0 text-[10px] px-1.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                         title={`${count} channel(s) of this playlist come from here`}>
@@ -119,6 +122,7 @@ const CategoryList: FC<{ height?: string }> = () => {
                 ) : (
                     sections.entries.map(([prefix, list]) => {
                         const usedHere = list.reduce((n, c) => n + (used.get(c.category_id) ?? 0), 0);
+                        const channelsHere = list.reduce((n, c) => n + (c.count ?? 0), 0);
                         const expanded = !!filter.trim() || open.has(prefix);
                         return (
                             <div key={prefix} className="border-b">
@@ -127,7 +131,9 @@ const CategoryList: FC<{ height?: string }> = () => {
                                     {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                                     <span className="flex-1 text-left">{prefix}</span>
                                     {usedHere > 0 && <span className="text-[10px] text-emerald-600 dark:text-emerald-400">{usedHere} used</span>}
-                                    <span className="text-[10px] text-muted-foreground font-normal">{list.length}</span>
+                                    <span className="text-[10px] text-muted-foreground font-normal" title={`${list.length} categories, ${channelsHere} channels`}>
+                                        {list.length} · {channelsHere}
+                                    </span>
                                 </button>
                                 {expanded && <div className="divide-y">{list.map(row)}</div>}
                             </div>
