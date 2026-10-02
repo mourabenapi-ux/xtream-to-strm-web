@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.5.5-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.6.0-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -91,10 +91,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.5.5
+  mourabena2ui/xtream-to-strm-web:4.6.0
 ```
 
-Available tags: `4.5.5` (pin this in production), `4.5`, `latest`.
+Available tags: `4.6.0` (pin this in production), `4.6`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -108,7 +108,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.5.5
+    image: mourabena2ui/xtream-to-strm-web:4.6.0
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -219,7 +219,26 @@ output/
 
 ## 📝 Version History
 
-### v4.5.5 (Current)
+### v4.6.0 (Current)
+
+Refonte de l'éditeur de playlist et de l'Auto Organizer, après un audit de l'écran.
+
+- 🔢 **La numérotation n'est plus détruite.** Sur une playlist numérotée, l'ordre d'une chaîne
+  *est* son numéro : un glisser-déposer le réécrivait en 0, 1, 2…. Un tri permute désormais les
+  numéros du groupe, un déplacement garde le numéro, un ajout prend le prochain numéro libre.
+- ↩️ **Annuler / rétablir agissent vraiment sur le serveur** (`PUT /live/playlists/{id}/snapshot`,
+  atomique, recrée les lignes supprimées sous leur ancien id).
+- 🔌 **Les playlists de l'Auto Organizer sont éditables** : sans abonnement propre, leur colonne
+  Source et la recherche renvoyaient une erreur 422.
+- 🧩 Déplacements en place (id, fournisseur, nom et EPG conservés), identité d'une chaîne =
+  fournisseur + stream id, écritures envoyées dans l'ordre avec rechargement automatique en cas
+  d'échec, raccourcis qui ne volent plus Ctrl+Z aux champs de saisie.
+- 🗂️ Interface : cible d'ajout visible, chaînes déjà présentes signalées, actions toujours
+  visibles, colonne des chaînes adaptative, interrupteur « Publish channel numbers ».
+- 🪄 **Auto Organizer** : profil d'abord, catalogues chargés d'office avec filtre, plan
+  décochable chaîne par chaîne, barre de création fixe, ouverture dans l'éditeur après création.
+
+### v4.5.5
 
 Supprimer une source EPG encore liée à des playlists était refusé, avec un message demandant
 de la délier à la main, playlist par playlist.
