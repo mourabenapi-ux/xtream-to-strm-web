@@ -3,10 +3,10 @@
 ## Pull from Docker Hub
 
 ```bash
-docker pull mourabena2ui/xtream-to-strm-web:4.5.5
+docker pull mourabena2ui/xtream-to-strm-web:4.7.0
 ```
 
-Tags: `4.5.5` (pin this), `4.5`, `latest`.
+Tags: `4.7.0` (pin this), `4.7`, `latest`.
 
 ## Run
 
@@ -19,7 +19,7 @@ docker run -d \
   -e TZ=Europe/Paris \
   -e TIMEZONE=Europe/Paris \
   --restart unless-stopped \
-  mourabena2ui/xtream-to-strm-web:4.5.5
+  mourabena2ui/xtream-to-strm-web:4.7.0
 ```
 
 Then open `http://<host>`.
@@ -36,6 +36,17 @@ your own zone, not the server's default.
 |---|---|---|
 | `./db` | `/db` | SQLite database — subscriptions, selections, sync state. **Back this up.** |
 | `./output` | `/output` | Generated `.strm` / `.nfo` library and downloaded files. |
+
+## Upgrading to v4.7.0
+
+Back up `db/` first: on its first start the container adds the columns and tables of
+migrations 013 and 014 (group number ranges and rules, organiser settings, versions, short
+names). Nothing is removed, and the existing playlists keep working unchanged, including the
+URLs already pasted into your player. The new short URLs (`/p/<name>.m3u`) come in addition
+to the old ones.
+
+If the web interface still looks like the previous version after the upgrade, reload it once
+with Ctrl+F5: earlier versions let the browser cache the page.
 
 ## Upgrading from v4.0.x / v4.1.x to v4.2.0
 
@@ -62,13 +73,13 @@ incremental again.
 Then upgrade:
 
 ```bash
-docker pull mourabena2ui/xtream-to-strm-web:4.5.5
+docker pull mourabena2ui/xtream-to-strm-web:4.7.0
 docker rm xtream_app
 # re-run the `docker run` command above with the new tag
 docker logs -f xtream_app
 ```
 
-With Docker Compose, change the `image:` tag to `4.5.5` and run:
+With Docker Compose, change the `image:` tag to `4.7.0` and run:
 
 ```bash
 docker compose pull && docker compose up -d

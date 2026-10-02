@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.6.0-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.7.0-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -64,7 +64,13 @@ Built with modern technologies, it provides an intuitive interface for managing 
 
 ### 📺 Live TV Architecture v2
 - **Virtual Bouquets**: Create, rename, and reorder custom bouquets from multiple subscriptions
-- **Live Composer**: Powerful drag-and-drop interface for channel organization
+- **Live Composer**: Powerful drag-and-drop interface for channel organization, in one column or in as many columns as fit
+- **Search everywhere (Ctrl+K)** *(New in v4.7.0)*: find a channel in the playlist and at every provider at once
+- **Playlist health** *(New in v4.7.0)*: what the player really receives — real guide coverage, dead channels, duplicates, broken numbering — with one-click fixes
+- **Channel numbers** *(New in v4.7.0)*: a number range per group, "Fix the numbering", "Number from the reference" (TF1 1, France 2 2…)
+- **Rule groups** *(New in v4.7.0)*: groups that fill themselves every hour ("name contains sport, not 4K")
+- **Missing reference channels, bulk rename, stream test, other feeds of a channel, preview as on the TV, named versions** *(New in v4.7.0)*
+- **Short player URLs** *(New in v4.7.0)*: `/p/<name>.m3u` and `/p/<name>.xml`, easy to type with a TV remote
 - **One-Click Discovery**: Fast category browser for quick channel selection
 - **Undo/Redo**: Full history system for all layout and configuration changes
 - **Centralized EPG Library** *(New in v4.0.0)*: Define global EPG sources once and link them to any playlist
@@ -91,10 +97,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.6.0
+  mourabena2ui/xtream-to-strm-web:4.7.0
 ```
 
-Available tags: `4.6.0` (pin this in production), `4.6`, `latest`.
+Available tags: `4.7.0` (pin this in production), `4.7`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -108,7 +114,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.6.0
+    image: mourabena2ui/xtream-to-strm-web:4.7.0
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -170,13 +176,20 @@ Click **Sync Movies** or **Sync Series** to generate your files!
 
 ### 5. Live TV M3U (Optional)
 
-**Generate Your Playlist:**
-- Navigate to **Live TV** → **Live Selection**
-- Select your subscription
-- Click refresh to load bouquets
-- Choose categories to include
-- Copy or download your M3U URL
-- Add URL to your IPTV player
+**Build a playlist automatically:**
+- Navigate to **Management** → **Auto Organizer**
+- Pick a reference profile and the categories to read, build the proposal, create the playlist
+- Re-run it later on the same playlist: you see what would change and tick what to apply
+
+**Edit it:**
+- Navigate to **Management** → **Live Playlists** → **Configure**
+- Add channels from the library (drag them onto a group) or with **Ctrl+K**
+- Open **Health** to fix dead channels, duplicates, numbering and guides in one click
+- The **Tools** menu holds the numbering, rename, versions and TV preview tools
+
+**Use it:**
+- Click the playlist name, choose a short name, and copy the two URLs
+  (`http://<host>/p/<name>.m3u` and `http://<host>/p/<name>.xml`) into your IPTV player
 
 ### 6. Configure Your Media Server
 
@@ -219,7 +232,50 @@ output/
 
 ## 📝 Version History
 
-### v4.6.0 (Current)
+### v4.7.0 (Current)
+
+Deuxième refonte de l'éditeur de playlist, après un audit fait en l'utilisant sur de vraies
+playlists (1 460 chaînes pour la plus grande).
+
+**Corrigé**
+- 🔍 **La recherche de l'en-tête ne marchait jamais** : la route `/streams/search` était masquée
+  par `/streams/{category_id}` (aucun résultat sur une source M3U, page blanche sur Xtream).
+  Remplacée par **Ctrl+K**, qui cherche dans la playlist et chez tous les fournisseurs à la fois.
+- 📺 **La couverture guide affichée était fausse** : elle comptait les chaînes ayant un
+  identifiant, pas celles ayant un programme (100 % affiché, 22 % réel). Elle mesure
+  désormais ce que le lecteur reçoit.
+- 🆔 L'identifiant factice `TS` du fournisseur n'est plus publié (83 chaînes affichaient le
+  même programme).
+- 🔢 Dupliquer ou importer un groupe ne crée plus de numéros en double, et un ajout ne déborde
+  plus sur le groupe suivant.
+- 🧱 L'en-tête de l'éditeur ne sort plus de l'écran ; une erreur affiche un message au lieu
+  d'une page blanche ; `index.html` n'est plus mis en cache (le navigateur gardait l'ancienne
+  version après une mise à jour).
+- 🩹 Le bouton « pourquoi ce guide » renvoyait une erreur 500 sur toutes les playlists de
+  l'Auto Organizer.
+- ⚽ L'Auto Organizer lisait « SP⚽RTS » (Strong) comme « Sp Rts » : le ballon est un O.
+
+**Nouveau**
+- 🩺 **Panneau Santé** : chaînes mortes, doublons, numéros cassés, groupes qui se
+  chevauchent, guides vides, chacun avec sa correction en un clic. Il montre aussi les
+  nouvelles chaînes des fournisseurs depuis la dernière visite, et les chaînes de référence
+  manquantes (France 2, LCP, Franceinfo…), ajoutées avec leur numéro officiel et leur guide.
+- 🔢 **Numérotation** : plage de numéros par groupe, « Réparer la numérotation »,
+  « Numéroter depuis la référence », insertion avec décalage.
+- 🗂️ **Éditeur** : bibliothèque sur une colonne avec panier et destination, glisser-déposer
+  vers un groupe, liste des chaînes en 1 à 4 colonnes (virtualisée : 1,2 s → 15 ms sur 622
+  chaînes), logo, programme en cours et état réel du guide sur chaque chaîne.
+- 🤖 **Automatismes** : groupes à règles complétés toutes les heures, réparation des chaînes
+  mortes par un autre flux, mise à jour d'une playlist existante par l'Auto Organizer avec
+  un différentiel à cocher.
+- 🧰 **Outils** : renommage en masse par règles avec aperçu, autres flux d'une chaîne,
+  chaînes masquées, test d'un flux (qualité + image), aperçu « comme sur la télé »,
+  versions nommées (une version automatique avant chaque outil).
+- 🔗 **URL courtes** pour le lecteur : `/p/<nom>.m3u` et `/p/<nom>.xml`.
+- ✅ 231 tests, tous verts. Migrations 013 et 014 (colonnes et tables ajoutées, rien de
+  supprimé) : sauvegardez `db/` avant la mise à jour.
+
+### v4.6.0
 
 Refonte de l'éditeur de playlist et de l'Auto Organizer, après un audit de l'écran.
 
