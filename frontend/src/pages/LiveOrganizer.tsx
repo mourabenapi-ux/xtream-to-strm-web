@@ -10,7 +10,7 @@ import {
     Loader2, Wand2, ChevronRight, ChevronDown, AlertTriangle, CheckCircle2,
     Tv, ListOrdered, HelpCircle, Layers, Search,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/contexts/ToastContext';
 import api from '@/lib/api';
 
@@ -51,6 +51,16 @@ interface Plan {
     to_confirm: PlanChannel[];
     junk_dropped: string[];
 }
+
+interface DiffAdd {
+    number: number; name: string; group: string; tvg_id: string;
+    subscription_id: number; stream_id: string; group_exists: boolean; number_free: boolean;
+}
+interface DiffRenumber {
+    channel_id: number; name: string; from_number: number; to_number: number; from_group: string; to_group: string;
+}
+interface DiffRemove { channel_id: number; name: string; group: string; number: number; }
+interface Diff { add: DiffAdd[]; renumber: DiffRenumber[]; remove: DiffRemove[]; unchanged: number; }
 
 interface Profile {
     name: string;
@@ -109,6 +119,7 @@ const QUALITY_PRESETS: Record<string, string[]> = {
 export default function LiveOrganizer() {
     const toast = useToast();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [categories, setCategories] = useState<Record<number, Category[]>>({});
@@ -130,6 +141,17 @@ export default function LiveOrganizer() {
     const [confirmed, setConfirmed] = useState<Set<number>>(new Set());
     const [dropped, setDropped] = useState<Set<number>>(new Set());
     const [existingNames, setExistingNames] = useState<string[]>([]);
+    const [existing, setExisting] = useState<{ id: number; name: string }[]>([]);
+    // Where the result goes: a new playlist, or an existing one updated in place.
+    const [targetId, setTargetId] = useState<number | null>(() => {
+        const raw = searchParams.get('playlist_id');
+        return raw ? Number(raw) : null;
+    });
+    const [diff, setDiff] = useState<Diff | null>(null);
+    const [diffLoading, setDiffLoading] = useState(false);
+    const [takeAdd, setTakeAdd] = useState<Set<string>>(new Set());
+    const [takeRenumber, setTakeRenumber] = useState<Set<number>>(new Set());
+    const [takeRemove, setTakeRemove] = useState<Set<number>>(new Set());
     const [playlistName, setPlaylistName] = useState('FR — organised');
     const [nameTouched, setNameTouched] = useState(false);
     const [showApplyDialog, setShowApplyDialog] = useState(false);
@@ -157,8 +179,9 @@ export default function LiveOrganizer() {
                 toast.apiError('Could not load the reference profiles', error);
             }
             try {
-                const res = await api.get<{ name: string }[]>('/live/playlists');
+                const res = await api.get<{ id: number; name: string }[]>('/live/playlists');
                 setExistingNames(res.data.map(p => p.name.trim().toLowerCase()));
+                setExisting(res.data.map(p => ({ id: p.id, name: p.name })));
             } catch { /* only used for a warning */ }
 
             setLoadingCategories(true);
@@ -174,6 +197,35 @@ export default function LiveOrganizer() {
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Updating a playlist the organiser built: bring back what it was asked
+    // last time, so re-running it is one click instead of re-ticking 30 categories.
+    useEffect(() => {
+        setDiff(null);
+        if (!targetId) return;
+        api.get<{ config: any; inferred: boolean }>(`/organizer/config/${targetId}`).then(res => {
+            const config = res.data.config;
+            if (!config) {
+                toast.info('No stored settings', 'Pick the categories to organise: they are remembered after the update.');
+                return;
+            }
+            if (config.profile) setProfile(config.profile);
+            if (config.quality_preset && QUALITY_PRESETS[config.quality_preset]) setQualityPreset(config.quality_preset);
+            const o = config.options ?? {};
+            if (typeof o.keep_backups === 'boolean') setKeepBackups(o.keep_backups);
+            if (typeof o.separate_timeshift === 'boolean') setSeparateTimeshift(o.separate_timeshift);
+            if (typeof o.include_unmatched === 'boolean') setIncludeUnmatched(o.include_unmatched);
+            const restored: Record<number, Set<string>> = {};
+            (config.scopes ?? []).forEach((scope: any) => { restored[scope.subscription_id] = new Set(scope.category_ids); });
+            setSelected(restored);
+            if (res.data.inferred) {
+                toast.info('Settings deduced from the playlist', `Profile "${config.profile}" and the ${(config.scopes ?? []).reduce((n: number, sc: any) => n + sc.category_ids.length, 0)} categories its channels come from. Check them, then build the proposal.`);
+            } else {
+                toast.success('Settings of the last run loaded', 'Build the proposal to see what changed.');
+            }
+        }).catch(() => { /* the screen still works without it */ });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [targetId]);
 
     // The suggested name follows the profile until the user types their own.
     useEffect(() => {
@@ -273,6 +325,87 @@ export default function LiveOrganizer() {
 
     const nameTaken = existingNames.includes(playlistName.trim().toLowerCase());
 
+    const currentConfig = () => ({
+        profile,
+        quality_preset: qualityPreset,
+        scopes: Object.entries(selected)
+            .filter(([, set]) => set.size > 0)
+            .map(([subscriptionId, set]) => ({ subscription_id: Number(subscriptionId), category_ids: Array.from(set) })),
+        options: {
+            quality_preference: QUALITY_PRESETS[qualityPreset],
+            keep_backups: keepBackups,
+            separate_timeshift: separateTimeshift,
+            include_unmatched: includeUnmatched,
+        },
+    });
+
+    const planChannels = () => channelsToApply.map(channel => ({
+        number: channel.number,
+        name: channel.name,
+        group: channel.group,
+        tvg_id: channel.tvg_id,
+        subscription_id: channel.stream.subscription_id,
+        stream_id: channel.stream.stream_id,
+    }));
+
+    const addKey = (a: { subscription_id: number; stream_id: string }) => `${a.subscription_id}:${a.stream_id}`;
+
+    const compare = async () => {
+        if (!plan || !targetId) return;
+        setDiffLoading(true);
+        try {
+            const res = await api.post<Diff>('/organizer/diff', { playlist_id: targetId, channels: planChannels() });
+            setDiff(res.data);
+            // Additions are what a re-run is for. Renumbering and removals
+            // touch work done by hand, so they wait to be asked for.
+            setTakeAdd(new Set(res.data.add.map(addKey)));
+            setTakeRenumber(new Set());
+            setTakeRemove(new Set());
+        } catch (error) {
+            toast.apiError('Could not compare with the playlist', error);
+        } finally {
+            setDiffLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (plan && targetId) compare();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [plan, targetId, confirmed, dropped]);
+
+    const applyUpdate = async () => {
+        if (!diff || !targetId) return;
+        setApplying(true);
+        try {
+            const res = await api.post('/organizer/update', {
+                playlist_id: targetId,
+                add: diff.add.filter(a => takeAdd.has(addKey(a))).map(a => ({
+                    number: a.number, name: a.name, group: a.group, tvg_id: a.tvg_id,
+                    subscription_id: a.subscription_id, stream_id: a.stream_id,
+                })),
+                renumber: diff.renumber.filter(r => takeRenumber.has(r.channel_id))
+                    .map(r => ({ channel_id: r.channel_id, number: r.to_number, group: r.to_group })),
+                remove_channel_ids: diff.remove.filter(r => takeRemove.has(r.channel_id)).map(r => r.channel_id),
+                config: currentConfig(),
+            });
+            toast.success('Playlist updated',
+                `+${res.data.added} · ${res.data.renumbered} renumbered · −${res.data.removed}${res.data.displaced ? ` · ${res.data.displaced} moved aside` : ''}. Opening it in the editor.`);
+            navigate(`/live-selection?playlist_id=${targetId}`);
+        } catch (error) {
+            toast.apiError('Could not update the playlist', error);
+        } finally {
+            setApplying(false);
+            setShowApplyDialog(false);
+        }
+    };
+
+    const takeCount = takeAdd.size + takeRenumber.size + takeRemove.size;
+    const toggleIn = <T,>(set: Set<T>, value: T, setter: (s: Set<T>) => void) => {
+        const next = new Set(set);
+        if (next.has(value)) next.delete(value); else next.add(value);
+        setter(next);
+    };
+
     const applyPlan = async () => {
         if (!plan) return;
         setApplying(true);
@@ -281,6 +414,7 @@ export default function LiveOrganizer() {
             const res = await api.post('/organizer/apply', {
                 playlist_name: playlistName.trim(),
                 description: `Automatic organisation — reference ${plan.reference_version}`,
+                config: currentConfig(),
                 group_order: plan.groups.map(g => g.name).filter(name => keptGroups.has(name)),
                 channels: channelsToApply.map(channel => ({
                     number: channel.number,
@@ -340,7 +474,8 @@ export default function LiveOrganizer() {
                 <p className="text-muted-foreground mt-1">
                     Matches your catalogue against a reference channel list, merges the
                     quality variants, and proposes a numbered, grouped playlist. Nothing
-                    is written until you create it, and it is always a new playlist.
+                    is written until you confirm. The result goes into a new playlist, or
+                    updates an existing one: you then see what would change and tick what to apply.
                 </p>
             </div>
 
@@ -612,6 +747,78 @@ export default function LiveOrganizer() {
                         </Card>
                     )}
 
+                    {targetId && (
+                        <Card className="border-primary/40">
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <Layers size={18} /> What would change in “{existing.find(p => p.id === targetId)?.name ?? `playlist ${targetId}`}”
+                                </CardTitle>
+                                <CardDescription>
+                                    Ticked lines are applied. Renames, guide mappings and numbers you set by hand are kept on every other channel.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {diffLoading && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Comparing…</div>}
+                                {diff && (
+                                    <>
+                                        <p className="text-sm text-muted-foreground">{diff.unchanged} channel(s) already as proposed.</p>
+                                        {([
+                                            ['add', `Add ${diff.add.length} new channel(s)`, diff.add.length, 'Channels of the proposal the playlist does not have yet.'],
+                                            ['renumber', `Renumber or regroup ${diff.renumber.length} channel(s)`, diff.renumber.length, 'Channels in both, whose number or group differs from the proposal. Off by default: these may be your own choices.'],
+                                            ['remove', `Remove ${diff.remove.length} channel(s)`, diff.remove.length, 'Channels the proposal no longer has — often ones you added by hand, or from categories not ticked above. Off by default.'],
+                                        ] as const).filter(([, , n]) => n > 0).map(([kind, title, , hint]) => {
+                                            const allOn = kind === 'add' ? takeAdd.size === diff.add.length
+                                                : kind === 'renumber' ? takeRenumber.size === diff.renumber.length
+                                                    : takeRemove.size === diff.remove.length;
+                                            const setAll = (on: boolean) => {
+                                                if (kind === 'add') setTakeAdd(new Set(on ? diff.add.map(addKey) : []));
+                                                if (kind === 'renumber') setTakeRenumber(new Set(on ? diff.renumber.map(r => r.channel_id) : []));
+                                                if (kind === 'remove') setTakeRemove(new Set(on ? diff.remove.map(r => r.channel_id) : []));
+                                            };
+                                            return (
+                                                <details key={kind} className="border rounded-md" open={kind === 'add'}>
+                                                    <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer">
+                                                        <Checkbox checked={allOn} onCheckedChange={setAll} onClick={e => e.stopPropagation()} />
+                                                        <span className="font-medium">{title}</span>
+                                                        <span className="text-xs text-muted-foreground">{hint}</span>
+                                                    </summary>
+                                                    <div className="border-t divide-y max-h-72 overflow-y-auto">
+                                                        {kind === 'add' && diff.add.map(a => (
+                                                            <label key={addKey(a)} className="flex items-center gap-3 px-3 py-1 text-sm cursor-pointer hover:bg-accent/50">
+                                                                <Checkbox checked={takeAdd.has(addKey(a))} onCheckedChange={() => toggleIn(takeAdd, addKey(a), setTakeAdd)} />
+                                                                <span className="font-mono text-xs w-12 text-muted-foreground">{a.number}</span>
+                                                                <span className="flex-1 truncate">{a.name}</span>
+                                                                <span className="text-xs text-muted-foreground">{a.group}{a.group_exists ? '' : ' (new group)'}{a.number_free ? '' : ' · number taken, next free one'}</span>
+                                                            </label>
+                                                        ))}
+                                                        {kind === 'renumber' && diff.renumber.map(r => (
+                                                            <label key={r.channel_id} className="flex items-center gap-3 px-3 py-1 text-sm cursor-pointer hover:bg-accent/50">
+                                                                <Checkbox checked={takeRenumber.has(r.channel_id)} onCheckedChange={() => toggleIn(takeRenumber, r.channel_id, setTakeRenumber)} />
+                                                                <span className="flex-1 truncate">{r.name}</span>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {r.from_number} → <strong className="text-foreground">{r.to_number}</strong>
+                                                                    {r.from_group !== r.to_group && <> · {r.from_group} → {r.to_group}</>}
+                                                                </span>
+                                                            </label>
+                                                        ))}
+                                                        {kind === 'remove' && diff.remove.map(r => (
+                                                            <label key={r.channel_id} className="flex items-center gap-3 px-3 py-1 text-sm cursor-pointer hover:bg-accent/50">
+                                                                <Checkbox checked={takeRemove.has(r.channel_id)} onCheckedChange={() => toggleIn(takeRemove, r.channel_id, setTakeRemove)} />
+                                                                <span className="font-mono text-xs w-12 text-muted-foreground">{r.number}</span>
+                                                                <span className="flex-1 truncate">{r.name}</span>
+                                                                <span className="text-xs text-muted-foreground">{r.group}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </details>
+                                            );
+                                        })}
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
+
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-lg">The channel list</CardTitle>
@@ -685,29 +892,67 @@ export default function LiveOrganizer() {
                     {/* Always in reach: the list above can be hundreds of rows long. */}
                     <div className="fixed bottom-0 left-0 right-0 lg:left-64 z-30 border-t bg-card/95 backdrop-blur shadow-lg">
                         <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-end gap-3">
-                            <div className="flex-1 min-w-[14rem]">
-                                <Label htmlFor="playlist-name" className="text-xs">New playlist name</Label>
-                                <Input id="playlist-name" value={playlistName}
-                                    onChange={e => { setPlaylistName(e.target.value); setNameTouched(true); }} />
-                                {nameTaken && (
-                                    <p className="text-[11px] text-amber-600 mt-0.5">
-                                        A playlist with this name already exists; pick another to tell them apart.
-                                    </p>
-                                )}
+                            <div className="min-w-[12rem]">
+                                <Label htmlFor="organizer-target" className="text-xs">Result goes to</Label>
+                                <select id="organizer-target" className="w-full h-9 text-sm border rounded-md px-2 bg-background"
+                                    value={targetId ?? ''} onChange={e => setTargetId(e.target.value ? Number(e.target.value) : null)}>
+                                    <option value="">a new playlist</option>
+                                    {existing.map(p => <option key={p.id} value={p.id}>update “{p.name}”</option>)}
+                                </select>
                             </div>
-                            <Button onClick={() => setShowApplyDialog(true)}
-                                disabled={applying || !playlistName.trim() || channelsToApply.length === 0}>
-                                {applying
-                                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating…</>
-                                    : <>Create playlist with {channelsToApply.length} channels</>}
-                            </Button>
+                            {targetId ? (
+                                <>
+                                    <p className="flex-1 min-w-[14rem] text-xs text-muted-foreground pb-2">
+                                        {diff ? `${takeCount} change(s) ticked out of ${diff.add.length + diff.renumber.length + diff.remove.length}.` : 'Comparing with the playlist…'}
+                                    </p>
+                                    <Button onClick={() => setShowApplyDialog(true)} disabled={applying || !diff || takeCount === 0}>
+                                        {applying ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating…</> : <>Apply {takeCount} change(s)</>}
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="flex-1 min-w-[14rem]">
+                                        <Label htmlFor="playlist-name" className="text-xs">New playlist name</Label>
+                                        <Input id="playlist-name" value={playlistName}
+                                            onChange={e => { setPlaylistName(e.target.value); setNameTouched(true); }} />
+                                        {nameTaken && (
+                                            <p className="text-[11px] text-amber-600 mt-0.5">
+                                                A playlist with this name already exists. Pick another name, or choose “update” on the left.
+                                            </p>
+                                        )}
+                                    </div>
+                                    <Button onClick={() => setShowApplyDialog(true)}
+                                        disabled={applying || !playlistName.trim() || channelsToApply.length === 0}>
+                                        {applying
+                                            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating…</>
+                                            : <>Create playlist with {channelsToApply.length} channels</>}
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </>
             )}
 
             <ConfirmDialog
-                isOpen={showApplyDialog}
+                isOpen={showApplyDialog && !!targetId}
+                onClose={() => setShowApplyDialog(false)}
+                onConfirm={applyUpdate}
+                title="Update the playlist"
+                confirmLabel="Apply"
+            >
+                <p>
+                    <strong>{takeAdd.size}</strong> addition(s), <strong>{takeRenumber.size}</strong> renumbering(s) and{' '}
+                    <strong>{takeRemove.size}</strong> removal(s) will be applied to{' '}
+                    <strong>{existing.find(p => p.id === targetId)?.name}</strong>.
+                </p>
+                <p className="text-muted-foreground">
+                    The organiser settings are saved with the playlist for the next run. In the editor, Tools › Fix numbering settles any number left out of place.
+                </p>
+            </ConfirmDialog>
+
+            <ConfirmDialog
+                isOpen={showApplyDialog && !targetId}
                 onClose={() => setShowApplyDialog(false)}
                 onConfirm={applyPlan}
                 title="Create the organised playlist"

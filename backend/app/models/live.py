@@ -1,5 +1,5 @@
 import secrets
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, DateTime, Boolean, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.base_class import Base
@@ -25,6 +25,11 @@ class LivePlaylist(Base):
     # as channel numbers would renumber a working setup for no reason.
     use_channel_numbers = Column(Boolean, default=False, nullable=False,
                                  server_default="0")
+    # What the Auto Organizer was asked for (profile, scopes, options), as JSON,
+    # so it can be re-run against this playlist and show what would change.
+    organizer_config = Column(Text, nullable=True)
+    # When the user last acknowledged the "what changed since" report.
+    reviewed_at = Column(DateTime, nullable=True)
     
     # Relations
     subscription = relationship("Subscription")
@@ -42,6 +47,13 @@ class LivePlaylistBouquet(Base):
     category_id = Column(String, nullable=True)  # Xtream category ID (null for virtual groups)
     custom_name = Column(String, nullable=True)
     order = Column(Integer, default=0)
+    # The channel numbers this group owns, on a numbered playlist. Appending
+    # stays inside them, so one group can no longer spill into the next.
+    number_start = Column(Integer, nullable=True)
+    number_end = Column(Integer, nullable=True)
+    # JSON filter that keeps the group topped up with the provider's matching
+    # channels (see services/playlist_tools.py). NULL = a manual group.
+    rule = Column(Text, nullable=True)
     
     # Relations
     playlist = relationship("LivePlaylist", back_populates="bouquets")
@@ -58,11 +70,22 @@ class LivePlaylistChannel(Base):
     order = Column(Integer, default=0)
     is_excluded = Column(Boolean, default=False)
     
-    # Mapping EPG (v3.7.0)
+    # Mapping EPG (v3.7.0). NULL inherits the provider's id, NO_GUIDE ("-")
+    # deliberately publishes none: a provider id shared by dozens of unrelated
+    # channels ("TS") is worse than no id at all.
     epg_channel_id = Column(String, nullable=True)
     
     # Relations
     bouquet = relationship("LivePlaylistBouquet", back_populates="channels")
+
+class LiveCatalogSeen(Base):
+    """When a provider stream was first noticed — the yardstick for "new"."""
+    __tablename__ = "live_catalog_seen"
+
+    subscription_id = Column(Integer, primary_key=True)
+    stream_id = Column(String, primary_key=True)
+    first_seen = Column(DateTime, nullable=False, default=datetime.utcnow)
+
 
 # Legacy model for migration (to be deleted after migration)
 class LiveStreamSubscription(Base):

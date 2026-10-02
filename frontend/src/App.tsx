@@ -51,8 +51,12 @@ function Layout({ children }: { children: React.ReactNode }) {
         setSidebarOpen(false);
     };
 
+    // h-screen, not min-h-screen: the sidebar's own height used to set the
+    // page height (957 px in a 900 px window), so full-height screens like the
+    // playlist editor scrolled their header out of view. Each column now
+    // scrolls on its own.
     return (
-        <div className="min-h-screen bg-background text-foreground flex relative">
+        <div className="h-screen overflow-hidden bg-background text-foreground flex relative">
             {/* Mobile Menu Button */}
             <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -72,7 +76,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Sidebar */}
             <aside className={`
-                w-64 border-r border-border bg-card p-4 flex flex-col
+                w-64 border-r border-border bg-card p-4 flex flex-col overflow-y-auto
                 fixed lg:relative inset-y-0 left-0 z-40
                 transform transition-transform duration-300 ease-in-out
                 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -276,7 +280,7 @@ function Layout({ children }: { children: React.ReactNode }) {
                 <div className="mt-auto pt-4 border-t border-border">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground px-3">
                         <Activity size={16} />
-                        <span>v4.6.0</span>
+                        <span>v4.7.0</span>
                     </div>
                 </div>
             </aside>

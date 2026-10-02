@@ -300,6 +300,53 @@ class EPGService:
             self.redis.sismember(f"epg:src:{sid}:channels", epg_id) for sid in source_ids
         )
 
+    def guide_states(self, source_ids: List[int], epg_ids) -> Dict[str, Dict[str, Any]]:
+        """What a player will show for each id: a schedule, an empty slot, or nothing.
+
+        ``live``    — a linked source has programmes from now on; ``now`` holds
+                      the title on air, when one is.
+        ``listed``  — a source names the channel but carries no schedule for it.
+        ``unknown`` — no linked source knows the id.
+
+        "Has an id" is not "has a guide": the editor used to count the former
+        and showed 100 % on a playlist where 22 % of the channels had one.
+        One pipeline for the whole playlist, so 1 500 channels stay one round trip.
+        """
+        import json as _json
+        ids = sorted({i for i in epg_ids if i})
+        if not ids or not source_ids:
+            return {i: {"state": "unknown", "now": None} for i in ids}
+        now = datetime.now().timestamp()
+        window = now - 12 * 3600
+        pipe = self.redis.pipeline()
+        for epg_id in ids:
+            for sid in source_ids:
+                pipe.sismember(f"epg:src:{sid}:channels", epg_id)
+                pipe.zcount(f"epg:src:{sid}:prog:{epg_id}", window, "+inf")
+                pipe.zrevrangebyscore(f"epg:src:{sid}:prog:{epg_id}", now, window, start=0, num=1)
+        answers = pipe.execute()
+        out: Dict[str, Dict[str, Any]] = {}
+        step = 3 * len(source_ids)
+        for index, epg_id in enumerate(ids):
+            chunk = answers[index * step:(index + 1) * step]
+            state, title = "unknown", None
+            for k in range(len(source_ids)):
+                listed, count, current = chunk[3 * k], chunk[3 * k + 1], chunk[3 * k + 2]
+                if count:
+                    state = "live"
+                    if current:
+                        try:
+                            programme = _json.loads(current[0])
+                            if programme.get("stop", 0) > now:
+                                title = programme.get("title")
+                        except (ValueError, TypeError):
+                            pass
+                    break
+                if listed:
+                    state = "listed"
+            out[epg_id] = {"state": state, "now": title}
+        return out
+
     def generate_playlist_xmltv(
         self, playlist: LivePlaylist, channels: Optional[List[Dict[str, Any]]] = None
     ) -> str:
@@ -334,7 +381,7 @@ class EPGService:
                 {"epg_id": ch.epg_channel_id, "name": ch.custom_name}
                 for b in playlist.bouquets
                 for ch in b.channels
-                if not ch.is_excluded
+                if not ch.is_excluded and ch.epg_channel_id != "-"
             ]
         else:
             wanted = channels
@@ -513,7 +560,8 @@ class EPGService:
         holders = {}
         for bouquet in playlist.bouquets:
             for channel in bouquet.channels:
-                if channel.epg_channel_id:
+                # "-" is a deliberate "no guide", not an id to share.
+                if channel.epg_channel_id and channel.epg_channel_id != "-":
                     holders.setdefault(channel.epg_channel_id, []).append(channel)
 
         released = 0

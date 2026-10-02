@@ -29,6 +29,11 @@ celery_app.conf.beat_schedule = {
         'task': 'app.tasks.epg.check_epg_refresh_schedule',
         'schedule': 3600.0,  # Check every hour
     },
+    # Rule groups follow the provider: new matching channels join them.
+    'refresh-live-rule-groups-every-hour': {
+        'task': 'app.tasks.live_rules.refresh_live_rule_groups',
+        'schedule': 3600.0,
+    },
 }
 celery_app.conf.timezone = settings.TIMEZONE
 
@@ -37,3 +42,4 @@ from app.tasks import sync  # noqa
 from app.tasks import m3u_sync  # noqa
 from app.tasks import downloads  # noqa
 from app.tasks import epg  # noqa
+from app.tasks import live_rules  # noqa

@@ -38,6 +38,77 @@ async def get_live_categories(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch categories: {str(e)}")
 
+# Declared before /streams/{category_id} on purpose: FastAPI matches routes in
+# registration order, and the other way round "search" was read as a category
+# id. The header search then returned nothing on an M3U source and the whole
+# 57 000-stream catalogue, ungrouped, on Xtream, which crashed the editor.
+@router.get("/streams/search", response_model=Any)
+async def search_live_streams(
+    subscription_id: int,
+    q: str = Query(...),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=500),
+    grouped: bool = Query(True),
+    db: Session = Depends(deps.get_db)
+) -> Any:
+    """Search for live streams across all categories in a source with pagination."""
+    sub = db.query(Subscription).filter(Subscription.id == subscription_id).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+
+    client = get_catalog(db, sub)
+    try:
+        all_streams = await client.get_live_streams()
+        categories = await client.get_live_categories()
+        
+        cat_map = {str(c.get("category_id")): c.get("category_name") for c in categories}
+        
+        query = q.lower()
+        results = []
+        
+        for s in all_streams:
+            if query in s.get("name", "").lower():
+                results.append({
+                    "stream_id": s.get("stream_id"),
+                    "name": s.get("name"),
+                    "category_id": str(s.get("category_id")),
+                    "category_name": cat_map.get(str(s.get("category_id")), "Unknown"),
+                    "stream_icon": s.get("stream_icon"),
+                    "epg_channel_id": s.get("epg_channel_id")
+                })
+        
+        total = len(results)
+        start = (page - 1) * page_size
+        end = start + page_size
+        page_results = results[start:end]
+
+        if not grouped:
+            return {
+                "items": page_results,
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "pages": (total + page_size - 1) // page_size
+            }
+
+        grouped_data = {}
+        for r in page_results:
+            cid = str(r["category_id"])
+            cname = r["category_name"]
+            if cid not in grouped_data:
+                grouped_data[cid] = {"category_id": cid, "category_name": cname, "streams": []}
+            grouped_data[cid]["streams"].append(r)
+            
+        return {
+            "items": list(grouped_data.values()),
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "pages": (total + page_size - 1) // page_size
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
 @router.get("/streams/{category_id}", response_model=Any)
 async def get_live_streams(
     category_id: str,
@@ -446,6 +517,9 @@ def restore_playlist_snapshot(
         bouquet.category_id = sb.category_id
         bouquet.custom_name = sb.custom_name
         bouquet.order = sb.order
+        bouquet.number_start = sb.number_start
+        bouquet.number_end = sb.number_end
+        bouquet.rule = sb.rule
     db.flush()
 
     # 2. Channels: update (possibly into another group) or re-create.
@@ -597,14 +671,30 @@ def duplicate_bouquet(
     db.add(new_bouquet)
     db.flush() # Get new_bouquet.id
     
+    # On a numbered playlist `order` is the channel number: copying it gave
+    # every copied channel the same number as its original. The copy goes at
+    # the end of the playlist, so it is numbered after the last channel.
+    playlist = db.query(LivePlaylist).filter(LivePlaylist.id == playlist_id).first()
+    renumber = bool(playlist and playlist.use_channel_numbers)
+    next_number = 0
+    if renumber:
+        bouquet_ids = [b.id for b in db.query(LivePlaylistBouquet.id).filter_by(playlist_id=playlist_id)]
+        highest = [c.order or 0 for c in db.query(LivePlaylistChannel).filter(
+            LivePlaylistChannel.bouquet_id.in_(bouquet_ids)).all()]
+        next_number = max(highest + [0]) + 1
+
     # Duplicate channels
-    for ch in source.channels:
+    for ch in sorted(source.channels, key=lambda c: c.order or 0):
+        if renumber:
+            order, next_number = next_number, next_number + 1
+        else:
+            order = ch.order
         new_ch = LivePlaylistChannel(
             bouquet_id=new_bouquet.id,
             stream_id=ch.stream_id,
             subscription_id=ch.subscription_id,
             custom_name=ch.custom_name,
-            order=ch.order,
+            order=order,
             is_excluded=ch.is_excluded,
             epg_channel_id=ch.epg_channel_id
         )
@@ -778,15 +868,16 @@ async def debug_epg_match(
     if not channel:
         raise HTTPException(status_code=404, detail="Channel not found")
         
-    sub = playlist.subscription
-    client = get_catalog(db, sub)
-
     target_name = channel.custom_name
     if not target_name:
-        # Fetch stream name from Xtream if no custom name
+        # Fetch stream name from the provider if no custom name. The channel's
+        # own provider first: a playlist built by the organiser has no
+        # subscription of its own, and reading `playlist.subscription` made
+        # this endpoint fail with a 500 on every one of them.
         try:
-            # We fetch all live streams once (cached in client usually or handled by provider)
-            # For simplicity, we assume we need the name from the provider.
+            sub_id = channel.subscription_id or channel.bouquet.subscription_id or playlist.subscription_id
+            sub = db.query(Subscription).filter(Subscription.id == sub_id).first()
+            client = get_catalog(db, sub)
             streams = await client.get_live_streams()
             stream = next((s for s in streams if str(s.get("stream_id")) == str(channel.stream_id)), None)
             if stream:
@@ -838,72 +929,6 @@ async def refresh_epg_source(
         "message": f"{channel_count} channel(s) cached.",
     }
 
-@router.get("/streams/search", response_model=Any)
-async def search_live_streams(
-    subscription_id: int,
-    q: str = Query(...),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=500),
-    grouped: bool = Query(True),
-    db: Session = Depends(deps.get_db)
-) -> Any:
-    """Search for live streams across all categories in a source with pagination."""
-    sub = db.query(Subscription).filter(Subscription.id == subscription_id).first()
-    if not sub:
-        raise HTTPException(status_code=404, detail="Subscription not found")
-
-    client = get_catalog(db, sub)
-    try:
-        all_streams = await client.get_live_streams()
-        categories = await client.get_live_categories()
-        
-        cat_map = {str(c.get("category_id")): c.get("category_name") for c in categories}
-        
-        query = q.lower()
-        results = []
-        
-        for s in all_streams:
-            if query in s.get("name", "").lower():
-                results.append({
-                    "stream_id": s.get("stream_id"),
-                    "name": s.get("name"),
-                    "category_id": str(s.get("category_id")),
-                    "category_name": cat_map.get(str(s.get("category_id")), "Unknown"),
-                    "stream_icon": s.get("stream_icon"),
-                    "epg_channel_id": s.get("epg_channel_id")
-                })
-        
-        total = len(results)
-        start = (page - 1) * page_size
-        end = start + page_size
-        page_results = results[start:end]
-
-        if not grouped:
-            return {
-                "items": page_results,
-                "total": total,
-                "page": page,
-                "page_size": page_size,
-                "pages": (total + page_size - 1) // page_size
-            }
-
-        grouped_data = {}
-        for r in page_results:
-            cid = str(r["category_id"])
-            cname = r["category_name"]
-            if cid not in grouped_data:
-                grouped_data[cid] = {"category_id": cid, "category_name": cname, "streams": []}
-            grouped_data[cid]["streams"].append(r)
-            
-        return {
-            "items": list(grouped_data.values()),
-            "total": total,
-            "page": page,
-            "page_size": page_size,
-            "pages": (total + page_size - 1) // page_size
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 def _as_positive_int(value: Any) -> int:
     """A count from a provider, which may arrive as "7", 7, "" or None."""
@@ -959,6 +984,13 @@ def _catchup_attributes(channel: dict) -> str:
     return " ".join(attributes) + " "
 
 
+# Stored in LivePlaylistChannel.epg_channel_id to publish *no* tvg-id. NULL
+# means "inherit the provider's", and some providers hand one id to dozens of
+# unrelated channels (Strong gives "TS" to 83), so every one of them showed the
+# same programme. Detaching is the only way to stop that inheritance.
+NO_GUIDE = "-"
+
+
 def _clean_epg_id(value: Any) -> str:
     """Normalise a tvg-id coming from a provider or from a channel override.
 
@@ -969,7 +1001,10 @@ def _clean_epg_id(value: Any) -> str:
     if value is None:
         return ""
     text = str(value).strip()
-    return "" if text.lower() in ("none", "null") else text
+    # "TS" is a provider template placeholder, not a channel: Strong hands it
+    # to 83 unrelated channels, so all of them showed the same schedule. The
+    # organiser already drops it (organizer.SourceStream.from_provider).
+    return "" if text.lower() in ("none", "null", "ts") else text
 
 
 async def resolve_playlist_channels(
@@ -1040,6 +1075,9 @@ async def resolve_playlist_channels(
             if dropped is not None:
                 for c in bouquet.channels:
                     dropped.append({
+                        "channel_id": c.id,
+                        "bouquet_id": bouquet.id,
+                        "subscription_id": c.subscription_id or b_sub_id,
                         "stream_id": str(c.stream_id),
                         "name": c.custom_name or "",
                         "bouquet": bouquet.custom_name or "",
@@ -1077,6 +1115,9 @@ async def resolve_playlist_channels(
                     bouquet_streams.append((s, channel, c_sub_id))
                 elif dropped is not None:
                     dropped.append({
+                        "channel_id": channel.id,
+                        "bouquet_id": bouquet.id,
+                        "subscription_id": c_sub_id,
                         "stream_id": str(channel.stream_id),
                         "name": channel.custom_name or "",
                         "bouquet": group_title,
@@ -1089,7 +1130,15 @@ async def resolve_playlist_channels(
 
         for stream, override, s_sub_id in bouquet_streams:
             client = subscription_data[s_sub_id]["client"]
-            override_id = _clean_epg_id(override.epg_channel_id) if override else ""
+            raw_override = (override.epg_channel_id or "").strip() if override else ""
+            detached = raw_override == NO_GUIDE
+            override_id = "" if detached else _clean_epg_id(raw_override)
+            if detached:
+                epg_id, epg_id_source = "", "detached"
+            elif override_id:
+                epg_id, epg_id_source = override_id, "override"
+            else:
+                epg_id, epg_id_source = _clean_epg_id(stream.get("epg_channel_id")), "provider"
             resolved.append({
                 **_catchup_of(stream, subscription_data[s_sub_id].get("sub")),
                 "number": override.order if override else None,
@@ -1097,10 +1146,13 @@ async def resolve_playlist_channels(
                 "name": (override.custom_name if (override and override.custom_name)
                          else stream.get("name")) or "",
                 "logo": stream.get("stream_icon") or "",
-                # An explicit mapping wins; otherwise fall back to what the
-                # provider declares for this stream.
-                "epg_id": override_id or _clean_epg_id(stream.get("epg_channel_id")),
-                "epg_id_source": "override" if override_id else "provider",
+                # An explicit mapping wins, a detached channel publishes none,
+                # otherwise fall back to what the provider declares.
+                "epg_id": epg_id,
+                "epg_id_source": epg_id_source,
+                "channel_id": override.id if override else None,
+                "bouquet_id": bouquet.id,
+                "category_id": str(stream.get("category_id") or ""),
                 "group_title": group_title,
                 "bouquet": group_title,
                 "subscription_id": s_sub_id,

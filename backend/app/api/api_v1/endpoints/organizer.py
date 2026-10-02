@@ -12,6 +12,7 @@ rejected by deleting one playlist.
 
 from typing import Any, Dict, List, Optional
 
+import json
 import logging
 
 import httpx
@@ -101,6 +102,9 @@ class ApplyIn(BaseModel):
     # empty guide, which reads as a broken organisation rather than a missing
     # link, so the default has to be "the same guides as everything else".
     epg_source_ids: Optional[List[int]] = None
+    # What the screen was asked (profile, scopes, options). Stored on the
+    # playlist so the organiser can be re-run against it later.
+    config: Optional[Dict[str, Any]] = None
 
 
 async def _collect_streams(db: Session, scopes: List[ScopeIn]) -> List[SourceStream]:
@@ -250,7 +254,8 @@ def apply_organization(
     # This playlist's orders *are* channel numbers — that is the whole point of
     # the organisation — so it publishes them.
     playlist = LivePlaylist(name=name, description=payload.description,
-                            use_channel_numbers=True)
+                            use_channel_numbers=True,
+                            organizer_config=json.dumps(payload.config) if payload.config else None)
     db.add(playlist)
     db.flush()  # need the id before the bouquets
 
@@ -324,3 +329,208 @@ def apply_organization(
         "channels": created_channels,
         "epg_sources_linked": len(sources),
     }
+
+
+# ---------------------------------------------------------------------------
+# Re-running the organiser against a playlist it already built
+# ---------------------------------------------------------------------------
+
+@router.get("/config/{playlist_id}")
+async def get_organizer_config(playlist_id: int, db: Session = Depends(deps.get_db)) -> Any:
+    """What the organiser was asked when it built (or last updated) this playlist.
+
+    Playlists built before the settings were stored get an inferred config:
+    the provider categories their channels come from, and the profile that
+    recognises most of them. ``inferred`` says which case it is.
+    """
+    playlist = db.query(LivePlaylist).filter(LivePlaylist.id == playlist_id).first()
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    if playlist.organizer_config:
+        try:
+            return {"config": json.loads(playlist.organizer_config), "inferred": False}
+        except ValueError:
+            pass
+
+    from app.api.api_v1.endpoints.live import resolve_playlist_channels
+    from app.services.playlist_tools import best_profile
+    served = await resolve_playlist_channels(db, playlist)
+    if not served:
+        return {"config": None, "inferred": True}
+    scopes: Dict[int, set] = {}
+    for channel in served:
+        if channel.get("category_id"):
+            scopes.setdefault(channel["subscription_id"], set()).add(channel["category_id"])
+    references = {name: load_profile(name) for name in PROFILES}
+    profile = best_profile(
+        references, [b.custom_name for b in playlist.bouquets],
+        [(c["name"], c["epg_id"], c.get("bouquet", "")) for c in served]) or DEFAULT_PROFILE
+    return {
+        "config": {
+            "profile": profile,
+            "scopes": [{"subscription_id": sid, "category_ids": sorted(ids)} for sid, ids in scopes.items()],
+        },
+        "inferred": True,
+    }
+
+
+class DiffIn(BaseModel):
+    playlist_id: int
+    channels: List[ApplyChannelIn]
+
+
+def _rows_by_key(playlist: LivePlaylist):
+    out = {}
+    for bouquet in playlist.bouquets:
+        for channel in bouquet.channels:
+            out.setdefault((channel.subscription_id, str(channel.stream_id)), (bouquet, channel))
+    return out
+
+
+@router.post("/diff")
+def diff_organization(payload: DiffIn, db: Session = Depends(deps.get_db)) -> Any:
+    """Compare a fresh proposal with an existing playlist. Writes nothing.
+
+    * ``add``      — channels of the proposal the playlist does not hold;
+    * ``remove``   — channels of the playlist the proposal no longer has
+                     (often channels added by hand: the screen leaves them
+                     unticked by default);
+    * ``renumber`` — channels in both, whose number or group differs.
+    """
+    playlist = db.query(LivePlaylist).filter(LivePlaylist.id == payload.playlist_id).first()
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    rows = _rows_by_key(playlist)
+    used = {c.order for b in playlist.bouquets for c in b.channels}
+    groups = {b.custom_name for b in playlist.bouquets}
+    planned = set()
+    add, renumber = [], []
+    for ch in payload.channels:
+        key = (ch.subscription_id, str(ch.stream_id))
+        planned.add(key)
+        if key not in rows:
+            add.append({**ch.model_dump(), "group_exists": ch.group in groups,
+                        "number_free": ch.number not in used})
+            continue
+        bouquet, row = rows[key]
+        if row.order != ch.number or bouquet.custom_name != ch.group:
+            renumber.append({"channel_id": row.id, "name": row.custom_name or ch.name,
+                             "from_number": row.order, "to_number": ch.number,
+                             "from_group": bouquet.custom_name, "to_group": ch.group})
+    remove = [
+        {"channel_id": row.id, "name": row.custom_name or f"Channel {row.stream_id}",
+         "group": bouquet.custom_name, "number": row.order}
+        for key, (bouquet, row) in rows.items()
+        if key not in planned and not row.is_excluded
+    ]
+    return {"add": add, "remove": remove, "renumber": renumber,
+            "unchanged": len(payload.channels) - len(add) - len(renumber)}
+
+
+class RenumberIn(BaseModel):
+    channel_id: int
+    number: int
+    group: str
+
+
+class UpdateIn(BaseModel):
+    playlist_id: int
+    add: List[ApplyChannelIn] = Field(default_factory=list)
+    remove_channel_ids: List[int] = Field(default_factory=list)
+    renumber: List[RenumberIn] = Field(default_factory=list)
+    config: Optional[Dict[str, Any]] = None
+
+
+@router.post("/update")
+def update_organization(payload: UpdateIn, db: Session = Depends(deps.get_db)) -> Any:
+    """Apply the ticked part of a diff to an existing playlist. One transaction.
+
+    Renames, guide mappings and numbers the user set by hand are kept on every
+    channel the diff does not explicitly touch. A group the proposal needs and
+    the playlist lacks is created before the Secours group.
+    """
+    playlist = db.query(LivePlaylist).filter(LivePlaylist.id == payload.playlist_id).first()
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    by_name = {b.custom_name: b for b in playlist.bouquets}
+
+    def group(name: str) -> LivePlaylistBouquet:
+        if name in by_name:
+            return by_name[name]
+        ordered = sorted(playlist.bouquets, key=lambda b: b.order)
+        backup = by_name.get(BACKUP_GROUP)
+        position = backup.order if backup is not None else (ordered[-1].order + 1 if ordered else 0)
+        for b in ordered:
+            if b.order >= position:
+                b.order += 1
+        bouquet = LivePlaylistBouquet(playlist_id=playlist.id, custom_name=name, order=position)
+        db.add(bouquet)
+        db.flush()
+        playlist.bouquets.append(bouquet)
+        by_name[name] = bouquet
+        return bouquet
+
+    rows = {c.id: (b, c) for b in playlist.bouquets for c in b.channels}
+    used = {c.order for _, c in rows.values()}
+    existing = {(c.subscription_id, str(c.stream_id)) for _, c in rows.values()}
+
+    removed = 0
+    for channel_id in payload.remove_channel_ids:
+        if channel_id in rows:
+            used.discard(rows[channel_id][1].order)
+            db.delete(rows[channel_id][1])
+            removed += 1
+
+    # A ticked renumbering takes its proposed number. A channel that held that
+    # number and was not itself ticked is displaced to the next free number of
+    # its group, rather than doubled or silently overwritten.
+    moving = {item.channel_id for item in payload.renumber if item.channel_id in rows}
+    owner = {c.order: c for cid, (_, c) in rows.items()
+             if cid not in moving and cid not in payload.remove_channel_ids}
+    displaced = []
+    moved = 0
+    for item in payload.renumber:
+        if item.channel_id not in rows:
+            continue
+        _, row = rows[item.channel_id]
+        target = group(item.group)
+        holder = owner.pop(item.number, None)
+        if holder is not None:
+            displaced.append(holder)
+        row.order, row.bouquet_id = item.number, target.id
+        moved += 1
+    used = {c.order for cid, (_, c) in rows.items()
+            if cid not in payload.remove_channel_ids and c not in displaced}
+    for row in displaced:
+        number = row.order + 1
+        while number in used:
+            number += 1
+        row.order = number
+        used.add(number)
+
+    added = 0
+    for ch in payload.add:
+        key = (ch.subscription_id, str(ch.stream_id))
+        if key in existing:
+            continue
+        target = group(ch.group)
+        number = ch.number
+        while number in used:
+            number += 1
+        used.add(number)
+        existing.add(key)
+        db.add(LivePlaylistChannel(
+            bouquet_id=target.id, subscription_id=ch.subscription_id,
+            stream_id=str(ch.stream_id), custom_name=ch.name, order=number,
+            epg_channel_id=ch.tvg_id or None, is_excluded=False,
+        ))
+        added += 1
+
+    if payload.config:
+        playlist.organizer_config = json.dumps(payload.config)
+    db.commit()
+    logger.info("Organizer: playlist %s updated: +%s, -%s, %s renumbered",
+                playlist.id, added, removed, moved)
+    return {"status": "success", "playlist_id": playlist.id,
+            "added": added, "removed": removed, "renumbered": moved,
+            "displaced": len(displaced)}

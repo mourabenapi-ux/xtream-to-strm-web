@@ -305,6 +305,9 @@ class LiveSnapshotBouquet(BaseModel):
     category_id: Optional[str] = None
     custom_name: Optional[str] = None
     order: int = 0
+    number_start: Optional[int] = None
+    number_end: Optional[int] = None
+    rule: Optional[str] = None
     channels: List[LiveSnapshotChannel] = []
 
 class LivePlaylistSnapshot(BaseModel):
@@ -317,6 +320,9 @@ class LivePlaylistBouquetBase(BaseModel):
     category_id: Optional[str] = None
     custom_name: Optional[str] = None
     order: int = 0
+    number_start: Optional[int] = None
+    number_end: Optional[int] = None
+    rule: Optional[str] = None
 
 class LivePlaylistChannelMove(BaseModel):
     new_bouquet_id: int
@@ -353,6 +359,7 @@ class LivePlaylist(LivePlaylistBase):
     public_id: Optional[str] = None
     created_at: datetime
     use_channel_numbers: bool = False
+    reviewed_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
 
 class LivePlaylistDetail(LivePlaylist):

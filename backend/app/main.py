@@ -315,5 +315,7 @@ if os.path.exists(static_dir):
         if request.url.path.startswith(settings.API_V1_STR):
             return JSONResponse(status_code=404, content={"detail": "Not found"})
         
-        # Otherwise serve the SPA
-        return FileResponse(f"{static_dir}/index.html")
+        # Otherwise serve the SPA. no-cache: the page names the hashed bundle,
+        # and without it a browser kept an old index.html after an update and
+        # went on running the previous version of the app.
+        return FileResponse(f"{static_dir}/index.html", headers={"Cache-Control": "no-cache"})

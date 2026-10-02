@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { X } from "lucide-react"
 
 interface DialogProps {
@@ -6,14 +6,33 @@ interface DialogProps {
     onClose: () => void
     title: string
     children: React.ReactNode
+    /** Wider panel for lists and tables. */
+    size?: "md" | "lg" | "xl"
 }
 
-export function Dialog({ isOpen, onClose, title, children }: DialogProps) {
+const WIDTH = { md: "max-w-lg", lg: "max-w-2xl", xl: "max-w-4xl" }
+
+export function Dialog({ isOpen, onClose, title, children, size = "md" }: DialogProps) {
+    // Escape closes every dialog: it used to do nothing, which left the search
+    // results and the guide mapping open until the mouse found the cross.
+    useEffect(() => {
+        if (!isOpen) return
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                e.stopPropagation()
+                onClose()
+            }
+        }
+        window.addEventListener("keydown", onKey)
+        return () => window.removeEventListener("keydown", onKey)
+    }, [isOpen, onClose])
+
     if (!isOpen) return null
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-background border rounded-lg shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div role="dialog" aria-modal="true" aria-label={title}
+                className={`bg-background border rounded-lg shadow-xl w-full ${WIDTH[size]} overflow-hidden animate-in zoom-in-95 duration-200`}>
                 <div className="flex items-center justify-between p-4 border-b">
                     <h3 className="text-lg font-semibold">{title}</h3>
                     <button
