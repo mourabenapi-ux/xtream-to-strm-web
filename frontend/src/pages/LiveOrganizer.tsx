@@ -468,7 +468,7 @@ export default function LiveOrganizer() {
     return (
         <div className="space-y-6 pb-28">
             <div>
-                <h1 className="text-3xl font-bold flex items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
                     <Wand2 className="text-primary" /> Auto Organizer
                 </h1>
                 <p className="text-muted-foreground mt-1">

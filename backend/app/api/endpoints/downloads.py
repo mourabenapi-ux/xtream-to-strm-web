@@ -8,7 +8,7 @@ from app.services.catalog import get_catalog
 from app.tasks.downloads import download_media_task, process_download_queue, check_auto_downloads
 from app import schemas
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
@@ -329,7 +329,7 @@ def cancel_download(
     
     return {"message": "Task cancelled/deleted"}
 
-@router.post("/tasks/{task_id}/retry")
+@router.post("/tasks/{task_id:int}/retry")
 def retry_download(
     task_id: int,
     db: Session = Depends(deps.get_db),
@@ -348,7 +348,7 @@ def retry_download(
     process_download_queue.delay()
     return {"message": "Task reset to pending"}
 
-@router.post("/tasks/{task_id}/pause")
+@router.post("/tasks/{task_id:int}/pause")
 def pause_download(
     task_id: int,
     db: Session = Depends(deps.get_db),
@@ -366,7 +366,7 @@ def pause_download(
     
     raise HTTPException(status_code=400, detail="Only downloading tasks can be paused")
 
-@router.post("/tasks/{task_id}/resume")
+@router.post("/tasks/{task_id:int}/resume")
 def resume_download(
     task_id: int,
     db: Session = Depends(deps.get_db),
@@ -427,7 +427,8 @@ def move_down_priority(
     db.commit()
     return {"message": "Priority decreased", "priority": task.priority}
 
-# Batch Operations
+# Batch Operations. The single-task routes above use {task_id:int} so that
+# "batch" is never captured as a task id (that returned a 422 for every batch action).
 @router.post("/tasks/batch/delete")
 def batch_delete_tasks(task_ids: List[int], db: Session = Depends(deps.get_db)):
     db.query(DownloadTask).filter(DownloadTask.id.in_(task_ids)).delete(synchronize_session=False)
@@ -571,9 +572,14 @@ def get_download_statistics(
     days: int = 7,
     db: Session = Depends(deps.get_db)
 ):
-    return db.query(DownloadStatistics).order_by(
-        DownloadStatistics.date.desc()
-    ).limit(days).all()
+    # A window of calendar days, not the N most recent rows: a row only exists
+    # for a day with activity, so limit(N) stretched "7 days" across months.
+    # Days without a row are filled in by the client.
+    days = max(1, min(days, 365))
+    cutoff = (datetime.now() - timedelta(days=days - 1)).strftime("%Y-%m-%d")
+    return db.query(DownloadStatistics).filter(
+        DownloadStatistics.date >= cutoff
+    ).order_by(DownloadStatistics.date.desc()).all()
 
 
 @router.get("/browse/{subscription_id}")

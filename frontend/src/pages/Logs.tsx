@@ -43,7 +43,7 @@ export default function Logs() {
     const [autoScroll, setAutoScroll] = useState(true);
     const [bufferedCount, setBufferedCount] = useState(0);
 
-    const logsEndRef = useRef<HTMLDivElement>(null);
+    const logBoxRef = useRef<HTMLDivElement>(null);
     const eventSourceRef = useRef<EventSource | null>(null);
     const pausedLogsRef = useRef<string[]>([]);
     // The SSE handler is installed once, so it cannot read `isPaused` from
@@ -95,9 +95,14 @@ export default function Logs() {
     }, [logs, level, search]);
 
     // Only follow the tail when the user hasn't taken manual control.
+    // The box scrolls itself and nothing else: scrollIntoView also scrolled
+    // the page, so on a phone every new line (the app logs its own requests,
+    // several a second) dragged the screen back down and it could not be
+    // scrolled up at all.
     useEffect(() => {
-        if (!isPaused && autoScroll) {
-            logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        const box = logBoxRef.current;
+        if (box && !isPaused && autoScroll) {
+            box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
         }
     }, [visibleLogs, isPaused, autoScroll]);
 
@@ -136,7 +141,7 @@ export default function Logs() {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-3xl font-bold tracking-tight">Logs</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Logs</h2>
                 <p className="text-muted-foreground">Real-time application logs</p>
             </div>
 
@@ -207,7 +212,8 @@ export default function Logs() {
                 </CardHeader>
                 <CardContent>
                     <div
-                        className="bg-black p-4 rounded-md font-mono text-sm h-[600px] overflow-auto"
+                        ref={logBoxRef}
+                        className="bg-black p-3 sm:p-4 rounded-md font-mono text-xs sm:text-sm h-[600px] max-h-[65vh] overflow-auto overscroll-contain"
                         // Any manual scroll away from the bottom stops the auto-follow,
                         // so reading history isn't yanked away by incoming lines.
                         onScroll={(e) => {
@@ -232,7 +238,6 @@ export default function Logs() {
                                         {log}
                                     </div>
                                 ))}
-                                <div ref={logsEndRef} />
                             </>
                         )}
                     </div>

@@ -56,12 +56,12 @@ export const TvPreview: FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
         start && stop && stop > start ? Math.min(100, Math.max(0, ((now - start) / (stop - start)) * 100)) : 0;
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" role="dialog" aria-label="Preview as on the TV">
-            <div className="w-full max-w-6xl h-[85vh] bg-[#0f1419] text-slate-100 rounded-xl shadow-2xl flex flex-col overflow-hidden border border-slate-700">
-                <div className="flex items-center justify-between px-5 py-3 border-b border-slate-700/70">
-                    <div>
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-2 sm:p-4" role="dialog" aria-label="Preview as on the TV">
+            <div className="w-full max-w-6xl h-full sm:h-[85vh] bg-[#0f1419] text-slate-100 rounded-xl shadow-2xl flex flex-col overflow-hidden border border-slate-700">
+                <div className="flex items-center justify-between gap-2 px-3 sm:px-5 py-3 border-b border-slate-700/70">
+                    <div className="min-w-0">
                         <div className="font-semibold">{playlist?.name}</div>
-                        <div className="text-[11px] text-slate-400">As your player receives it · ← → groups · ↑ ↓ channels · Esc to close</div>
+                        <div className="text-[11px] text-slate-400">As your player receives it<span className="hidden sm:inline"> · ← → groups · ↑ ↓ channels · Esc to close</span></div>
                     </div>
                     <button type="button" onClick={onClose} className="p-1.5 rounded hover:bg-slate-700" aria-label="Close"><X className="h-5 w-5" /></button>
                 </div>
@@ -69,10 +69,10 @@ export const TvPreview: FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
                     <div className="flex-1 flex items-center justify-center text-slate-400">This playlist serves no channel.</div>
                 ) : (
                     <div className="flex-1 flex min-h-0">
-                        <div className="w-56 border-r border-slate-700/70 overflow-y-auto">
+                        <div className="w-32 sm:w-56 flex-shrink-0 border-r border-slate-700/70 overflow-y-auto">
                             {groups.map((g, i) => (
                                 <button key={g.id} type="button" onClick={() => setGroupIndex(i)}
-                                    className={`w-full text-left px-4 py-2.5 text-sm flex justify-between gap-2 ${i === groupIndex ? 'bg-sky-600 text-white' : 'hover:bg-slate-800 text-slate-300'}`}>
+                                    className={`w-full text-left px-2 sm:px-4 py-2.5 text-xs sm:text-sm flex justify-between gap-2 ${i === groupIndex ? 'bg-sky-600 text-white' : 'hover:bg-slate-800 text-slate-300'}`}>
                                     <span className="truncate">{g.name}</span><span className="opacity-70">{g.channels.length}</span>
                                 </button>
                             ))}
@@ -82,9 +82,9 @@ export const TvPreview: FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
                                 const e = effectiveOf(c.id);
                                 return (
                                     <button key={c.id} data-ch={i} type="button" onClick={() => setChannelIndex(i)}
-                                        className={`w-full flex items-center gap-3 px-4 py-2 text-left ${i === channelIndex ? 'bg-slate-700/80' : 'hover:bg-slate-800/70'}`}>
-                                        {useChannelNumbers && <span className="w-12 text-right text-slate-400 font-mono text-sm">{c.order}</span>}
-                                        <span className="w-10 h-7 flex items-center justify-center bg-slate-800 rounded overflow-hidden">
+                                        className={`w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-2 text-left ${i === channelIndex ? 'bg-slate-700/80' : 'hover:bg-slate-800/70'}`}>
+                                        {useChannelNumbers && <span className="w-8 sm:w-12 flex-shrink-0 text-right text-slate-400 font-mono text-xs sm:text-sm">{c.order}</span>}
+                                        <span className="w-10 h-7 flex-shrink-0 flex items-center justify-center bg-slate-800 rounded overflow-hidden">
                                             {e?.logo ? <img src={e.logo} alt="" className="max-h-full max-w-full object-contain" loading="lazy" /> : <Radio className="h-4 w-4 text-slate-500" />}
                                         </span>
                                         <span className="flex-1 min-w-0">

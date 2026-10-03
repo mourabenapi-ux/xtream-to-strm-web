@@ -169,6 +169,38 @@ class XtreamClient:
             kwargs["category_id"] = category_id
         return self._request_sync("get_live_streams", **kwargs)
 
+    async def get_account_info(self) -> Dict:
+        """The account itself: status, expiry, connections in use and allowed.
+
+        It is what a player calls at login (``player_api.php`` with no action).
+        Only the fields the dashboard shows are returned; the answer also
+        repeats the credentials, which must not travel any further.
+        """
+        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True,
+                                     headers={"User-Agent": DEFAULT_USER_AGENT, "Connection": "close"}) as client:
+            response = await client.get(self.api_url, params={"username": self.username,
+                                                              "password": self.password})
+            response.raise_for_status()
+            data = response.json()
+        info = (data or {}).get("user_info") or {}
+
+        def number(value):
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return None
+
+        return {
+            "auth": number(info.get("auth")),
+            "status": info.get("status"),
+            "message": (info.get("message") or "")[:200],
+            "exp_date": number(info.get("exp_date")),
+            "is_trial": str(info.get("is_trial")) == "1",
+            "active_cons": number(info.get("active_cons")),
+            "max_connections": number(info.get("max_connections")),
+            "created_at": number(info.get("created_at")),
+        }
+
     def get_stream_url(self, stream_type: str, stream_id: str, extension: str) -> str:
         # stream_type: "movie" or "series"
         return f"{self.base_url}/{stream_type}/{self.username}/{self.password}/{stream_id}.{extension}"

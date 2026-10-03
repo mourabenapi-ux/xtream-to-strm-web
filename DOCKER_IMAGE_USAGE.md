@@ -3,10 +3,10 @@
 ## Pull from Docker Hub
 
 ```bash
-docker pull mourabena2ui/xtream-to-strm-web:4.7.0
+docker pull mourabena2ui/xtream-to-strm-web:4.8.0
 ```
 
-Tags: `4.7.0` (pin this), `4.7`, `latest`.
+Tags: `4.8.0` (pin this), `4.8`, `latest`.
 
 ## Run
 
@@ -19,7 +19,7 @@ docker run -d \
   -e TZ=Europe/Paris \
   -e TIMEZONE=Europe/Paris \
   --restart unless-stopped \
-  mourabena2ui/xtream-to-strm-web:4.7.0
+  mourabena2ui/xtream-to-strm-web:4.8.0
 ```
 
 Then open `http://<host>`.
@@ -36,6 +36,18 @@ your own zone, not the server's default.
 |---|---|---|
 | `./db` | `/db` | SQLite database — subscriptions, selections, sync state. **Back this up.** |
 | `./output` | `/output` | Generated `.strm` / `.nfo` library and downloaded files. |
+
+## Upgrading to v4.8.0
+
+Back up `db/` first: on its first start the container adds three tables (activity journal,
+open problems, player fetches) and one column, migrations 015 and 016. Nothing is removed,
+and 4.7.0 would still run on the migrated database.
+
+The first look at the new dashboard after a restart says "computing" for 15 to 40 seconds,
+then fills in. Notifications are off until you set them up in **Administration →
+Integrations**: an ntfy topic URL, a Telegram bot token and chat id, or a webhook URL. Set
+the public address there too if you want the player URLs you copy to say something other
+than `localhost`.
 
 ## Upgrading to v4.7.0
 
@@ -73,13 +85,13 @@ incremental again.
 Then upgrade:
 
 ```bash
-docker pull mourabena2ui/xtream-to-strm-web:4.7.0
+docker pull mourabena2ui/xtream-to-strm-web:4.8.0
 docker rm xtream_app
 # re-run the `docker run` command above with the new tag
 docker logs -f xtream_app
 ```
 
-With Docker Compose, change the `image:` tag to `4.7.0` and run:
+With Docker Compose, change the `image:` tag to `4.8.0` and run:
 
 ```bash
 docker compose pull && docker compose up -d

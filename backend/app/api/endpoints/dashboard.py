@@ -41,8 +41,10 @@ def get_dashboard_stats(db: Session = Depends(get_db)) -> Dict[str, Any]:
 
     # Content statistics. One sync fills these caches for both kinds of source,
     # so there is a single pair of counts to read.
-    movies_count = db.query(MovieCache).count()
-    series_count = db.query(SeriesCache).count()
+    # Rows left by a deleted source belong to no library any more.
+    live_ids = [sid for (sid,) in db.query(Subscription.id).all()]
+    movies_count = db.query(MovieCache).filter(MovieCache.subscription_id.in_(live_ids)).count()
+    series_count = db.query(SeriesCache).filter(SeriesCache.subscription_id.in_(live_ids)).count()
 
     # Sync status
     recent_syncs = db.query(SyncState).order_by(

@@ -1397,6 +1397,7 @@ def download_media_task(self, download_id: int):
             db.commit()
             update_daily_stats(db, success=True, bytes_downloaded=float(download.downloaded_bytes))
             logger.info(f"Download {download_id} finished: {download.title}")
+            _journal_download(db, download, done=True)
 
     except (SourceDamagedError, UnverifiableDownloadError) as e:
         # Final: retrying cannot change the answer. The file stays on disk, the
@@ -1408,6 +1409,7 @@ def download_media_task(self, download_id: int):
             download.error_message = str(e)
             db.commit()
             update_daily_stats(db, success=False)
+            _journal_download(db, download, done=False)
         except Exception as status_err:
             logger.error(f"Error recording failure: {status_err}")
     except Exception as e:
@@ -1429,11 +1431,26 @@ def download_media_task(self, download_id: int):
                 download.error_message = str(e)
                 db.commit()
                 update_daily_stats(db, success=False)
+                _journal_download(db, download, done=False)
         except Exception as retry_err:
             logger.error(f"Error handling retry: {retry_err}")
     finally:
         _clear_heartbeat(download_id)
         db.close()
+
+def _journal_download(db, download, done: bool) -> None:
+    """A finished or failed download, in the dashboard's journal. A finished
+    one also reaches the phone when the user asked for it."""
+    from app.models.dashboard import Severity
+    from app.services import dashboard_settings
+    from app.services.events import record_event
+    if done:
+        push = dashboard_settings.as_bool(dashboard_settings.load(db), "NOTIFY_DOWNLOAD_DONE")
+        record_event(db, "download", f"Downloaded: {download.title}", link="/downloads/manager", push=push)
+    else:
+        record_event(db, "download", f"Download failed: {download.title}", severity=Severity.WARNING,
+                     detail=(download.error_message or "")[:300], link="/downloads/manager")
+
 
 @celery_app.task
 def process_download_queue():

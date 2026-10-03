@@ -1,5 +1,5 @@
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Loader2, Plus, ShoppingBasket, CornerDownLeft, ListTree, Check } from 'lucide-react';
+import { Search, Loader2, Plus, ShoppingBasket, CornerDownLeft, ListTree, Check, X } from 'lucide-react';
 import api from '@/lib/api';
 import { useLiveSelection, streamKey, BasketItem, Stream } from '@/contexts/LiveSelectionContext';
 
@@ -164,25 +164,29 @@ export const CommandPalette: FC<{ isOpen: boolean; onClose: () => void }> = ({ i
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] p-4 bg-black/50 backdrop-blur-sm" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-            <div className="w-full max-w-2xl bg-background border rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[75vh]" role="dialog" aria-label="Search channels">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-2 pt-4 sm:p-4 sm:pt-[10vh] bg-black/50 backdrop-blur-sm" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+            <div className="w-full max-w-2xl bg-background border rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-full sm:max-h-[75vh]" role="dialog" aria-label="Search channels">
                 <div className="flex items-center gap-2 px-3 border-b">
                     <Search className="h-4 w-4 text-muted-foreground" />
                     <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} onKeyDown={onKey}
                         placeholder="Search the playlist and every provider…" className="flex-1 h-12 bg-transparent outline-none text-sm" />
                     {loading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                    {/* No Escape key on a phone. */}
+                    <button type="button" onClick={onClose} className="sm:hidden p-1.5 rounded hover:bg-muted" aria-label="Close the search">
+                        <X className="h-4 w-4" />
+                    </button>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 border-b text-xs bg-muted/30">
                     <ListTree className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="text-muted-foreground">Enter adds to</span>
-                    <select className="border rounded px-1 py-0.5 bg-background text-xs" value={target ?? ''}
+                    <select className="min-w-0 border rounded px-1 py-0.5 bg-background text-xs" value={target ?? ''}
                         onChange={e => setTarget(e.target.value ? Number(e.target.value) : null)}>
                         <option value="">the basket only</option>
                         {playlist?.bouquets.map(b => <option key={b.id} value={b.id}>{bouquetLabel(b)}</option>)}
                     </select>
-                    <span className="ml-auto text-muted-foreground">↑↓ move · Enter add · Shift+Enter basket · Esc close</span>
+                    <span className="ml-auto text-muted-foreground hidden sm:inline">↑↓ move · Enter add · Shift+Enter basket · Esc close</span>
                 </div>
-                <div ref={listRef} className="overflow-y-auto">
+                <div ref={listRef} className="overflow-y-auto overscroll-contain min-h-0">
                     {query.trim().length < 2 ? (
                         <p className="p-6 text-center text-sm text-muted-foreground">Type at least two letters. Accents and case do not matter.</p>
                     ) : (

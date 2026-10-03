@@ -659,7 +659,9 @@ async def process_series(db: Session, xc, fm: FileManager, subscription_id: int)
         db.add(sync_state)
     
     sync_state.status = SyncStatus.RUNNING
-    sync_state.last_sync = datetime.utcnow()
+    # Local time, like the movie row: the two were written in different
+    # clocks and the dashboard showed series two hours older than they were.
+    sync_state.last_sync = datetime.now()
     sync_state.progress_phase = "Reading the provider catalogue"
     sync_state.progress_done = 0
     sync_state.progress_total = 0
@@ -1033,6 +1035,31 @@ def _record_source_run(db: Session, sub: Subscription) -> None:
     db.commit()
 
 
+def _journal_sync(db: Session, sub: Subscription, kind: str) -> None:
+    """One journal line per finished run, in the dashboard's activity feed.
+
+    Not pushed to the phone: a failed run also raises a condition on the next
+    dashboard pass, and that is what notifies, once.
+    """
+    from app.models.dashboard import Severity
+    from app.services.events import record_event
+    state = db.query(SyncState).filter(SyncState.subscription_id == sub.id,
+                                       SyncState.type == kind).first()
+    if not state:
+        return
+    label = "Movies" if kind == "movies" else "Series"
+    if state.status == SyncStatus.FAILED:
+        severity, title = Severity.DANGER, f"{label} sync of {sub.name} failed"
+    else:
+        parts = [f"+{state.items_added or 0}", f"−{state.items_deleted or 0}"]
+        if state.items_refreshed:
+            parts.append(f"{state.items_refreshed} refreshed")
+        severity = Severity.WARNING if state.status == SyncStatus.PARTIAL else Severity.INFO
+        title = f"{label} of {sub.name} synced: " + ", ".join(parts)
+    record_event(db, "sync", title, severity=severity, detail=state.error_message,
+                 link="/xtreamtv/selection")
+
+
 @celery_app.task
 def sync_movies_task(subscription_id: int, force: bool = False):
     db = SessionLocal()
@@ -1055,6 +1082,7 @@ def sync_movies_task(subscription_id: int, force: bool = False):
 
         asyncio.run(process_movies(db, xc, fm, subscription_id))
         _record_source_run(db, sub)
+        _journal_sync(db, sub, "movies")
         return f"Movies synced successfully for {sub.name}"
     finally:
         db.close()
@@ -1080,6 +1108,7 @@ def sync_series_task(subscription_id: int, force: bool = False):
 
         asyncio.run(process_series(db, xc, fm, subscription_id))
         _record_source_run(db, sub)
+        _journal_sync(db, sub, "series")
         return f"Series synced successfully for {sub.name}"
     finally:
         db.close()

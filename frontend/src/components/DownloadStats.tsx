@@ -1,10 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { BarChart3, ChevronDown, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import api from "@/lib/api";
+
+const DAYS = 7;
+const OPEN_KEY = "downloads.stats.open";
+
+const isoDay = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 interface DailyStats {
     date: string;
@@ -15,7 +22,19 @@ interface DailyStats {
 }
 
 export default function DownloadStats() {
-    const [stats, setStats] = useState<DailyStats[]>([]);
+    const [rows, setRows] = useState<DailyStats[]>([]);
+    // Collapsed unless he opened it last time: the charts are background
+    // information on a page whose job is the queue below.
+    const [open, setOpen] = useState(() => {
+        try { return localStorage.getItem(OPEN_KEY) === "1"; } catch { return false; }
+    });
+
+    const toggle = () => {
+        setOpen(prev => {
+            try { localStorage.setItem(OPEN_KEY, prev ? "0" : "1"); } catch { /* storage unavailable */ }
+            return !prev;
+        });
+    };
 
     useEffect(() => {
         fetchStats();
@@ -23,9 +42,8 @@ export default function DownloadStats() {
 
     const fetchStats = async () => {
         try {
-            const res = await api.get<DailyStats[]>("/downloads/stats");
-            // Reverse to show chronological order for the chart
-            setStats(res.data.reverse());
+            const res = await api.get<DailyStats[]>("/downloads/stats", { params: { days: DAYS } });
+            setRows(res.data);
         } catch (error) {
             console.error("Failed to fetch statistics", error);
         }
@@ -39,9 +57,47 @@ export default function DownloadStats() {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
-    if (!stats.length) return null;
+    // Exactly DAYS consecutive days ending today; a day with no activity has no
+    // row on the server, so it is drawn as zero instead of being skipped.
+    const stats = useMemo<DailyStats[]>(() => {
+        const byDate = new Map(rows.map(r => [r.date, r]));
+        const out: DailyStats[] = [];
+        for (let i = DAYS - 1; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const key = isoDay(d);
+            out.push(byDate.get(key) ?? {
+                date: key, total_downloads: 0, completed_downloads: 0,
+                failed_downloads: 0, total_bytes_downloaded: 0,
+            });
+        }
+        return out;
+    }, [rows]);
+
+    const completed = stats.reduce((n, d) => n + d.completed_downloads, 0);
+    const failed = stats.reduce((n, d) => n + d.failed_downloads, 0);
+    const bytes = stats.reduce((n, d) => n + d.total_bytes_downloaded, 0);
 
     return (
+        <div className="space-y-3">
+            <button
+                type="button"
+                onClick={toggle}
+                aria-expanded={open}
+                className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border bg-muted/30 px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors"
+            >
+                {open ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+                <BarChart3 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="font-medium">Last {DAYS} days</span>
+                <span className="text-muted-foreground">
+                    <span className="text-green-600">{completed} completed</span>
+                    {' · '}
+                    <span className={failed > 0 ? "text-red-500" : ""}>{failed} failed</span>
+                    {' · '}
+                    {formatSize(bytes)}
+                </span>
+            </button>
+            {open && (
         <div className="grid gap-4 md:grid-cols-2">
             <Card>
                 <CardHeader>
@@ -95,6 +151,8 @@ export default function DownloadStats() {
                     </ResponsiveContainer>
                 </CardContent>
             </Card>
+        </div>
+            )}
         </div>
     );
 }

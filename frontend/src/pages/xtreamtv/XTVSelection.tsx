@@ -409,7 +409,7 @@ export default function XTVSelection() {
         <div className="space-y-8 h-full flex flex-col">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Bouquet Selection</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Bouquet Selection</h2>
                     <p className="text-muted-foreground">
                         Choose which categories to synchronize, on any source — an M3U
                         playlist offers its group titles where an Xtream subscription
@@ -614,8 +614,8 @@ export default function XTVSelection() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
                     {/* Movies Column (Left) */}
-                    <Card className="flex flex-col h-full">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <Card className="flex flex-col h-full min-w-0">
+                        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0 pb-2">
                             <CardTitle>Movies Categories ({filteredAndSortedMovies.length})</CardTitle>
                             <div className="flex gap-2">
                                 <Button size="sm" variant="outline" onClick={syncMovies} disabled={syncingMovies}>
@@ -648,7 +648,7 @@ export default function XTVSelection() {
                                                 <th className="p-3 w-20 cursor-pointer hover:bg-muted" onClick={() => handleSort('movie', 'count')}>
                                                     Count {renderSortIcon(movieSort, 'count')}
                                                 </th>
-                                                <th className="p-3 w-20 cursor-pointer hover:bg-muted" onClick={() => handleSort('movie', 'id')}>
+                                                <th className="p-3 w-20 cursor-pointer hover:bg-muted hidden sm:table-cell" onClick={() => handleSort('movie', 'id')}>
                                                     ID {renderSortIcon(movieSort, 'id')}
                                                 </th>
                                             </tr>
@@ -668,7 +668,7 @@ export default function XTVSelection() {
                                                         {cat.category_name}
                                                     </td>
                                                     <td className="p-3 text-muted-foreground">{cat.item_count}</td>
-                                                    <td className="p-3 text-muted-foreground text-xs">{cat.category_id}</td>
+                                                    <td className="p-3 text-muted-foreground text-xs hidden sm:table-cell">{cat.category_id}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -683,8 +683,8 @@ export default function XTVSelection() {
                     </Card>
 
                     {/* Series Column (Right) */}
-                    <Card className="flex flex-col h-full">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <Card className="flex flex-col h-full min-w-0">
+                        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0 pb-2">
                             <CardTitle>Series Categories ({filteredAndSortedSeries.length})</CardTitle>
                             <div className="flex gap-2">
                                 <Button size="sm" variant="outline" onClick={syncSeries} disabled={syncingSeries}>
@@ -717,7 +717,7 @@ export default function XTVSelection() {
                                                 <th className="p-3 w-20 cursor-pointer hover:bg-muted" onClick={() => handleSort('series', 'count')}>
                                                     Count {renderSortIcon(seriesSort, 'count')}
                                                 </th>
-                                                <th className="p-3 w-20 cursor-pointer hover:bg-muted" onClick={() => handleSort('series', 'id')}>
+                                                <th className="p-3 w-20 cursor-pointer hover:bg-muted hidden sm:table-cell" onClick={() => handleSort('series', 'id')}>
                                                     ID {renderSortIcon(seriesSort, 'id')}
                                                 </th>
                                             </tr>
@@ -737,7 +737,7 @@ export default function XTVSelection() {
                                                         {cat.category_name}
                                                     </td>
                                                     <td className="p-3 text-muted-foreground">{cat.item_count}</td>
-                                                    <td className="p-3 text-muted-foreground text-xs">{cat.category_id}</td>
+                                                    <td className="p-3 text-muted-foreground text-xs hidden sm:table-cell">{cat.category_id}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

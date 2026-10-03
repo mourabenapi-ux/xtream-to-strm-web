@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { IntegrationsSettings } from '@/components/home/IntegrationsSettings';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -255,9 +256,12 @@ export default function Administration() {
     return (
         <div className="space-y-10">
             <div>
-                <h2 className="text-3xl font-bold tracking-tight">Administration</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Administration</h2>
                 <p className="text-muted-foreground">Manage system settings and data.</p>
             </div>
+
+            {/* ---------- Dashboard integrations ---------- */}
+            <IntegrationsSettings />
 
             {/* ---------- Download Orchestration ---------- */}
             <section className="space-y-4">

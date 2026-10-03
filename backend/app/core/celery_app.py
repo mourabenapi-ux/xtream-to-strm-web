@@ -34,6 +34,11 @@ celery_app.conf.beat_schedule = {
         'task': 'app.tasks.live_rules.refresh_live_rule_groups',
         'schedule': 3600.0,
     },
+    # What the dashboard shows, and the alerts it sends, are judged here.
+    'refresh-dashboard-every-5-mins': {
+        'task': 'app.tasks.dashboard.refresh_overview',
+        'schedule': 300.0,
+    },
 }
 celery_app.conf.timezone = settings.TIMEZONE
 
@@ -43,3 +48,4 @@ from app.tasks import m3u_sync  # noqa
 from app.tasks import downloads  # noqa
 from app.tasks import epg  # noqa
 from app.tasks import live_rules  # noqa
+from app.tasks import dashboard  # noqa

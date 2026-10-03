@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
     Pencil, X, GripVertical, Trash2, Info, Tv, EyeOff, Eye, Radio, Wrench, Unlink, Sparkles,
-    PlayCircle, Layers, Rows3, Columns3, Type,
+    PlayCircle, Layers, Rows3, Columns3, Type, MoreVertical,
 } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLiveSelection, editKey, parseRule, PlaylistChannel, PlaylistBouquet, Effective } from '@/contexts/LiveSelectionContext';
@@ -65,6 +65,8 @@ interface RowActions {
 interface RowProps {
     items: PlaylistChannel[];
     columns: number;
+    /** A phone-width single column: the actions go behind one button. */
+    narrow: boolean;
     groupNames: Map<number, string> | null;
     selected: Set<number>;
     highlightId: number | null;
@@ -94,13 +96,21 @@ const ChannelCell = memo(({ ch, p, tile }: { ch: PlaylistChannel; p: RowProps; t
     const inRuleGroup = groupId !== undefined && p.ruleGroupIds.has(groupId);
     const a = p.actions;
     const icon = 'h-3.5 w-3.5';
+    const [actionsOpen, setActionsOpen] = useState(false);
+    const folded = !tile && p.narrow;
 
     // In columns the actions float over the name on hover: a 300 px cell has
     // no room for seven buttons beside a readable name.
+    // On a phone-width row the same goes for a single column: seven buttons
+    // left a name of three letters. They open from one button instead, and
+    // close once one of them is used.
     const actions = (
         <div className={tile
             ? 'absolute right-1 top-1/2 -translate-y-1/2 hidden group-hover:flex group-focus-within:flex [@media(hover:none)]:flex items-center bg-background/95 border rounded shadow-sm z-10'
-            : 'flex items-center opacity-40 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100'}>
+            : folded
+                ? `absolute right-9 top-1/2 -translate-y-1/2 ${actionsOpen ? 'flex' : 'hidden'} items-center bg-background border rounded shadow-md z-10`
+                : 'flex items-center opacity-40 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100'}
+            onClick={folded ? () => setActionsOpen(false) : undefined}>
             <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => a.probe(ch.id)} title="Test the stream: does it play, in which quality" aria-label={`Test ${label}`}>
                 <PlayCircle className={icon} />
             </Button>
@@ -142,8 +152,10 @@ const ChannelCell = memo(({ ch, p, tile }: { ch: PlaylistChannel; p: RowProps; t
                 ${ch.is_excluded ? 'opacity-50' : ''}
                 ${dead ? 'bg-destructive/5 border-destructive/30' : ''}`}
         >
+            {/* touch-none: on a touch screen the browser otherwise takes the
+                gesture as a scroll and the drag never starts. */}
             <span {...attributes} {...listeners}
-                className={`text-muted-foreground/50 ${p.sortable ? 'cursor-grab hover:text-primary' : 'opacity-30'}`}
+                className={`text-muted-foreground/50 ${p.sortable ? 'cursor-grab hover:text-primary touch-none' : 'opacity-30'}`}
                 title={p.sortable ? 'Drag to reorder, or onto a group to move it' : 'Clear the filter (or open the group) to reorder'}>
                 <GripVertical className="h-3.5 w-3.5" />
             </span>
@@ -221,6 +233,12 @@ const ChannelCell = memo(({ ch, p, tile }: { ch: PlaylistChannel; p: RowProps; t
                 <GuideChip e={e} stored={ch.epg_channel_id} />
             )}
             {actions}
+            {folded && (
+                <Button size="icon" variant="ghost" className="h-7 w-7 flex-shrink-0" onClick={() => setActionsOpen(o => !o)}
+                    aria-expanded={actionsOpen} aria-label={`Actions for ${label}`} title="Actions">
+                    <MoreVertical className={icon} />
+                </Button>
+            )}
         </div>
     );
 });
@@ -462,7 +480,8 @@ export const CompositeList: FC<{ compactMode: boolean; onBulkRename?: () => void
                         const columns = layout === 'list' ? 1 : Math.max(1, Math.min(4, Math.floor((width - 8) / cellMin)));
                         columnsRef.current = columns;
                         const rowProps: RowProps = {
-                            items, columns, groupNames, selected: selectedChannelIds, highlightId, compact: compactMode,
+                            items, columns, narrow: columns === 1 && width < 480,
+                            groupNames, selected: selectedChannelIds, highlightId, compact: compactMode,
                             numbered: useChannelNumbers, rank, sortable, editingId, editValue, ruleGroupIds, actions,
                             labelOf: channelLabel, editableOf: channelEditableName, effectiveOf,
                             groupOf: (id: number) => groupIdOf.get(id),

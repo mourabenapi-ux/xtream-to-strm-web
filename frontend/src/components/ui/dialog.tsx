@@ -30,10 +30,13 @@ export function Dialog({ isOpen, onClose, title, children, size = "md" }: Dialog
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+        // The panel is bounded by the overlay (max-h-full), not by 80vh: on a
+        // phone 80vh plus the title bar was taller than the visible screen,
+        // and the buttons at the bottom of a dialog could not be reached.
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div role="dialog" aria-modal="true" aria-label={title}
-                className={`bg-background border rounded-lg shadow-xl w-full ${WIDTH[size]} overflow-hidden animate-in zoom-in-95 duration-200`}>
-                <div className="flex items-center justify-between p-4 border-b">
+                className={`bg-background border rounded-lg shadow-xl w-full ${WIDTH[size]} max-h-full flex flex-col overflow-hidden animate-in zoom-in-95 duration-200`}>
+                <div className="flex items-center justify-between gap-2 p-4 border-b flex-shrink-0">
                     <h3 className="text-lg font-semibold">{title}</h3>
                     <button
                         onClick={onClose}
@@ -43,7 +46,7 @@ export function Dialog({ isOpen, onClose, title, children, size = "md" }: Dialog
                         <span className="sr-only">Close</span>
                     </button>
                 </div>
-                <div className="p-4 overflow-y-auto max-h-[80vh]">
+                <div className="p-4 overflow-y-auto overscroll-contain min-h-0 sm:max-h-[80vh]">
                     {children}
                 </div>
             </div>

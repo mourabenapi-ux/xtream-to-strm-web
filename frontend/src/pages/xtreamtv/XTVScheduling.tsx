@@ -176,7 +176,7 @@ export default function XTVScheduling() {
         return (
             <div className="space-y-8">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Scheduler</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Scheduler</h2>
                     <p className="text-muted-foreground">Configure automatic sync schedules</p>
                 </div>
                 <Card>
@@ -191,7 +191,7 @@ export default function XTVScheduling() {
     return (
         <div className="space-y-8">
             <div>
-                <h2 className="text-3xl font-bold tracking-tight">Scheduler</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Scheduler</h2>
                 <p className="text-muted-foreground">Configure automatic sync schedules</p>
             </div>
 

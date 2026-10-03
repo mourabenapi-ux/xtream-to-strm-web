@@ -627,9 +627,9 @@ export default function DownloadSelection() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap justify-between items-center gap-3">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Download Selection</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Download Selection</h2>
                     <p className="text-muted-foreground">Browse and select media to download or monitor</p>
                 </div>
                 <Button variant="outline" onClick={forceMonitoringCheck} disabled={checkingMonitored}>

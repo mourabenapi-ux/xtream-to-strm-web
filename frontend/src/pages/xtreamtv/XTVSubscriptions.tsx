@@ -290,7 +290,7 @@ export default function XTVSubscriptions() {
     return (
         <div className="space-y-8">
             <div>
-                <h2 className="text-3xl font-bold tracking-tight">Sources</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Sources</h2>
                 <p className="text-muted-foreground">
                     Every source in one place. An Xtream subscription and an M3U playlist
                     differ only in how they are reached — everything downstream treats
@@ -300,7 +300,7 @@ export default function XTVSubscriptions() {
 
             {/* Subscription Management Table */}
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0 pb-4">
                     <CardTitle>Configuration</CardTitle>
                     <div className="flex gap-2">
                         <Button onClick={() => startAdd('xtream')} disabled={isAdding || editingId !== null || loading} size="sm">
@@ -320,9 +320,11 @@ export default function XTVSubscriptions() {
                         </div>
                     )}
                     {/* Six columns of inputs overflowed the viewport with no way
-                        to reach them; the table now scrolls inside its own box. */}
+                        to reach them; the table now scrolls inside its own box.
+                        On a phone each source is a card instead (stack-table),
+                        so the edit and delete buttons are not 600 px away. */}
                     <div className="border rounded-md overflow-x-auto">
-                        <table className="w-full text-sm min-w-[900px]">
+                        <table className="stack-table w-full text-sm md:min-w-[900px]">
                             <thead className="bg-muted/50 text-muted-foreground">
                                 <tr>
                                     <th className="p-3 text-left">Type</th>
@@ -337,12 +339,12 @@ export default function XTVSubscriptions() {
                             <tbody className="divide-y">
                                 {isAdding && (
                                     <tr className="bg-accent/50">
-                                        <td className="p-2">
+                                        <td data-label="Type" className="p-2">
                                             <span className="text-xs px-1.5 py-0.5 rounded border text-muted-foreground whitespace-nowrap">
                                                 {formData.kind === 'm3u' ? 'M3U' : 'Xtream'}
                                             </span>
                                         </td>
-                                        <td className="p-2 space-y-1">
+                                        <td data-label="Source" className="p-2 space-y-1">
                                             <Input name="name" value={formData.name} onChange={handleInputChange} placeholder="Name" className="h-8" />
                                             {formData.kind === 'm3u' ? (<>
                                                 <Input name="url" value={formData.url} onChange={handleInputChange}
@@ -382,11 +384,11 @@ export default function XTVSubscriptions() {
                                             </div>
                                             </>)}
                                         </td>
-                                        <td className="p-2 space-y-1">
+                                        <td data-label="STRM directories" className="p-2 space-y-1">
                                             <Input name="movies_dir" value={formData.movies_dir} onChange={handleInputChange} placeholder={formData.kind === 'm3u' ? 'Movies STRM (optional)' : 'Movies STRM'} className="h-8" />
                                             <Input name="series_dir" value={formData.series_dir} onChange={handleInputChange} placeholder={formData.kind === 'm3u' ? 'Series STRM (optional)' : 'Series STRM'} className="h-8" />
                                         </td>
-                                        <td className="p-2 space-y-1">
+                                        <td data-label="Download directories" className="p-2 space-y-1">
                                             {formData.kind === 'm3u' ? (
                                                 <span className="text-xs text-muted-foreground">—</span>
                                             ) : (<>
@@ -394,7 +396,7 @@ export default function XTVSubscriptions() {
                                             <Input name="download_series_dir" value={formData.download_series_dir} onChange={handleInputChange} placeholder="Series Download" className="h-8" />
                                             </>)}
                                         </td>
-                                        <td className="p-2">
+                                        <td data-label="Limits (parallel / segments)" className="p-2">
                                             {formData.kind === 'm3u' ? (
                                                 <span className="text-xs text-muted-foreground">—</span>
                                             ) : (
@@ -404,7 +406,7 @@ export default function XTVSubscriptions() {
                                             </div>
                                             )}
                                         </td>
-                                        <td className="p-2 text-center">
+                                        <td data-label="Active" className="p-2 md:text-center">
                                             <input type="checkbox" name="is_active" checked={formData.is_active} onChange={handleInputChange} className="w-4 h-4" />
                                         </td>
                                         <td className="p-2">
@@ -418,12 +420,12 @@ export default function XTVSubscriptions() {
                                 {subscriptions.map(sub => (
                                     editingId === sub.id ? (
                                         <tr key={sub.id} className="bg-accent/50">
-                                            <td className="p-2">
+                                            <td data-label="Type" className="p-2">
                                                 <span className="text-xs px-1.5 py-0.5 rounded border text-muted-foreground whitespace-nowrap">
                                                     {sub.kind === 'm3u' ? 'M3U' : 'Xtream'}
                                                 </span>
                                             </td>
-                                            <td className="p-2 space-y-1">
+                                            <td data-label="Source" className="p-2 space-y-1">
                                                 <Input name="name" value={formData.name} onChange={handleInputChange} className="h-8" />
                                                 {formData.kind === 'm3u' ? (
                                                     <Input name="url" value={formData.url} onChange={handleInputChange} placeholder="Playlist URL" className="h-8"
@@ -452,11 +454,11 @@ export default function XTVSubscriptions() {
                                                 </div>
                                                 </>)}
                                             </td>
-                                            <td className="p-2 space-y-1">
+                                            <td data-label="STRM directories" className="p-2 space-y-1">
                                                 <Input name="movies_dir" value={formData.movies_dir} onChange={handleInputChange} className="h-8" />
                                                 <Input name="series_dir" value={formData.series_dir} onChange={handleInputChange} className="h-8" />
                                             </td>
-                                            <td className="p-2 space-y-1">
+                                            <td data-label="Download directories" className="p-2 space-y-1">
                                                 {formData.kind === 'm3u' ? (
                                                     <span className="text-xs text-muted-foreground">-</span>
                                                 ) : (<>
@@ -464,7 +466,7 @@ export default function XTVSubscriptions() {
                                                 <Input name="download_series_dir" value={formData.download_series_dir} onChange={handleInputChange} className="h-8" />
                                                 </>)}
                                             </td>
-                                            <td className="p-2">
+                                            <td data-label="Limits (parallel / segments)" className="p-2">
                                                 {formData.kind === 'm3u' ? (
                                                     <span className="text-xs text-muted-foreground">-</span>
                                                 ) : (
@@ -474,7 +476,7 @@ export default function XTVSubscriptions() {
                                                 </div>
                                                 )}
                                             </td>
-                                            <td className="p-2 text-center">
+                                            <td data-label="Active" className="p-2 md:text-center">
                                                 <input type="checkbox" name="is_active" checked={formData.is_active} onChange={handleInputChange} className="w-4 h-4" />
                                             </td>
                                             <td className="p-2">
@@ -486,12 +488,12 @@ export default function XTVSubscriptions() {
                                         </tr>
                                     ) : (
                                         <tr key={sub.id} className="hover:bg-muted/50 transition-colors">
-                                            <td className="p-3">
+                                            <td data-label="Type" className="p-3">
                                                 <span className="text-xs px-1.5 py-0.5 rounded border text-muted-foreground whitespace-nowrap">
                                                     {sub.kind === 'm3u' ? 'M3U' : 'Xtream'}
                                                 </span>
                                             </td>
-                                            <td className="p-3">
+                                            <td data-label="Source" className="p-3">
                                                 <div className="font-bold">{sub.name}</div>
                                                 {sub.kind === 'm3u' ? (
                                                     <div className="text-xs text-muted-foreground truncate max-w-[240px]">
@@ -502,11 +504,11 @@ export default function XTVSubscriptions() {
                                                     <div className="text-xs text-muted-foreground">{sub.username}</div>
                                                 </>)}
                                             </td>
-                                            <td className="p-3 text-xs">
+                                            <td data-label="STRM directories" className="p-3 text-xs">
                                                 <div>Movies: {sub.movies_dir}</div>
                                                 <div>Series: {sub.series_dir}</div>
                                             </td>
-                                            <td className="p-3 text-xs">
+                                            <td data-label="Download directories" className="p-3 text-xs">
                                                 {sub.kind === 'm3u' ? (
                                                     <span className="text-muted-foreground">-</span>
                                                 ) : (<>
@@ -514,12 +516,12 @@ export default function XTVSubscriptions() {
                                                     <div>Series: {sub.download_series_dir}</div>
                                                 </>)}
                                             </td>
-                                            <td className="p-3 text-center text-xs">
+                                            <td data-label="Limits (parallel / segments)" className="p-3 md:text-center text-xs">
                                                 {sub.kind === 'm3u'
                                                     ? <span className="text-muted-foreground">-</span>
                                                     : <span>{sub.max_parallel_downloads || 2} / {sub.download_segments || 1}</span>}
                                             </td>
-                                            <td className="p-3 text-center">
+                                            <td data-label="Active" className="p-3 md:text-center">
                                                 <button
                                                     onClick={() => toggleActive(sub)}
                                                     disabled={loading}

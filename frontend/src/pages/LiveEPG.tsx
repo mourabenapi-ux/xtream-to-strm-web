@@ -203,7 +203,7 @@ export default function LiveEPG() {
         return (
             <div className="p-6 max-w-4xl mx-auto space-y-6">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">EPG Configuration</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">EPG Configuration</h2>
                     <p className="text-muted-foreground">Select a playlist to configure its EPG sources</p>
                 </div>
 
@@ -242,8 +242,8 @@ export default function LiveEPG() {
 
     return (
         <div className="space-y-6 max-w-5xl mx-auto">
-            <div className="flex justify-between items-center">
-                <div className="flex items-center gap-4">
+            <div className="flex flex-wrap justify-between items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                     <Button variant="ghost" size="icon" onClick={() => {
                         if (playlistId) {
                             navigate(`/live-selection?playlist_id=${playlistId}`);
@@ -254,11 +254,11 @@ export default function LiveEPG() {
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tight">EPG Sources</h2>
+                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">EPG Sources</h2>
                         <CardDescription>Manage Electronic Program Guide sources for this playlist</CardDescription>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={triggerAutoMatch} disabled={matching || loading}>
                         {matching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2 text-yellow-500" />}
                         Auto-Match
@@ -301,12 +301,12 @@ export default function LiveEPG() {
                         {links.map(link => (
                             <Card key={link.id}>
                                 <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4 flex-1">
-                                        <div className="p-2 rounded-full bg-primary/10 text-primary">
+                                    <div className="flex items-center gap-4 flex-1 min-w-0 w-full">
+                                        <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
                                             {link.epg_source.source_type === 'url' ? <Globe className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
                                         </div>
-                                        <div className="truncate">
-                                            <div className="font-semibold flex items-center gap-2">
+                                        <div className="min-w-0">
+                                            <div className="font-semibold flex flex-wrap items-center gap-x-2 gap-y-1">
                                                 {link.epg_source.name}
                                                 <div className="bg-primary/20 text-primary px-2 py-0.5 rounded text-xs">Priority: {link.priority}</div>
                                             </div>

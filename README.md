@@ -10,7 +10,7 @@ Generate `.strm` files, download content, and create dynamic M3U playlists for y
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/docker/v/mourabena2ui/xtream-to-strm-web?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
 [![Docker Pulls](https://img.shields.io/docker/pulls/mourabena2ui/xtream-to-strm-web)](https://hub.docker.com/r/mourabena2ui/xtream-to-strm-web)
-[![Version](https://img.shields.io/badge/version-4.7.0-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
+[![Version](https://img.shields.io/badge/version-4.8.0-blue.svg)](https://github.com/mourabenapi-ux/xtream-to-strm-web/releases)
 
 </div>
 
@@ -81,7 +81,10 @@ Built with modern technologies, it provides an intuitive interface for managing 
 - **Dynamic M3U Server**: Single, high-performance URL that updates instantly
 
 ### 🛠️ Advanced Administration
-- **Command Center Dashboard** *(New in v4.0.0)*: Real-time system health, task monitoring, and quick actions
+- **Dashboard** *(Rebuilt in v4.8.0)*: what is on air and tonight's guide, a wall of live captures from your free channels, every playlist with its dead channels, real guide coverage and short player URLs, every source with its expiry and connections in use, the two Jellyfin libraries, and a journal of what the app did. Nothing is computed while you wait: the page reads a snapshot refreshed every 5 minutes
+- **Problem bell and phone alerts** *(New in v4.8.0)*: a bell in the header of every screen lists what needs you (disk, expiring or refused source, empty guide, failed sync, dead playlist); a problem seen twice is pushed to your phone through ntfy, Telegram or a webhook, and a "resolved" follows. Set it up in Administration → Integrations
+- **Find anywhere (Ctrl+K)** *(New in v4.8.0)*: the search palette now opens from every screen
+- **Phone layout** *(New in v4.8.0)*: drawer menu, screens that fit the visible height, readable Download Manager and Logs
 - **Database Management**: Easy reset and cleanup operations
 - **File Management**: Bulk delete and reorganization tools
 - **NFO Settings**: Customize title formatting with regex patterns
@@ -97,10 +100,10 @@ docker run -d \
   -v $(pwd)/output:/output \
   -v $(pwd)/db:/db \
   --name xtream-to-strm \
-  mourabena2ui/xtream-to-strm-web:4.7.0
+  mourabena2ui/xtream-to-strm-web:4.8.0
 ```
 
-Available tags: `4.7.0` (pin this in production), `4.7`, `latest`.
+Available tags: `4.8.0` (pin this in production), `4.8`, `latest`.
 
 Access the web interface at **http://localhost:8000**
 
@@ -114,7 +117,7 @@ Access the web interface at **http://localhost:8000**
 ```yaml
 services:
   app:
-    image: mourabena2ui/xtream-to-strm-web:4.7.0
+    image: mourabena2ui/xtream-to-strm-web:4.8.0
     container_name: xtream_app
     environment:
       - TZ=Europe/Paris
@@ -232,7 +235,28 @@ output/
 
 ## 📝 Version History
 
-### v4.7.0 (Current)
+### v4.8.0 (Current)
+
+Nouveau tableau de bord, mise en page téléphone et correctifs du gestionnaire de téléchargements.
+
+**Corrigé**
+- 📺 **Le tableau de bord affichait une couverture guide fausse** (100 % vert sur un guide vide) : il comptait les chaînes ayant un identifiant, pas celles ayant un programme. Il utilise désormais la mesure de l'éditeur, et le bandeau « tout va bien » ne cache plus un disque presque plein.
+- ⏯️ **Pause, reprise et relance en lot ne marchaient jamais** dans le gestionnaire de téléchargements : `/tasks/{id}/pause` masquait `/tasks/batch/pause` et chaque clic renvoyait une erreur 422. Seule la suppression en lot fonctionnait. Un test garde l'ordre des routes.
+- 📱 **Gestionnaire de téléchargements sur téléphone** : le nom du film ou de la série était écrasé à zéro pixel par les colonnes fixes. Lignes plus basses, texte plus petit, titre sur deux lignes pour garder le numéro d'épisode.
+- 📊 **Graphique « 7 derniers jours »** : il affichait les 7 dernières lignes de la table, donc des dates de février à octobre. Il montre maintenant 7 jours consécutifs, zéro les jours sans activité, et il est replié par défaut derrière une ligne de résumé.
+- 📱 Menu en tiroir sous `lg`, hauteur `dvh` (le bas du menu passait sous la barre du navigateur), page Logs qui ne se défilait plus, position de défilement remise à zéro à chaque page.
+- 🕐 La date de dernière synchronisation des séries était écrite en UTC et affichée deux heures trop tôt.
+- 📡 Un guide ne se télécharge plus deux fois en même temps (verrou par source) : sur un compte à une seule connexion, un second téléchargement doublait la coupure.
+
+**Nouveau**
+- 🏠 **Tableau de bord refait** : à l'antenne et programme de ce soir, mur de captures des chaînes gratuites (jamais un compte à connexion unique), tableau des playlists (chaînes servies, mortes, vrai guide, URL courtes à copier), sources (expiration, connexions utilisées sur autorisées), bibliothèques Jellyfin, activité, état du système.
+- 🔔 **Cloche de problèmes dans l'en-tête de chaque écran**, et alertes sur le téléphone (ntfy, Telegram, webhook) : un problème n'est envoyé qu'à sa deuxième observation, « résolu » seulement s'il avait été envoyé. Option : une ligne à la fin d'un téléchargement.
+- 🔎 **Ctrl+K partout** (palette de recherche globale).
+- 🧾 **Journal d'activité** : synchronisations, téléchargements, rafraîchissements de guide, et quel lecteur (TiviMate, Jellyfin…) a récupéré quelle playlist.
+- ⚙️ **Administration → Intégrations** : adresse publique des URL copiées, Jellyfin (adresse + clé API), notifications. Les secrets ne sont jamais renvoyés au navigateur.
+- ✅ 257 tests, tous verts. Migrations 015 et 016 (trois tables et une colonne ajoutées, rien de supprimé) : sauvegardez `db/` avant la mise à jour.
+
+### v4.7.0
 
 Deuxième refonte de l'éditeur de playlist, après un audit fait en l'utilisant sur de vraies
 playlists (1 460 chaînes pour la plus grande).

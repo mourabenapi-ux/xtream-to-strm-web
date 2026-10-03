@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { copyText } from '@/lib/home';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,8 +103,8 @@ export default function LivePlaylists() {
     };
 
     // Short URLs (/p/<alias>.m3u): they are typed with a TV remote.
-    const copyUrl = (url: string, id: string) => {
-        navigator.clipboard.writeText(url);
+    const copyUrl = async (url: string, id: string) => {
+        if (!(await copyText(url))) { toast.error('Could not copy', 'Select the address and copy it by hand.'); return; }
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
     };
@@ -111,7 +112,7 @@ export default function LivePlaylists() {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-3xl font-bold tracking-tight">Live Playlists</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Live Playlists</h2>
                 <p className="text-muted-foreground">Manage your custom Live TV configurations</p>
             </div>
 

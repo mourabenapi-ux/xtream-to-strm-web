@@ -32,7 +32,7 @@ export const EPGDebugDialog: FC<EPGDebugDialogProps> = ({ channelId, onClose }) 
             onClose={onClose}
             title={`EPG Matching Debug`}
         >
-            <div className="flex flex-col gap-4 min-w-[500px]">
+            <div className="flex flex-col gap-4 sm:min-w-[500px]">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -52,7 +52,7 @@ export const EPGDebugDialog: FC<EPGDebugDialogProps> = ({ channelId, onClose }) 
                             The <span className="font-bold text-foreground">Composite Score</span> determines the final match (min 75.0).
                         </p>
 
-                        <div className="border rounded overflow-hidden">
+                        <div className="border rounded overflow-x-auto">
                             <table className="w-full text-[11px]">
                                 <thead className="bg-muted text-muted-foreground">
                                     <tr className="text-left border-b">

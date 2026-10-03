@@ -16,9 +16,11 @@ api_router.include_router(m3u_selection.router, prefix="/m3u-selection", tags=["
 api_router.include_router(m3u_sync.router, prefix="/m3u-sync", tags=["m3u-sync"])
 api_router.include_router(downloads.router, prefix="/downloads", tags=["downloads"])
 api_router.include_router(tmdb_overrides.router, prefix="/tmdb-overrides", tags=["tmdb"])
-from app.api.api_v1.endpoints import live, live_tools, epg_admin, organizer
+from app.api.api_v1.endpoints import live, live_tools, epg_admin, organizer, home
 api_router.include_router(live.router, prefix="/live", tags=["live"])
 # The editor's automatic tools (health, numbering, rules, repairs, search).
 api_router.include_router(live_tools.router, prefix="/live", tags=["live"])
 api_router.include_router(epg_admin.router, prefix="/epg-sources", tags=["epg"])
 api_router.include_router(organizer.router, prefix="/organizer", tags=["organizer"])
+# The dashboard v2: snapshot, on air, tonight, TV wall, search, integrations.
+api_router.include_router(home.router, prefix="/dashboard", tags=["dashboard"])

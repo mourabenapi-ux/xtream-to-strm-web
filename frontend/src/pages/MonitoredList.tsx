@@ -102,9 +102,9 @@ export default function MonitoredList() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap justify-between items-center gap-3">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Active Surveillance</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Active Surveillance</h2>
                     <p className="text-muted-foreground">Manage categories and series being automatically checked for new content every hour.</p>
                 </div>
                 <Button onClick={triggerCheck} disabled={checking} className="flex items-center gap-2">

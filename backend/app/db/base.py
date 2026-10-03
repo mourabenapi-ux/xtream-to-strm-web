@@ -13,3 +13,4 @@ from app.models.source_entry import SourceEntry  # noqa
 from app.models.downloads import DownloadTask, DownloadSettings, MonitoredMedia  # noqa
 from app.models.epg import EPGSourceGlobal, PlaylistEPGSource  # noqa
 from app.models.tmdb_override import TmdbOverride  # noqa
+from app.models.dashboard import AppCondition, AppEvent, PlayerFetch  # noqa

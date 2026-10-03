@@ -11,6 +11,14 @@ logger = logging.getLogger(__name__)
 @celery_app.task(bind=True)
 def refresh_epg_task(self, source_id: int):
     """Refresh a single EPG source."""
+    # One download per source at a time. A provider guide can take minutes, and
+    # an account that allows a single connection is cut off for the whole time:
+    # a second refresh (the startup one, then a click) only doubles the damage.
+    from app.core.redis import redis_conn
+    lock = f"epg:refresh:lock:{source_id}"
+    if not redis_conn.set(lock, "1", nx=True, ex=1800):
+        logger.info(f"EPG source {source_id} is already being refreshed, skipping.")
+        return
     logger.info(f"Starting background refresh for EPG source {source_id}...")
     db = SessionLocal()
     try:
@@ -33,6 +41,15 @@ def refresh_epg_task(self, source_id: int):
         source.channel_count = epg_service.redis.scard(f"epg:src:{source.id}:channels")
 
         db.commit()
+        from app.models.dashboard import Severity
+        from app.services.events import record_event
+        if source.channel_count:
+            record_event(db, "guide", f"Guide “{source.name}” refreshed: {source.channel_count} channels",
+                         link="/epg-admin")
+        else:
+            record_event(db, "guide", f"Guide “{source.name}” refreshed but holds no channel",
+                         severity=Severity.WARNING, detail="Check its URL, file path or subscription.",
+                         link="/epg-admin")
         if source.channel_count:
             logger.info(f"✅ EPG Source '{source.name}' refreshed. Found {source.channel_count} channels.")
         else:
@@ -45,8 +62,13 @@ def refresh_epg_task(self, source_id: int):
     except Exception as e:
         logger.error(f"❌ Failed to refresh EPG source {source_id}: {e}")
         db.rollback()
+        from app.models.dashboard import Severity
+        from app.services.events import record_event
+        record_event(db, "guide", f"Guide refresh failed (source {source_id})", severity=Severity.WARNING,
+                     detail=str(e)[:300], link="/epg-admin")
     finally:
         db.close()
+        redis_conn.delete(lock)
 
 @celery_app.task
 def refresh_all_active_epg_sources():

@@ -231,7 +231,7 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
 
     if (loading && !playlist) {
         return (
-            <div className="flex h-[60vh] items-center justify-center bg-background">
+            <div className="flex h-full items-center justify-center bg-background">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
                     <p className="text-lg font-medium animate-pulse">Loading playlist data...</p>
@@ -267,12 +267,17 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
 
     return (
         <DndContext sensors={sensors} collisionDetection={collision} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setDragLabel(null)}>
-            <div className={`flex flex-col h-[calc(100vh-4rem)] lg:h-screen bg-background overflow-hidden -m-4 lg:-m-8 ${compactMode ? 'text-xs' : ''}`}>
-                <header className="flex items-center gap-2 px-3 lg:px-4 py-2 border-b bg-card shadow-sm z-10">
+            {/* The layout gives this screen the whole content area (no padding,
+                no page scroll), so it fills it rather than guessing at 100vh. */}
+            <div className={`flex flex-col h-full bg-background overflow-hidden ${compactMode ? 'text-xs' : ''}`}>
+                {/* On a phone the header takes two lines: name and save state,
+                    then search and tools. On one line the name was squeezed to
+                    nothing and the last buttons were cut off. */}
+                <header className="flex flex-wrap md:flex-nowrap items-center gap-x-2 gap-y-1.5 px-3 lg:px-4 py-2 border-b bg-card shadow-sm z-10">
                     <Button variant="ghost" size="icon" onClick={() => navigate('/live-playlists')} title="Back to the playlists" aria-label="Back to the playlists">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <button type="button" className="min-w-0 flex-shrink text-left group" onClick={() => setSettingsOpen(true)}
+                    <button type="button" className="min-w-0 flex-1 md:flex-initial text-left group" onClick={() => setSettingsOpen(true)}
                         title="Name, description, short URLs">
                         <h1 className="text-lg font-bold tracking-tight truncate flex items-center gap-1.5">
                             {playlist.name}
@@ -280,9 +285,11 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
                         </h1>
                         <p className="text-[11px] text-muted-foreground truncate">{playlist.description || 'Playlist editor'}</p>
                     </button>
+                    <div className="md:hidden flex-shrink-0">{statusBadge}</div>
+                    <div className="basis-full h-0 md:hidden" aria-hidden="true" />
 
                     <button type="button" onClick={() => setPaletteOpen(true)}
-                        className="mx-auto flex items-center gap-2 w-full max-w-sm h-9 px-3 rounded-md border bg-muted/30 text-xs text-muted-foreground hover:bg-muted/60">
+                        className="flex-1 md:flex-initial min-w-0 md:mx-auto flex items-center gap-2 md:w-full max-w-sm h-9 px-3 rounded-md border bg-muted/30 text-xs text-muted-foreground hover:bg-muted/60">
                         <Search className="h-4 w-4" />
                         <span className="flex-1 text-left truncate">Search the playlist and every provider…</span>
                         <kbd className="hidden md:inline px-1.5 py-0.5 border rounded text-[10px] bg-background">Ctrl K</kbd>
@@ -303,7 +310,9 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
                                 <Wrench className="h-4 w-4" /> <span className="hidden lg:inline">Tools</span>
                             </Button>
                             {toolsOpen && (
-                                <div className="absolute right-0 mt-1 w-80 bg-card border rounded-md shadow-xl z-40 py-1 max-h-[80vh] overflow-y-auto">
+                                // On a phone the button is not at the screen edge, so a
+                                // 20rem menu anchored to it ran off the left side.
+                                <div className="fixed inset-x-3 mt-1 max-h-[60vh] md:absolute md:inset-x-auto md:right-0 md:w-80 md:max-h-[80vh] bg-card border rounded-md shadow-xl z-40 py-1 overflow-y-auto overscroll-contain">
                                     {tool('fix_numbering', <ListOrdered className="h-4 w-4" />, 'Fix the numbering',
                                         useChannelNumbers ? 'Every group gets a range; duplicates, 0 and overlapping groups are renumbered. Valid numbers are kept.' : 'Rewrites the positions 1, 2, 3… in every group.', true)}
                                     {useChannelNumbers && tool('reference_numbering', <Hash className="h-4 w-4" />, 'Number from the reference',
@@ -354,7 +363,7 @@ const LiveSelectionLayout: FC<{ playlistId: string }> = ({ playlistId }) => {
                             onClick={() => setCompactMode(!compactMode)} title={compactMode ? "Comfortable rows" : "Compact rows"} aria-label="Toggle compact rows">
                             {compactMode ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
                         </Button>
-                        {statusBadge}
+                        <div className="hidden md:block">{statusBadge}</div>
                     </div>
                 </header>
 

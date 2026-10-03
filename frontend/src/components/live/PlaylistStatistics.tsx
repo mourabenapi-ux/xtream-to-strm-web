@@ -28,7 +28,9 @@ export const PlaylistStatistics: FC<{ onOpenHealth: (tab: 'issues' | 'new' | 'mi
     const tone = pct >= 90 ? 'text-emerald-500' : pct >= 50 ? 'text-amber-500' : 'text-destructive';
 
     return (
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-card border-b text-xs overflow-x-auto whitespace-nowrap scrollbar-hide">
+        // Wraps on a phone: as a single scrolling line, the switch and the guide
+        // button sat past the right edge where nothing hinted at them.
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 bg-card border-b text-xs md:overflow-x-auto whitespace-nowrap scrollbar-hide">
             <span className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/5 rounded-full border border-primary/10">
                 <Hash className="h-3.5 w-3.5 text-primary" /><strong>{stats.totalChannels}</strong> channels
             </span>
@@ -63,7 +65,7 @@ export const PlaylistStatistics: FC<{ onOpenHealth: (tab: 'issues' | 'new' | 'mi
                 <span className="text-muted-foreground">Publish channel numbers</span>
             </label>
 
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-primary hover:bg-primary/10 ml-auto"
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-primary hover:bg-primary/10 md:ml-auto"
                 onClick={() => navigate(`/live-epg?playlist_id=${playlist?.id}`)} title="Choose the guide sources and map channels to them">
                 <Settings className="h-3.5 w-3.5 mr-1" /> Guide sources &amp; mapping
             </Button>

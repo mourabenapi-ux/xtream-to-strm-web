@@ -133,7 +133,19 @@ async def playlist_health(playlist_id: int, db: Session = Depends(deps.get_db)) 
     Each issue names the channels it concerns and, when one exists, the action
     that fixes it (``fix``), so the screen can offer a one-click repair.
     """
-    playlist = _playlist(db, playlist_id)
+    return await health_report(db, _playlist(db, playlist_id))
+
+
+async def health_report(db: Session, playlist: LivePlaylist,
+                        served_out: Optional[List[dict]] = None,
+                        dropped_out: Optional[List[dict]] = None) -> Dict[str, Any]:
+    """The editor's health check, callable without a request.
+
+    The dashboard runs the very same check in the background, so the two
+    screens can never disagree about a playlist. ``served_out`` and
+    ``dropped_out`` receive the resolved channel lists for callers that need
+    more than the summary.
+    """
     dropped: List[dict] = []
     served = await resolve_playlist_channels(db, playlist, dropped=dropped)
     source_ids = epg_service.active_source_ids(playlist)
@@ -280,6 +292,10 @@ async def playlist_health(playlist_id: int, db: Session = Depends(deps.get_db)) 
     served_count = sum(1 for v in effective.values() if v.get("served"))
     live = sum(1 for v in effective.values() if v.get("served") and v.get("guide") == "live")
     with_id = sum(1 for v in effective.values() if v.get("served") and v.get("epg_id"))
+    if served_out is not None:
+        served_out.extend(served)
+    if dropped_out is not None:
+        dropped_out.extend(dropped)
     return {
         "channels": effective,
         "issues": issues,

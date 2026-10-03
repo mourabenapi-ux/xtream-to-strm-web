@@ -9,6 +9,7 @@ from app.models.live import LivePlaylist, LivePlaylistBouquet, LivePlaylistChann
 from app.models.epg import EPGSourceGlobal, PlaylistEPGSource
 from app.services.catalog import get_catalog
 from app.services.epg import epg_service
+from app.services.events import record_player_fetch
 from app import schemas
 from datetime import datetime
 
@@ -1196,6 +1197,7 @@ async def resolve_playlist_channels(
 
 @router.get("/playlist.xml")
 async def get_playlist_epg(
+    request: Request,
     db: Session = Depends(deps.get_db),
     playlist_id: str = Query(...)
 ) -> Any:
@@ -1203,6 +1205,7 @@ async def get_playlist_epg(
     playlist = db.query(LivePlaylist).filter(LivePlaylist.public_id == playlist_id).first()
     if not playlist:
         raise HTTPException(status_code=404, detail="Playlist not found")
+    record_player_fetch(db, playlist, "xml", request)
 
     # Describe exactly the channels the M3U advertises, using the same ids.
     channels = await resolve_playlist_channels(db, playlist)
@@ -1219,6 +1222,10 @@ async def generate_m3u_playlist(
     playlist = db.query(LivePlaylist).filter(LivePlaylist.public_id == playlist_id).first()
     if not playlist:
         raise HTTPException(status_code=404, detail="Playlist not found")
+    # The editor's preview calls this function directly: only a real request
+    # for the playlist URL is a player fetching it.
+    if request.url.path.endswith("/playlist.m3u"):
+        record_player_fetch(db, playlist, "m3u", request)
 
     channels = await resolve_playlist_channels(db, playlist)
 

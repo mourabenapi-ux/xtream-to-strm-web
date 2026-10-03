@@ -182,7 +182,7 @@ export default function Downloads() {
             <DownloadStats />
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Downloads</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Downloads</h2>
                     <p className="text-muted-foreground">Advanced Download Manager</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -207,32 +207,32 @@ export default function Downloads() {
             </div>
 
             {/* Statistics */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-3 gap-2 md:gap-4">
                 <Card className="bg-blue-50/50 dark:bg-blue-900/10">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1 sm:p-6 sm:pb-2">
+                        <CardTitle className="text-xs sm:text-sm font-medium">Active</CardTitle>
                         <Download className="h-4 w-4 text-blue-500" />
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{activeCount}</div>
+                    <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                        <div className="text-xl sm:text-2xl font-bold">{activeCount}</div>
                     </CardContent>
                 </Card>
                 <Card className="bg-yellow-50/50 dark:bg-yellow-900/10">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Queued</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1 sm:p-6 sm:pb-2">
+                        <CardTitle className="text-xs sm:text-sm font-medium">Queued</CardTitle>
                         <Clock className="h-4 w-4 text-yellow-500" />
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{pendingCount}</div>
+                    <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                        <div className="text-xl sm:text-2xl font-bold">{pendingCount}</div>
                     </CardContent>
                 </Card>
                 <Card className="bg-red-50/50 dark:bg-red-900/10">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Failed</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1 sm:p-6 sm:pb-2">
+                        <CardTitle className="text-xs sm:text-sm font-medium">Failed</CardTitle>
                         <XCircle className="h-4 w-4 text-red-500" />
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{failedCount}</div>
+                    <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                        <div className="text-xl sm:text-2xl font-bold">{failedCount}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -308,20 +308,23 @@ export default function Downloads() {
                     visibleTasks.map((task: DownloadTask) => (
                         <Card key={task.id} className={`transition-all ${selectedTasks.includes(task.id) ? 'ring-1 ring-primary border-primary/50' : ''}`}>
                             <CardContent className="p-0">
-                                <div className="flex flex-wrap xl:flex-nowrap items-center gap-y-3 p-4">
-                                    <div className="w-10 flex justify-center">
+                                <div className="flex flex-wrap xl:flex-nowrap items-center gap-x-2 gap-y-2 p-3 sm:p-4">
+                                    <div className="w-8 sm:w-10 flex justify-center">
                                         <Checkbox
                                             checked={selectedTasks.includes(task.id)}
                                             onCheckedChange={() => toggleSelection(task.id)}
                                         />
                                     </div>
 
-                                    <div className="flex-1 ml-4 overflow-hidden">
+                                    {/* Below xl the row wraps: the title must claim the rest of the
+                                        first line (100% minus checkbox + margin), otherwise the
+                                        fixed-width priority/actions columns squeeze it to nothing. */}
+                                    <div className="flex-1 ml-2 sm:ml-4 overflow-hidden min-w-[calc(100%-3.2rem)] sm:min-w-[calc(100%-3.7rem)] xl:min-w-0">
                                         <div className="flex items-center gap-2">
                                             {getStatusIcon(task.status)}
-                                            <p className="font-semibold truncate">{task.title}</p>
+                                            <p className="text-sm sm:text-base font-semibold leading-tight line-clamp-2 sm:line-clamp-none sm:truncate break-words">{task.title}</p>
                                         </div>
-                                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground capitalize">
+                                        <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-0.5 mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-muted-foreground capitalize">
                                             <span>{task.media_type}</span>
                                             {task.status === 'downloading' && (
                                                 <>
@@ -333,12 +336,12 @@ export default function Downloads() {
                                                 <span className="text-red-500 font-medium truncate max-w-[200px]">{task.error_message}</span>
                                             )}
                                             {task.status === 'completed' && task.save_path && (
-                                                <span className="truncate max-w-[300px]" title={task.save_path}>{task.save_path}</span>
+                                                <span className="hidden sm:inline truncate max-w-[300px]" title={task.save_path}>{task.save_path}</span>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div className="w-full xl:w-48 order-last xl:order-none px-0 xl:px-4 flex flex-col gap-1">
+                                    <div className="flex-1 basis-24 min-w-0 xl:flex-none xl:w-48 px-0 xl:px-4 flex flex-col gap-0.5 sm:gap-1">
                                         <div className="flex justify-between text-[10px] font-medium text-muted-foreground uppercase">
                                             <span>{formatBytes(task.downloaded_bytes)}</span>
                                             <span>{formatBytes(task.file_size)}</span>
@@ -356,36 +359,36 @@ export default function Downloads() {
                                         <div className="text-right text-[10px] font-bold">{task.progress.toFixed(1)}%</div>
                                     </div>
 
-                                    <div className="w-32 flex justify-center items-center gap-1 ml-auto xl:ml-0">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePriority('move-down', task.id)} disabled={task.status !== 'pending'}>
+                                    <div className="xl:w-32 flex justify-center items-center gap-0.5 sm:gap-1">
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => handlePriority('move-down', task.id)} disabled={task.status !== 'pending'}>
                                             <ArrowDown className="h-4 w-4" />
                                         </Button>
                                         <span className="text-xs font-bold w-4 text-center">{task.priority}</span>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePriority('move-up', task.id)} disabled={task.status !== 'pending'}>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={() => handlePriority('move-up', task.id)} disabled={task.status !== 'pending'}>
                                             <ArrowUp className="h-4 w-4" />
                                         </Button>
                                     </div>
 
-                                    <div className="w-32 flex justify-end gap-1">
+                                    <div className="xl:w-32 flex justify-end gap-0.5 sm:gap-1">
                                         {task.status === 'downloading' && (
-                                            <Button variant="outline" size="icon" className="h-8 w-8 text-orange-500" onClick={() => handleAction('pause', task.id)}>
+                                            <Button variant="outline" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-orange-500" onClick={() => handleAction('pause', task.id)}>
                                                 <Pause className="h-4 w-4" />
                                             </Button>
                                         )}
                                         {task.status === 'paused' && (
-                                            <Button variant="outline" size="icon" className="h-8 w-8 text-green-500" onClick={() => handleAction('resume', task.id)}>
+                                            <Button variant="outline" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-green-500" onClick={() => handleAction('resume', task.id)}>
                                                 <Play className="h-4 w-4" />
                                             </Button>
                                         )}
                                         {(task.status === 'failed' || task.status === 'cancelled') && (
-                                            <Button variant="outline" size="icon" className="h-8 w-8 text-blue-500" onClick={() => handleAction('retry', task.id)}>
+                                            <Button variant="outline" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-blue-500" onClick={() => handleAction('retry', task.id)}>
                                                 <RotateCcw className="h-4 w-4" />
                                             </Button>
                                         )}
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-8 w-8 text-destructive"
+                                            className="h-7 w-7 sm:h-8 sm:w-8 text-destructive"
                                             onClick={() => setPendingDelete({ ids: [task.id], label: task.title })}
                                         >
                                             <Trash2 className="h-4 w-4" />

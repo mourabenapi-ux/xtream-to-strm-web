@@ -1,4 +1,5 @@
 import { FC, useEffect, useState } from 'react';
+import { copyText, getPublicBase } from '@/lib/home';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +10,7 @@ import { useLiveSelection } from '@/contexts/LiveSelectionContext';
 
 /** The URLs a player needs, short form first: they are typed with a remote. */
 export const playerUrls = (playlist: { public_id: string | null; short_name?: string | null; id: number }) => {
-    const origin = window.location.origin;
+    const origin = getPublicBase();
     const key = playlist.short_name || playlist.public_id || String(playlist.id);
     return {
         m3u: `${origin}/p/${key}.m3u`,
@@ -36,7 +37,7 @@ export const PlaylistSettingsDialog: FC<{ isOpen: boolean; onClose: () => void }
 
     if (!playlist) return null;
     const urls = playerUrls({ ...playlist, short_name: shortName.trim().toLowerCase() || null });
-    const copy = (text: string) => { navigator.clipboard.writeText(text); toast.success('Copied', text); };
+    const copy = async (text: string) => { (await copyText(text)) ? toast.success('Copied', text) : toast.error('Could not copy', 'Select the address and copy it by hand.'); };
 
     const save = async () => {
         setBusy(true);

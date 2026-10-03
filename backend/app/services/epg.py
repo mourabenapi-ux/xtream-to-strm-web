@@ -196,12 +196,24 @@ class EPGService:
                                 pipe.delete(key)
                                 pending += 1
 
-                            payload = json.dumps({
+                            entry = {
                                 "start": start_ts,
                                 "stop": stop_ts,
                                 "title": elem.findtext("title"),
                                 "desc": elem.findtext("desc") or "",
-                            })
+                            }
+                            # Kept only when present, for the dashboard's
+                            # "tonight" panel: episode title, genre, picture.
+                            sub_title = elem.findtext("sub-title")
+                            if sub_title:
+                                entry["sub"] = sub_title
+                            category = elem.findtext("category")
+                            if category:
+                                entry["cat"] = category
+                            picture = elem.find("icon")
+                            if picture is not None and picture.get("src"):
+                                entry["icon"] = picture.get("src")
+                            payload = json.dumps(entry)
                             pipe.zadd(key, {payload: start_ts})
                             pending += 1
                             program_count += 1

@@ -13,6 +13,7 @@ from app.api import deps
 from app.api.api_v1.endpoints.live import m3u_text, resolve_playlist_channels
 from app.models.live import LivePlaylist
 from app.services.epg import epg_service
+from app.services.events import record_player_fetch
 
 router = APIRouter()
 
@@ -29,6 +30,7 @@ def _find(db: Session, key: str) -> LivePlaylist:
 @router.get("/p/{key}.m3u")
 async def short_m3u(key: str, request: Request, db: Session = Depends(deps.get_db)):
     playlist = _find(db, key)
+    record_player_fetch(db, playlist, "m3u", request)
     channels = await resolve_playlist_channels(db, playlist)
     # The guide URL inside the playlist is short too, on the same alias.
     epg_url = str(request.url_for("short_xml", key=key))
@@ -36,8 +38,9 @@ async def short_m3u(key: str, request: Request, db: Session = Depends(deps.get_d
 
 
 @router.get("/p/{key}.xml", name="short_xml")
-async def short_xml(key: str, db: Session = Depends(deps.get_db)):
+async def short_xml(key: str, request: Request, db: Session = Depends(deps.get_db)):
     playlist = _find(db, key)
+    record_player_fetch(db, playlist, "xml", request)
     channels = await resolve_playlist_channels(db, playlist)
     return Response(content=epg_service.generate_playlist_xmltv(playlist, channels),
                     media_type="application/xml")

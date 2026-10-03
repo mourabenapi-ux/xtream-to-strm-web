@@ -178,10 +178,10 @@ export default function EPGAdmin() {
     };
 
     return (
-        <div className="p-6 max-w-6xl mx-auto space-y-6">
-            <div className="flex justify-between items-center">
+        <div className="lg:p-6 max-w-6xl mx-auto space-y-6">
+            <div className="flex flex-wrap justify-between items-center gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">EPG Administration</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">EPG Administration</h1>
                     <p className="text-muted-foreground">Manage centralized EPG sources for all your playlists.</p>
                 </div>
                 <Button onClick={openCreate} className="gap-2">
@@ -194,13 +194,14 @@ export default function EPGAdmin() {
                     <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 </div>
             ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                     {sources.map(source => (
                         <Card key={source.id} className={`${!source.is_active ? 'opacity-60' : ''} transition-opacity`}>
                             <CardHeader className="pb-3">
-                                <div className="flex justify-between items-start">
-                                    <div className="space-y-1">
-                                        <CardTitle className="flex items-center gap-2">
+                                <div className="flex justify-between items-start gap-2">
+                                    <div className="space-y-1 min-w-0">
+                                        {/* A source named after its URL has no space to wrap at. */}
+                                        <CardTitle className="flex items-center gap-2 [overflow-wrap:anywhere]">
                                             {source.source_type === 'xtream'
                                                 ? <Database className="h-4 w-4 text-emerald-500" />
                                                 : source.source_type === 'url'
@@ -212,7 +213,7 @@ export default function EPGAdmin() {
                                             {describeLocation(source, subscriptions)}
                                         </CardDescription>
                                     </div>
-                                    <div className={`px-2 py-1 rounded-full text-xs font-semibold ${source.is_active ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                                    <div className={`flex-shrink-0 px-2 py-1 rounded-full text-xs font-semibold ${source.is_active ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
                                         {source.is_active ? "Active" : "Inactive"}
                                     </div>
                                 </div>

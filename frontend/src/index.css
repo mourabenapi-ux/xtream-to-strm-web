@@ -74,3 +74,50 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  /* Exactly the part of the screen the browser shows. On a phone 100vh is the
+     height with the address bar hidden, so anything sized to it ran under the
+     browser's toolbar. 100vh stays as the fallback for browsers without dvh. */
+  .app-frame {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* A table that becomes a list of cards on a phone: one card per row, each
+     cell under its column name (taken from data-label). Below md only, so the
+     desktop table is unchanged. */
+  @media (max-width: 767px) {
+    .stack-table,
+    .stack-table tbody,
+    .stack-table tr,
+    .stack-table td {
+      display: block;
+      width: 100%;
+      min-width: 0;
+    }
+    .stack-table thead {
+      display: none;
+    }
+    .stack-table tr {
+      padding: 0.5rem 0;
+    }
+    .stack-table td {
+      padding: 0.25rem 0.75rem;
+      text-align: left;
+    }
+    .stack-table td[data-label]::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 0.125rem;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: hsl(var(--muted-foreground));
+    }
+    .stack-table td > .stack-end {
+      justify-content: flex-start;
+    }
+  }
+}
